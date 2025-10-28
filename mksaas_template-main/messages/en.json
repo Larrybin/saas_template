@@ -1,0 +1,1061 @@
+{
+  "Metadata": {
+    "name": "MkSaaS Demo",
+    "title": "MkSaaS - The Best AI SaaS Boilerplate",
+    "description": "MkSaaS is the best AI SaaS boilerplate. Make AI SaaS in days, simply and effortlessly"
+  },
+  "Common": {
+    "login": "Log in",
+    "logout": "Log out",
+    "signUp": "Sign up",
+    "language": "Switch language",
+    "mode": {
+      "label": "Toggle mode",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "theme": {
+      "label": "Toggle theme",
+      "default": "Default",
+      "blue": "Blue",
+      "green": "Green",
+      "amber": "Amber",
+      "neutral": "Neutral"
+    },
+    "copy": "Copy",
+    "saving": "Saving...",
+    "save": "Save",
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "logoutFailed": "Failed to log out",
+    "table": {
+      "totalRecords": "Total {count} records",
+      "noResults": "No results",
+      "loading": "Loading...",
+      "columns": "Columns",
+      "rowsPerPage": "Rows per page",
+      "page": "Page",
+      "firstPage": "First Page",
+      "lastPage": "Last Page",
+      "nextPage": "Next Page",
+      "previousPage": "Previous Page",
+      "ascending": "Asc",
+      "descending": "Desc"
+    }
+  },
+  "PricingPage": {
+    "title": "Pricing",
+    "description": "Choose the plan that works best for you",
+    "subtitle": "Choose the plan that works best for you",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "PricingCard": {
+      "freePrice": "$0",
+      "perMonth": "/month",
+      "perYear": "/year",
+      "popular": "Popular",
+      "currentPlan": "Current Plan",
+      "yourCurrentPlan": "Your Current Plan",
+      "getStartedForFree": "Get Started For Free",
+      "getLifetimeAccess": "Get Lifetime Access",
+      "getStarted": "Get Started",
+      "notAvailable": "Not Available",
+      "daysTrial": "{days}-day free trial"
+    },
+    "CheckoutButton": {
+      "loading": "Loading...",
+      "checkoutFailed": "Failed to open checkout page"
+    }
+  },
+  "PricePlans": {
+    "free": {
+      "name": "Free",
+      "description": "Basic features for personal use",
+      "features": {
+        "feature-1": "Up to 3 projects",
+        "feature-2": "1 GB storage",
+        "feature-3": "Basic analytics",
+        "feature-4": "Community support"
+      },
+      "limits": {
+        "limit-1": "Custom domains",
+        "limit-2": "Custom branding",
+        "limit-3": "Lifetime updates"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Advanced features for professionals",
+      "features": {
+        "feature-1": "Unlimited projects",
+        "feature-2": "10 GB storage",
+        "feature-3": "Advanced analytics",
+        "feature-4": "Priority support",
+        "feature-5": "Custom domains"
+      },
+      "limits": {
+        "limit-1": "Custom branding",
+        "limit-2": "Lifetime updates"
+      }
+    },
+    "lifetime": {
+      "name": "Lifetime",
+      "description": "Premium features with one-time payment",
+      "features": {
+        "feature-1": "All Pro features",
+        "feature-2": "100 GB storage",
+        "feature-3": "Dedicated support",
+        "feature-4": "Enterprise-grade security",
+        "feature-5": "Advanced integrations",
+        "feature-6": "Custom branding",
+        "feature-7": "Lifetime updates"
+      }
+    }
+  },
+  "CreditPackages": {
+    "basic": {
+      "name": "Basic",
+      "description": "Basic credits package description"
+    },
+    "standard": {
+      "name": "Standard",
+      "description": "Standard credits package description"
+    },
+    "premium": {
+      "name": "Premium",
+      "description": "Premium credits package description"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Enterprise credits package description"
+    }
+  },
+  "NotFoundPage": {
+    "title": "404",
+    "message": "Sorry, the page you are looking for does not exist.",
+    "backToHome": "Back to home"
+  },
+  "ErrorPage": {
+    "title": "Oops! Something went wrong!",
+    "tryAgain": "Try again",
+    "backToHome": "Back to home"
+  },
+  "AboutPage": {
+    "title": "About",
+    "description": "This is MkSaaS, an AI SaaS template built with modern technologies, helping you build your SaaS faster and better.",
+    "authorName": "MkSaaS",
+    "authorBio": "AI SaaS Boilerplate",
+    "introduction": "👋 Hi there! This is MkSaaS, an AI SaaS template built with modern technologies, helping you build your SaaS faster and better. If you have any questions, welcome to contact me.",
+    "talkWithMe": "Talk with me",
+    "followMe": "Follow me on X"
+  },
+  "ChangelogPage": {
+    "title": "Changelog",
+    "description": "Stay up to date with the latest changes in our product",
+    "subtitle": "Stay up to date with the latest changes in our product"
+  },
+  "ContactPage": {
+    "title": "Contact",
+    "description": "We'll help you find the right plan for your business",
+    "subtitle": "We'll help you find the right plan for your business",
+    "form": {
+      "title": "Contact Us",
+      "description": "If you have any questions or feedback, please reach out to our team",
+      "name": "Name",
+      "email": "Email",
+      "message": "Message",
+      "submit": "Submit",
+      "submitting": "Submitting...",
+      "success": "Message sent successfully",
+      "fail": "Failed to send message",
+      "nameMinLength": "Name must be at least 3 characters",
+      "nameMaxLength": "Name must not exceed 30 characters",
+      "emailValidation": "Please enter a valid email address",
+      "messageMinLength": "Message must be at least 10 characters",
+      "messageMaxLength": "Message must not exceed 500 characters"
+    }
+  },
+  "WaitlistPage": {
+    "title": "Waitlist",
+    "description": "Join our waitlist for the launch of our product",
+    "subtitle": "Join our waitlist for the launch of our product",
+    "form": {
+      "title": "Join Our Waitlist",
+      "description": "We will notify you when we launch our product",
+      "email": "Email",
+      "subscribe": "Subscribe",
+      "subscribing": "Subscribing...",
+      "success": "Subscribed successfully",
+      "fail": "Failed to subscribe",
+      "emailValidation": "Please enter a valid email address"
+    }
+  },
+  "Newsletter": {
+    "title": "Newsletter",
+    "subtitle": "Join the community",
+    "description": "Subscribe to our newsletter for the latest news and updates",
+    "form": {
+      "email": "Email",
+      "subscribe": "Subscribe",
+      "subscribing": "Subscribing...",
+      "success": "Subscribed successfully",
+      "fail": "Failed to subscribe",
+      "emailValidation": "Please enter a valid email address"
+    }
+  },
+  "AuthPage": {
+    "login": {
+      "title": "Login",
+      "welcomeBack": "Welcome back",
+      "email": "Email",
+      "password": "Password",
+      "signIn": "Sign In",
+      "signUpHint": "Don't have an account? Sign up",
+      "forgotPassword": "Forgot Password?",
+      "signInWithGoogle": "Sign In with Google",
+      "signInWithGitHub": "Sign In with GitHub",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "or": "Or continue with",
+      "emailRequired": "Please enter your email",
+      "passwordRequired": "Please enter your password",
+      "captchaInvalid": "Captcha verification failed",
+      "captchaError": "Captcha verification error"
+    },
+    "register": {
+      "title": "Register",
+      "createAccount": "Create an account",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "signUp": "Sign Up",
+      "signInHint": "Already have an account? Sign in",
+      "checkEmail": "Please check your email inbox",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "nameRequired": "Please enter your name",
+      "emailRequired": "Please enter your email",
+      "passwordRequired": "Please enter your password",
+      "captchaInvalid": "Captcha verification failed",
+      "captchaError": "Captcha verification error"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "email": "Email",
+      "send": "Send reset link",
+      "backToLogin": "Back to login",
+      "checkEmail": "Please check your email inbox",
+      "emailRequired": "Please enter your email"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "password": "Password",
+      "reset": "Reset password",
+      "backToLogin": "Back to login",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "minLength": "Password must be at least 8 characters"
+    },
+    "error": {
+      "title": "Oops! Something went wrong!",
+      "tryAgain": "Please try again.",
+      "backToLogin": "Back to login",
+      "checkEmail": "Please check your email inbox"
+    },
+    "common": {
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "byClickingContinue": "By clicking continue, you agree to our ",
+      "and": " and "
+    }
+  },
+  "BlogPage": {
+    "title": "Blog",
+    "description": "Latest news and updates from our team",
+    "subtitle": "Latest news and updates from our team",
+    "author": "Author",
+    "categories": "Categories",
+    "tableOfContents": "Table of Contents",
+    "readTime": "{minutes} min read",
+    "all": "All",
+    "noPostsFound": "No posts found",
+    "allPosts": "All Posts",
+    "morePosts": "More Posts"
+  },
+  "DocsPage": {
+    "toc": "Table of Contents",
+    "search": "Search docs",
+    "lastUpdate": "Last updated on",
+    "searchNoResult": "No results",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "chooseLanguage": "Select language",
+    "title": "MkSaaS Docs",
+    "homepage": "Homepage",
+    "blog": "Blog"
+  },
+  "Marketing": {
+    "navbar": {
+      "features": {
+        "title": "Features"
+      },
+      "pricing": {
+        "title": "Pricing"
+      },
+      "blog": {
+        "title": "Blog"
+      },
+      "docs": {
+        "title": "Docs"
+      },
+      "ai": {
+        "title": "AI Tools",
+        "items": {
+          "text": {
+            "title": "AI Text",
+            "description": "Show how to use AI to write stunning text"
+          },
+          "image": {
+            "title": "AI Image",
+            "description": "Show how to use AI to generate beautiful images"
+          },
+          "chat": {
+            "title": "AI Chat",
+            "description": "Show how to use AI to chat with your customers"
+          },
+          "video": {
+            "title": "AI Video",
+            "description": "Show how to use AI to generate amazing videos"
+          },
+          "audio": {
+            "title": "AI Audio",
+            "description": "Show how to use AI to generate wonderful audio"
+          }
+        }
+      },
+      "pages": {
+        "title": "Pages",
+        "items": {
+          "about": {
+            "title": "About",
+            "description": "Learn more about our company, mission, and values"
+          },
+          "contact": {
+            "title": "Contact",
+            "description": "Get in touch with our team for support or inquiries"
+          },
+          "waitlist": {
+            "title": "Waitlist",
+            "description": "Join our waitlist for latest news and updates"
+          },
+          "changelog": {
+            "title": "Changelog",
+            "description": "See the latest updates to our products"
+          },
+          "roadmap": {
+            "title": "Roadmap",
+            "description": "Explore our future plans and upcoming features"
+          },
+          "cookiePolicy": {
+            "title": "Cookie Policy",
+            "description": "How we use the cookies on our website"
+          },
+          "privacyPolicy": {
+            "title": "Privacy Policy",
+            "description": "How we protect and handle your data"
+          },
+          "termsOfService": {
+            "title": "Terms of Service",
+            "description": "The legal agreement between you and our company"
+          }
+        }
+      },
+      "blocks": {
+        "title": "Blocks",
+        "items": {
+          "magicui": {
+            "title": "MagicUI Blocks"
+          },
+          "hero-section": {
+            "title": "Hero Blocks"
+          },
+          "logo-cloud": {
+            "title": "Logo Cloud Blocks"
+          },
+          "integrations": {
+            "title": "Integrations Blocks"
+          },
+          "features": {
+            "title": "Features Blocks"
+          },
+          "content": {
+            "title": "Content Blocks"
+          },
+          "stats": {
+            "title": "Stats Blocks"
+          },
+          "team": {
+            "title": "Team Blocks"
+          },
+          "testimonials": {
+            "title": "Testimonials Blocks"
+          },
+          "callToAction": {
+            "title": "Call to Action Blocks"
+          },
+          "footer": {
+            "title": "Footer Blocks"
+          },
+          "pricing": {
+            "title": "Pricing Blocks"
+          },
+          "comparator": {
+            "title": "Comparator Blocks"
+          },
+          "faq": {
+            "title": "FAQ Blocks"
+          },
+          "login": {
+            "title": "Login Blocks"
+          },
+          "signup": {
+            "title": "Signup Blocks"
+          },
+          "forgot-password": {
+            "title": "Forgot Password Blocks"
+          },
+          "contact": {
+            "title": "Contact Blocks"
+          }
+        }
+      }
+    },
+    "footer": {
+      "tagline": "Make AI SaaS in days, simply and effortlessly",
+      "product": {
+        "title": "Product",
+        "items": {
+          "features": "Features",
+          "pricing": "Pricing",
+          "faq": "FAQ"
+        }
+      },
+      "resources": {
+        "title": "Resources",
+        "items": {
+          "blog": "Blog",
+          "docs": "Documentation",
+          "changelog": "Changelog",
+          "roadmap": "Roadmap"
+        }
+      },
+      "company": {
+        "title": "Company",
+        "items": {
+          "about": "About",
+          "contact": "Contact",
+          "waitlist": "Waitlist"
+        }
+      },
+      "legal": {
+        "title": "Legal",
+        "items": {
+          "cookiePolicy": "Cookie Policy",
+          "privacyPolicy": "Privacy Policy",
+          "termsOfService": "Terms of Service"
+        }
+      }
+    },
+    "avatar": {
+      "dashboard": "Dashboard",
+      "billing": "Billing",
+      "credits": "Credits",
+      "settings": "Settings"
+    }
+  },
+  "Dashboard": {
+    "dashboard": {
+      "title": "Dashboard"
+    },
+    "admin": {
+      "title": "Admin",
+      "users": {
+        "title": "Users",
+        "fakeData": "Note: Faked data for demonstration, some features are disabled",
+        "error": "Failed to get users",
+        "search": "Search users...",
+        "columns": {
+          "columns": "Columns",
+          "name": "Name",
+          "email": "Email",
+          "role": "Role",
+          "createdAt": "Created At",
+          "customerId": "Customer ID",
+          "status": "Status",
+          "banReason": "Ban Reason",
+          "banExpires": "Ban Expires"
+        },
+        "admin": "Admin",
+        "user": "User",
+        "email": {
+          "verified": "Email Verified",
+          "unverified": "Email Unverified"
+        },
+        "emailCopied": "Email copied to clipboard",
+        "banned": "Banned",
+        "active": "Active",
+        "joined": "Joined at",
+        "updated": "Updated at",
+        "ban": {
+          "reason": "Ban Reason",
+          "reasonPlaceholder": "Enter the reason for banning this user",
+          "defaultReason": "Spamming",
+          "never": "Never",
+          "expires": "Ban Expires",
+          "selectDate": "Select Date",
+          "button": "Ban User",
+          "success": "User has been banned",
+          "error": "Failed to ban user"
+        },
+        "unban": {
+          "button": "Unban User",
+          "success": "User has been unbanned",
+          "error": "Failed to unban user"
+        },
+        "close": "Close"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "profile": {
+        "title": "Profile",
+        "description": "Manage your account information",
+        "avatar": {
+          "title": "Avatar",
+          "description": "Click upload button to upload a custom one",
+          "recommendation": "An avatar is optional but strongly recommended",
+          "uploading": "Uploading...",
+          "uploadAvatar": "Upload Avatar",
+          "success": "Avatar updated successfully",
+          "fail": "Failed to update avatar"
+        },
+        "name": {
+          "title": "Name",
+          "description": "Please enter your display name",
+          "placeholder": "Enter your name",
+          "minLength": "Please use 3 characters at minimum",
+          "maxLength": "Please use 30 characters at maximum",
+          "hint": "Please use 3-30 characters for your name",
+          "success": "Name updated successfully",
+          "fail": "Failed to update name",
+          "saving": "Saving...",
+          "save": "Save"
+        }
+      },
+      "billing": {
+        "title": "Billing",
+        "description": "Manage your subscription and billing details",
+        "status": {
+          "active": "Active",
+          "trial": "Trial",
+          "free": "Free",
+          "lifetime": "Lifetime"
+        },
+        "interval": {
+          "month": "month",
+          "year": "year",
+          "oneTime": "one-time"
+        },
+        "currentPlan": {
+          "title": "Current Plan",
+          "description": "Your current plan details",
+          "noPlan": "You have no active plan"
+        },
+        "CustomerPortalButton": {
+          "loading": "Loading...",
+          "createCustomerPortalFailed": "Failed to open Stripe customer portal"
+        },
+        "price": "Price:",
+        "periodStartDate": "Period start date:",
+        "nextBillingDate": "Next billing date:",
+        "trialEnds": "Trial ends:",
+        "freePlanMessage": "You are currently on the free plan with limited features",
+        "lifetimeMessage": "You have lifetime access to all premium features",
+        "manageSubscription": "Manage Subscription and Billing",
+        "manageBilling": "Manage Billing",
+        "upgradePlan": "Upgrade Plan",
+        "retry": "Retry",
+        "errorMessage": "Failed to get data",
+        "paymentSuccess": "Payment successful"
+      },
+      "credits": {
+        "title": "Credits",
+        "description": "Manage your credit transactions",
+        "tabs": {
+          "balance": "Balance",
+          "transactions": "Transactions"
+        },
+        "balance": {
+          "title": "Credit Balance",
+          "description": "Your credit balance",
+          "credits": "Credits",
+          "creditsDescription": "You have {credits} credits",
+          "creditsExpired": "Credits expired",
+          "creditsAdded": "Credits have been added to your account",
+          "viewTransactions": "View Credit Transactions",
+          "retry": "Retry",
+          "expiringCredits": "{credits} credits expiring in the next {days} days"
+        },
+        "packages": {
+          "title": "Credit Packages",
+          "description": "Purchase additional credits to use our services",
+          "purchase": "Purchase",
+          "processing": "Processing...",
+          "popular": "Popular",
+          "completePurchase": "Complete Your Purchase",
+          "failedToFetchCredits": "Failed to fetch credits",
+          "failedToCreatePaymentIntent": "Failed to create payment intent",
+          "failedToInitiatePayment": "Failed to initiate payment",
+          "cancel": "Cancel",
+          "purchaseFailed": "Purchase credits failed",
+          "checkoutFailed": "Failed to create checkout session",
+          "loading": "Loading...",
+          "pay": "Pay"
+        },
+        "transactions": {
+          "title": "Credit Transactions",
+          "error": "Failed to get credit transactions",
+          "search": "Search credit transactions...",
+          "paymentIdCopied": "Payment ID copied to clipboard",
+          "columns": {
+            "columns": "Columns",
+            "id": "ID",
+            "type": "Type",
+            "description": "Description",
+            "amount": "Amount",
+            "remainingAmount": "Remaining Amount",
+            "paymentId": "Payment ID",
+            "expirationDate": "Expiration Date",
+            "expirationDateProcessedAt": "Expiration Date Processed At",
+            "createdAt": "Created At",
+            "updatedAt": "Updated At"
+          },
+          "types": {
+            "MONTHLY_REFRESH": "Monthly Refresh",
+            "REGISTER_GIFT": "Register Gift",
+            "PURCHASE": "Purchased Credits",
+            "USAGE": "Consumed Credits",
+            "EXPIRE": "Expired Credits",
+            "SUBSCRIPTION_RENEWAL": "Subscription Renewal",
+            "LIFETIME_MONTHLY": "Lifetime Monthly"
+          },
+          "detailViewer": {
+            "title": "Credit Transaction Detail",
+            "close": "Close"
+          },
+          "expired": "Expired",
+          "never": "Never"
+        }
+      },
+      "notification": {
+        "title": "Notification",
+        "description": "Manage your notification preferences",
+        "newsletter": {
+          "title": "Newsletter Subscription",
+          "description": "Manage your newsletter subscription preferences",
+          "label": "Subscribe to newsletter",
+          "hint": "You can change your subscription preferences at any time",
+          "emailRequired": "Email is required to subscribe to the newsletter",
+          "subscribeSuccess": "Successfully subscribed to the newsletter",
+          "subscribeFail": "Failed to subscribe to the newsletter",
+          "unsubscribeSuccess": "Successfully unsubscribed from the newsletter",
+          "unsubscribeFail": "Failed to unsubscribe from the newsletter",
+          "error": "An error occurred while updating your subscription"
+        }
+      },
+      "security": {
+        "title": "Security",
+        "description": "Manage your security settings",
+        "updatePassword": {
+          "title": "Change Password",
+          "description": "Enter your current password and a new password",
+          "currentPassword": "Current Password",
+          "currentRequired": "Current password is required",
+          "newPassword": "New Password",
+          "newMinLength": "Password must be at least 8 characters",
+          "hint": "Please use at least 8 characters for password",
+          "showPassword": "Show password",
+          "hidePassword": "Hide password",
+          "success": "Password updated successfully",
+          "fail": "Failed to update password",
+          "saving": "Saving...",
+          "save": "Save"
+        },
+        "resetPassword": {
+          "title": "Reset Password",
+          "description": "Reset password to enable email login",
+          "info": "Resetting your password will allow you to sign in using your email and password in addition to your social login methods. You will receive an email with instructions to reset your password",
+          "button": "Reset Password"
+        },
+        "deleteAccount": {
+          "title": "Delete Account",
+          "description": "Permanently remove your account and all of its contents",
+          "warning": "This action is not reversible, so please continue with caution",
+          "button": "Delete Account",
+          "confirmTitle": "Delete Account",
+          "confirmDescription": "Are you sure you want to delete your account? This action cannot be undone.",
+          "confirm": "Delete",
+          "cancel": "Cancel",
+          "deleting": "Deleting...",
+          "success": "Account deleted successfully",
+          "fail": "Failed to delete account"
+        }
+      }
+    },
+    "upgrade": {
+      "title": "Upgrade",
+      "description": "Upgrade to Pro to access all features",
+      "button": "Upgrade"
+    }
+  },
+  "Mail": {
+    "common": {
+      "team": "{name} Team",
+      "copyright": "©️ {year} All Rights Reserved."
+    },
+    "verifyEmail": {
+      "title": "Hi, {name}.",
+      "body": "Please click the link below to verify your email address.",
+      "confirmEmail": "Confirm email",
+      "subject": "Verify your email"
+    },
+    "forgotPassword": {
+      "title": "Hi, {name}.",
+      "body": "Please click the link below to reset your password.",
+      "resetPassword": "Reset password",
+      "subject": "Reset your password"
+    },
+    "subscribeNewsletter": {
+      "body": "Thank you for subscribing to the newsletter. We will keep you updated with the latest news and updates.",
+      "subject": "Thanks for subscribing"
+    },
+    "contactMessage": {
+      "name": "Name: {name}",
+      "email": "Email: {email}",
+      "message": "Message: {message}",
+      "subject": "Contact Message from Website"
+    }
+  },
+  "HomePage": {
+    "title": "MkSaaS",
+    "description": "Make AI SaaS in days, simply and effortlessly",
+    "hero": {
+      "title": "Make AI SaaS in days, simply and effortlessly",
+      "description": "The is a demo website built with MkSaaS, a Next.js SaaS boilerplate to help you build your AI SaaS faster and better.",
+      "introduction": "Introducing MkSaaS Boilerplate",
+      "primary": "Get Started",
+      "secondary": "See Demo"
+    },
+    "logocloud": {
+      "title": "Your favorite companies are our partners"
+    },
+    "integration": {
+      "title": "Integrations",
+      "subtitle": "Integrate with your favorite tools",
+      "description": "Connect seamlessly with popular platforms and services to enhance your workflow.",
+      "learnMore": "Learn More",
+      "items": {
+        "item-1": {
+          "title": "Google Gemini",
+          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        },
+        "item-2": {
+          "title": "Replit",
+          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        },
+        "item-3": {
+          "title": "MagicUI",
+          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        },
+        "item-4": {
+          "title": "VSCodium",
+          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        },
+        "item-5": {
+          "title": "MediaWiki",
+          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        },
+        "item-6": {
+          "title": "Google PaLM",
+          "description": "Amet praesentium deserunt ex commodi tempore fuga voluptatem."
+        }
+      }
+    },
+    "integration2": {
+      "title": "Integrate with your favorite tools",
+      "description": "Connect seamlessly with popular platforms and services to enhance your workflow.",
+      "primaryButton": "Get Started",
+      "secondaryButton": "See Demo"
+    },
+    "features": {
+      "title": "Features",
+      "subtitle": "The features of your product",
+      "description": "Write the description of your product here",
+      "items": {
+        "item-1": {
+          "title": "Product Feature One",
+          "description": "Please write the detailed description of feature one here, make it as detailed as possible, make it more attractive to users"
+        },
+        "item-2": {
+          "title": "Product Feature Two",
+          "description": "Please write the detailed description of feature two here, make it as detailed as possible, make it more attractive to users"
+        },
+        "item-3": {
+          "title": "Product Feature Three",
+          "description": "Please write the detailed description of feature three here, make it as detailed as possible, make it more attractive to users"
+        },
+        "item-4": {
+          "title": "Product Feature Four",
+          "description": "Please write the detailed description of feature four here, make it as detailed as possible, make it more attractive to users"
+        }
+      }
+    },
+    "features2": {
+      "title": "Features2",
+      "subtitle": "The features of your product",
+      "description": "Write the description of your product here",
+      "feature-1": "Product Feature One",
+      "feature-2": "Product Feature Two",
+      "feature-3": "Product Feature Three",
+      "feature-4": "Product Feature Four"
+    },
+    "features3": {
+      "title": "Features3",
+      "subtitle": "The features of your product",
+      "description": "Write the description of your product here",
+      "items": {
+        "item-1": {
+          "title": "Product Feature One",
+          "description": "Please write the detailed description of feature one here"
+        },
+        "item-2": {
+          "title": "Product Feature Two",
+          "description": "Please write the detailed description of feature two here"
+        },
+        "item-3": {
+          "title": "Product Feature Three",
+          "description": "Please write the detailed description of feature three here"
+        },
+        "item-4": {
+          "title": "Product Feature Four",
+          "description": "Please write the detailed description of feature four here"
+        },
+        "item-5": {
+          "title": "Product Feature Five",
+          "description": "Please write the detailed description of feature five here"
+        },
+        "item-6": {
+          "title": "Product Feature Six",
+          "description": "Please write the detailed description of feature six here"
+        }
+      }
+    },
+    "pricing": {
+      "title": "Pricing",
+      "subtitle": "Pricing",
+      "description": "Choose the plan that works best for you"
+    },
+    "faqs": {
+      "title": "FAQ",
+      "subtitle": "Frequently Asked Questions",
+      "items": {
+        "item-1": {
+          "question": "Do you offer a free trial?",
+          "answer": "Yes, we offer a 7-day free trial."
+        },
+        "item-2": {
+          "question": "How do I cancel my subscription?",
+          "answer": "You can cancel your subscription by visiting the billing page."
+        },
+        "item-3": {
+          "question": "Can I change my plan?",
+          "answer": "Yes, you can change your plan at any time by visiting the billing page."
+        },
+        "item-4": {
+          "question": "What is the refund policy?",
+          "answer": "We offer a 30-day money-back guarantee if you are not happy with our product."
+        },
+        "item-5": {
+          "question": "Can't find what you're looking for?",
+          "answer": "Please contact our customer support team at support@mksaas.com"
+        }
+      }
+    },
+    "testimonials": {
+      "title": "Testimonials",
+      "subtitle": "What our customers are saying",
+      "items": {
+        "item-1": {
+          "name": "Jonathan Yombo",
+          "role": "Software Engineer",
+          "image": "https://randomuser.me/api/portraits/men/1.jpg",
+          "quote": "MkSaaS is really extraordinary and very practical, no need to break your head. A real gold mine."
+        },
+        "item-2": {
+          "name": "Yves Kalume",
+          "role": "GDE - Android",
+          "image": "https://randomuser.me/api/portraits/men/6.jpg",
+          "quote": "With no experience in webdesign I just redesigned my entire website in a few minutes with tailwindcss thanks to MkSaaS."
+        },
+        "item-3": {
+          "name": "Yucel Faruksahan",
+          "role": "Tailkits Creator",
+          "image": "https://randomuser.me/api/portraits/men/7.jpg",
+          "quote": "Great work on MkSaaS template. This is one of the best personal website that I have seen so far :)"
+        },
+        "item-4": {
+          "name": "Anonymous author",
+          "role": "Product Manager",
+          "image": "https://randomuser.me/api/portraits/men/8.jpg",
+          "quote": "I downloaded the one of MkSaaS template which is very clear to understand at the start and you could modify the codes/blocks to fit perfectly on your purpose of the page."
+        },
+        "item-5": {
+          "name": "Shekinah Tshiokufila",
+          "role": "Senior Software Engineer",
+          "image": "https://randomuser.me/api/portraits/men/4.jpg",
+          "quote": "MkSaaS is redefining the standard of web design, with these blocks it provides an easy and efficient way for those who love beauty but may lack the time to implement it."
+        },
+        "item-6": {
+          "name": "Oketa Fred",
+          "role": "Fullstack Developer",
+          "image": "https://randomuser.me/api/portraits/men/2.jpg",
+          "quote": "I absolutely love MkSaaS! The component blocks are beautifully designed and easy to use, which makes creating a great-looking website a breeze."
+        },
+        "item-7": {
+          "name": "Zeki",
+          "role": "Founder of ChatExtend",
+          "image": "https://randomuser.me/api/portraits/men/5.jpg",
+          "quote": "MkSaaS is the perfect fusion of simplicity and versatility, enabling us to create UIs that are as stunning as they are user-friendly."
+        },
+        "item-8": {
+          "name": "Joseph Kitheka",
+          "role": "Fullstack Developer",
+          "image": "https://randomuser.me/api/portraits/men/9.jpg",
+          "quote": "MkSaaS has transformed the way I develop web applications. Their extensive collection of UI components, blocks, and templates has significantly accelerated my workflow."
+        },
+        "item-9": {
+          "name": "Khatab Wedaa",
+          "role": "MerakiUI Creator",
+          "image": "https://randomuser.me/api/portraits/men/10.jpg",
+          "quote": "MkSaaS is an elegant, clean, and responsive tailwind css components it's very helpful to start fast with your project."
+        },
+        "item-10": {
+          "name": "Rodrigo Aguilar",
+          "role": "TailwindAwesome Creator",
+          "image": "https://randomuser.me/api/portraits/men/11.jpg",
+          "quote": "I love MkSaaS ❤️. The component blocks are well-structured, simple to use, and beautifully designed. It makes it really easy to have a good-looking website in no time."
+        },
+        "item-11": {
+          "name": "Eric Ampire",
+          "role": "@GoogleDevExpert for Android",
+          "image": "https://randomuser.me/api/portraits/men/12.jpg",
+          "quote": "MkSaaS templates are the perfect solution for anyone who wants to create a beautiful and functional website without any web design experience."
+        },
+        "item-12": {
+          "name": "Roland Tubonge",
+          "role": "Software Engineer",
+          "image": "https://randomuser.me/api/portraits/men/13.jpg",
+          "quote": "MkSaaS is so well designed that even with a very poor knowledge of web design you can do miracles. Let yourself be seduced!"
+        }
+      }
+    },
+    "stats": {
+      "title": "Stats",
+      "subtitle": "MkSaaS in numbers",
+      "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly",
+      "items": {
+        "item-1": {
+          "title": "Stars on GitHub"
+        },
+        "item-2": {
+          "title": "Active Users"
+        },
+        "item-3": {
+          "title": "Powered Apps"
+        }
+      }
+    },
+    "calltoaction": {
+      "title": "Start Building",
+      "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly",
+      "primaryButton": "Get Started",
+      "secondaryButton": "See Demo"
+    }
+  },
+  "AITextPage": {
+    "title": "AI Text Demo",
+    "description": "Analyze web content with AI to extract key information, features, and insights",
+    "content": "Web Content Analyzer",
+    "subtitle": "Enter a website URL to get AI-powered analysis of its content",
+    "analyzer": {
+      "title": "Web Content Analyzer",
+      "description": "Analyze any website content using AI to extract structured information",
+      "placeholder": "Enter website URL (e.g., https://example.com)",
+      "button": "Analyze Website",
+      "loading": {
+        "scraping": "Scraping website content...",
+        "analyzing": "Analyzing content with AI..."
+      },
+      "results": {
+        "title": "Analysis Results",
+        "newAnalysis": "Analyze Another Website",
+        "sections": {
+          "title": "Title",
+          "description": "Description",
+          "introduction": "Introduction",
+          "features": "Features",
+          "pricing": "Pricing",
+          "useCases": "Use Cases",
+          "screenshot": "Website Screenshot"
+        }
+      },
+      "errors": {
+        "invalidUrl": "Please enter a valid URL starting with http:// or https://",
+        "analysisError": "Failed to analyze website. Please try again.",
+        "networkError": "Network error. Please check your connection and try again.",
+        "insufficientCredits": "Insufficient credits. Please purchase more credits to continue."
+      }
+    },
+    "features": {
+      "scraping": {
+        "title": "Smart Web Scraping",
+        "description": "Advanced web scraping technology extracts clean, structured content from any website"
+      },
+      "analysis": {
+        "title": "AI-Powered Analysis",
+        "description": "Intelligent AI analysis extracts key insights, features, and structured information"
+      },
+      "results": {
+        "title": "Structured Results",
+        "description": "Get organized, easy-to-read results with clear sections and actionable insights"
+      }
+    }
+  },
+  "AIImagePage": {
+    "title": "AI Image",
+    "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly"
+  },
+  "AIChatPage": {
+    "title": "AI Chat",
+    "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly"
+  },
+  "AIVideoPage": {
+    "title": "AI Video",
+    "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly"
+  },
+  "AIAudioPage": {
+    "title": "AI Audio",
+    "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly"
+  }
+}

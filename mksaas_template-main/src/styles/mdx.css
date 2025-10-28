@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Fumadocs Themes */
+/* https://fumadocs.dev/docs/ui/theme#themes */
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+@source '../../node_modules/fumadocs-ui/dist/**/*.js';

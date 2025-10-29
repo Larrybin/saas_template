@@ -55,6 +55,11 @@ export async function sendMessageToDiscord(
               value: `\`${sessionId}\``,
               inline: false,
             },
+            {
+              name: 'Source',
+              value: getBaseUrl(),
+              inline: false,
+            },
           ],
           timestamp: new Date().toISOString(),
         },

@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  NODE_VERSION: '20'
+  PNPM_CACHE_FOLDER: .pnpm-store
+
+jobs:
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install dependencies (frozen)
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Biome Lint
+        run: pnpm lint
+      - name: TypeScript Typecheck
+        run: |
+          if pnpm run -s typecheck >/dev/null 2>&1; then
+            pnpm run -s typecheck
+          else
+            pnpm exec tsc -p tsconfig.json --noEmit
+          fi
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install dependencies (frozen)
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Generate static content
+        run: pnpm content
+      - name: Build application
+        run: pnpm build
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install dependencies (frozen)
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: npm audit (blocking on moderate+)
+        run: pnpm audit --audit-level=moderate
+      - name: OSV Scanner
+        uses: google/osv-scanner-action@v1
+        with:
+          scan-args: >-
+            --lockfile=pnpm-lock.yaml
+            --skip-git
+            --severity=MEDIUM
+
+  drizzle-drift:
+    name: Drizzle Schema Drift (dry run)
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && secrets.DATABASE_URL != ''
+    env:
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install dependencies (frozen)
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Check schema drift (dry run)
+        run: pnpm db:push --dry-run
+

@@ -5,6 +5,8 @@
  * @param userName The username of the customer
  * @param amount The purchase amount in the currency's main unit (e.g., dollars, not cents)
  */
+import { getBaseUrl } from '@/lib/urls/urls';
+
 export async function sendMessageToFeishu(
   sessionId: string,
   customerId: string,
@@ -25,7 +27,7 @@ export async function sendMessageToFeishu(
     const message = {
       msg_type: 'text',
       content: {
-        text: `🎉 New Purchase\nUsername: ${userName}\nAmount: $${amount.toFixed(2)}\nCustomer ID: ${customerId}\nSession ID: ${sessionId}`,
+        text: `🎉 New Purchase\nUsername: ${userName}\nAmount: $${amount.toFixed(2)}\nCustomer ID: ${customerId}\nSession ID: ${sessionId}\nSource: ${getBaseUrl()}`,
       },
     };
 
@@ -53,3 +55,4 @@ export async function sendMessageToFeishu(
     // Don't rethrow the error to avoid interrupting the payment flow
   }
 }
+

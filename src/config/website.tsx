@@ -52,7 +52,7 @@ export const websiteConfig: WebsiteConfig = {
   },
   auth: {
     enableGoogleLogin: true,
-    enableGithubLogin: true,
+    enableGithubLogin: false,
     enableCredentialLogin: true,
   },
   i18n: {
@@ -78,8 +78,12 @@ export const websiteConfig: WebsiteConfig = {
   },
   mail: {
     provider: 'resend',
-    fromEmail: 'MkSaaS <support@mksaas.com>',
-    supportEmail: 'MkSaaS <support@mksaas.com>',
+    fromEmail:
+      process.env.NEXT_PUBLIC_MAIL_FROM_EMAIL ||
+      'Bin <support@labubuwholesale.com>',
+    supportEmail:
+      process.env.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL ||
+      'Bin <support@labubuwholesale.com>',
   },
   newsletter: {
     enable: true,

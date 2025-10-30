@@ -1,8 +1,8 @@
 import type { StructuredData } from 'fumadocs-core/mdx-plugins';
 import type { TableOfContents } from 'fumadocs-core/server';
 import type { PageData } from 'fumadocs-core/source';
-import type { MDXContent } from 'mdx/types';
 import type { ExtractedReference } from 'fumadocs-mdx';
+import type { MDXContent } from 'mdx/types';
 
 /**
  * Common fields that every markdown-based entry receives from fumadocs.

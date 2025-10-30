@@ -2,6 +2,7 @@ import type { StructuredData } from 'fumadocs-core/mdx-plugins';
 import type { TableOfContents } from 'fumadocs-core/server';
 import type { PageData } from 'fumadocs-core/source';
 import type { MDXContent } from 'mdx/types';
+import type { ExtractedReference } from 'fumadocs-mdx';
 
 /**
  * Common fields that every markdown-based entry receives from fumadocs.
@@ -12,18 +13,16 @@ export interface MarkdownEntryFields {
   toc: TableOfContents;
   structuredData: StructuredData;
   _exports: Record<string, unknown>;
-  /**
-   * Absolute and relative path to the MDX source file.
-   */
-  _file: {
-    path: string;
-    absolutePath: string;
-  };
-  /**
-   * Original content and last modification metadata are optional depending on loader settings.
-   */
-  content?: string;
   lastModified?: Date;
+  extractedReferences?: ExtractedReference[];
+  info: {
+    path: string;
+    fullPath: string;
+    hash?: string;
+    absolutePath?: string;
+  };
+  getText: (type?: 'raw' | 'processed') => Promise<string>;
+  getMDAST: () => Promise<unknown>;
 }
 
 type BaseMarkdownFrontmatter = PageData & MarkdownEntryFields;

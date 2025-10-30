@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -72,13 +72,7 @@ jobs:
         run: pnpm dlx license-checker --summary --excludePrivatePackages || echo "::warning::License checker reported issues."
 
       - name: OSV Scanner
-        uses: google/osv-scanner-action@v2.2.4
-        with:
-          scan-args: >-
-            --lockfile=pnpm-lock.yaml
-            --skip-git
-            --format sarif
-            --output osv-results.sarif
+        run: pnpm dlx -y @google/osv-scanner --lockfile=pnpm-lock.yaml --skip-git --format sarif --output osv-results.sarif
 
       - name: Upload OSV report
         uses: actions/upload-artifact@v4
@@ -88,11 +82,11 @@ jobs:
           retention-days: 5
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: '/language:javascript-typescript'

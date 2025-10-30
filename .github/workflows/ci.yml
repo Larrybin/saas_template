@@ -106,10 +106,10 @@ jobs:
   drizzle-drift:
     name: Drizzle Schema Drift (dry run)
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' && secrets.DATABASE_URL != ''
     env:
       NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    if: github.event_name != 'pull_request' && env.DATABASE_URL != ''
     steps:
       - uses: actions/checkout@v4
       - name: Setup pnpm

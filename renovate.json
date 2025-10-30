@@ -16,10 +16,7 @@
   "osvVulnerabilityAlerts": true,
   "prHourlyLimit": 4,
   "prConcurrentLimit": 10,
-  "schedule": [
-    "after 9am on saturday",
-    "before 10pm on sunday"
-  ],
+  "schedule": ["after 9am on saturday", "before 10pm on sunday"],
   "lockFileMaintenance": {
     "enabled": true,
     "automerge": true,

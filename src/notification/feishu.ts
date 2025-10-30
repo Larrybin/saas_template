@@ -55,4 +55,3 @@ export async function sendMessageToFeishu(
     // Don't rethrow the error to avoid interrupting the payment flow
   }
 }
-

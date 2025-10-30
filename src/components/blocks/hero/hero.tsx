@@ -7,7 +7,9 @@ import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 
-const transitionVariants = {
+import { defineTransition, defineVariants } from '@/lib/motion';
+
+const transitionVariants = defineVariants({
   item: {
     hidden: {
       opacity: 0,
@@ -18,14 +20,14 @@ const transitionVariants = {
       opacity: 1,
       filter: 'blur(0px)',
       y: 0,
-      transition: {
+      transition: defineTransition({
         type: 'spring',
         bounce: 0.3,
         duration: 1.5,
-      },
+      }),
     },
   },
-};
+});
 
 export default function HeroSection() {
   const t = useTranslations('HomePage.hero');
@@ -100,17 +102,17 @@ export default function HeroSection() {
 
                 {/* action buttons */}
                 <AnimatedGroup
-                  variants={{
+                  variants={defineVariants({
                     container: {
                       visible: {
-                        transition: {
+                        transition: defineTransition({
                           staggerChildren: 0.05,
                           delayChildren: 0.75,
-                        },
+                        }),
                       },
                     },
                     ...transitionVariants,
-                  }}
+                  })}
                   className="mt-12 flex flex-row items-center justify-center gap-4"
                 >
                   <div
@@ -144,17 +146,17 @@ export default function HeroSection() {
 
             {/* images */}
             <AnimatedGroup
-              variants={{
+              variants={defineVariants({
                 container: {
                   visible: {
-                    transition: {
+                    transition: defineTransition({
                       staggerChildren: 0.05,
                       delayChildren: 0.75,
-                    },
+                    }),
                   },
                 },
                 ...transitionVariants,
-              }}
+              })}
             >
               <div className="relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
                 <div

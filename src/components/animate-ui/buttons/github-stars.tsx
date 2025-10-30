@@ -15,6 +15,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
+import { defineTransition } from '@/lib/motion';
 
 type FormatNumberResult = { number: string[]; unit: string };
 
@@ -41,12 +42,18 @@ const animations = {
   pulse: {
     initial: { scale: 1.2, opacity: 0 },
     animate: { scale: [1.2, 1.8, 1.2], opacity: [0, 0.3, 0] },
-    transition: { duration: 1.2, ease: 'easeInOut' },
+    transition: defineTransition({
+      duration: 1.2,
+      ease: 'easeInOut',
+    }),
   },
   glow: {
     initial: { scale: 1, opacity: 0 },
     animate: { scale: [1, 1.5], opacity: [0.8, 0] },
-    transition: { duration: 0.8, ease: 'easeOut' },
+    transition: defineTransition({
+      duration: 0.8,
+      ease: 'easeOut',
+    }),
   },
   particle: (index: number) => ({
     initial: { x: '50%', y: '50%', scale: 0, opacity: 0 },
@@ -56,7 +63,11 @@ const animations = {
       scale: [0, 1, 0],
       opacity: [0, 1, 0],
     },
-    transition: { duration: 0.8, delay: index * 0.05, ease: 'easeOut' },
+    transition: defineTransition({
+      duration: 0.8,
+      delay: index * 0.05,
+      ease: 'easeOut',
+    }),
   }),
 };
 

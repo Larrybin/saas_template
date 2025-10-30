@@ -7,7 +7,9 @@ import { TextEffect } from '@/components/tailark/motion/text-effect';
 import { AnimatedGroup } from '@/components/tailark/motion/animated-group';
 import { HeroHeader } from '@/components/tailark/hero5-header';
 
-const transitionVariants = {
+import { defineTransition, defineVariants } from '@/lib/motion';
+
+const transitionVariants = defineVariants({
   item: {
     hidden: {
       opacity: 0,
@@ -18,14 +20,14 @@ const transitionVariants = {
       opacity: 1,
       filter: 'blur(0px)',
       y: 0,
-      transition: {
+      transition: defineTransition({
         type: 'spring',
         bounce: 0.3,
         duration: 1.5,
-      },
+      }),
     },
   },
-};
+});
 
 export default function HeroSection() {
   return (
@@ -43,12 +45,12 @@ export default function HeroSection() {
         <section>
           <div className="relative pt-24 md:pt-36">
             <AnimatedGroup
-              variants={{
+              variants={defineVariants({
                 container: {
                   visible: {
-                    transition: {
+                    transition: defineTransition({
                       delayChildren: 1,
-                    },
+                    }),
                   },
                 },
                 item: {
@@ -59,14 +61,14 @@ export default function HeroSection() {
                   visible: {
                     opacity: 1,
                     y: 0,
-                    transition: {
+                    transition: defineTransition({
                       type: 'spring',
                       bounce: 0.3,
                       duration: 2,
-                    },
+                    }),
                   },
                 },
-              }}
+              })}
               className="absolute inset-0 -z-20"
             >
               <Image
@@ -167,17 +169,17 @@ export default function HeroSection() {
             </div>
 
             <AnimatedGroup
-              variants={{
+              variants={defineVariants({
                 container: {
                   visible: {
-                    transition: {
+                    transition: defineTransition({
                       staggerChildren: 0.05,
                       delayChildren: 0.75,
-                    },
+                    }),
                   },
                 },
                 ...transitionVariants,
-              }}
+              })}
             >
               <div className="relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
                 <div

@@ -7,7 +7,9 @@ import { HeroHeader } from '@/components/tailark/hero5-header';
 import { LogoCloud } from '@/components/tailark/logo-cloud';
 import Image from 'next/image';
 
-const transitionVariants = {
+import { defineTransition, defineVariants } from '@/lib/motion';
+
+const transitionVariants = defineVariants({
   item: {
     hidden: {
       opacity: 0,
@@ -18,14 +20,14 @@ const transitionVariants = {
       opacity: 1,
       filter: 'blur(0px)',
       y: 0,
-      transition: {
+      transition: defineTransition({
         type: 'spring',
         bounce: 0.3,
         duration: 1.5,
-      },
+      }),
     },
   },
-};
+});
 
 export default function HeroSection() {
   return (
@@ -66,17 +68,17 @@ export default function HeroSection() {
               </TextEffect>
 
               <AnimatedGroup
-                variants={{
+                variants={defineVariants({
                   container: {
                     visible: {
-                      transition: {
+                      transition: defineTransition({
                         staggerChildren: 0.05,
                         delayChildren: 0.75,
-                      },
+                      }),
                     },
                   },
                   ...transitionVariants,
-                }}
+                })}
                 className="mt-12"
               >
                 <form action="" className="mx-auto max-w-sm">
@@ -108,17 +110,17 @@ export default function HeroSection() {
             </div>
             <div className="mx-auto md:-mt-20 lg:-mt-40">
               <AnimatedGroup
-                variants={{
+                variants={defineVariants({
                   container: {
                     visible: {
-                      transition: {
+                      transition: defineTransition({
                         staggerChildren: 0.05,
                         delayChildren: 0.75,
-                      },
+                      }),
                     },
                   },
                   ...transitionVariants,
-                }}
+                })}
               >
                 <div className="-rotate-30 aspect-3/2 relative mx-auto lg:w-2/3">
                   <div className="bg-linear-to-b to-background from-background absolute inset-0 via-transparent"></div>

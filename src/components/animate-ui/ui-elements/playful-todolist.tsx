@@ -29,7 +29,10 @@ const getPathAnimate = (isChecked: boolean) => ({
 });
 
 const getPathTransition = (isChecked: boolean) => ({
-  pathLength: { duration: 1, ease: 'easeInOut' },
+  pathLength: {
+    duration: 1,
+    ease: 'easeInOut' as const,
+  },
   opacity: {
     duration: 0.01,
     delay: isChecked ? 0 : 1,

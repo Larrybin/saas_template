@@ -7,7 +7,9 @@ import { TextEffect } from '@/components/tailark/motion/text-effect';
 import { AnimatedGroup } from '@/components/tailark/motion/animated-group';
 import { HeroHeader } from '@/components/tailark/hero6-header';
 
-const transitionVariants = {
+import { defineTransition, defineVariants } from '@/lib/motion';
+
+const transitionVariants = defineVariants({
   item: {
     hidden: {
       opacity: 0,
@@ -18,14 +20,14 @@ const transitionVariants = {
       opacity: 1,
       filter: 'blur(0px)',
       y: 0,
-      transition: {
+      transition: defineTransition({
         type: 'spring',
         bounce: 0.3,
         duration: 1.5,
-      },
+      }),
     },
   },
-};
+});
 
 export default function HeroSection() {
   return (
@@ -66,18 +68,18 @@ export default function HeroSection() {
                   it.
                 </TextEffect>
 
-                <AnimatedGroup
-                  variants={{
+               <AnimatedGroup
+                  variants={defineVariants({
                     container: {
                       visible: {
-                        transition: {
+                        transition: defineTransition({
                           staggerChildren: 0.05,
                           delayChildren: 0.75,
-                        },
+                        }),
                       },
                     },
                     ...transitionVariants,
-                  }}
+                  })}
                   className="mt-12 flex items-center gap-2"
                 >
                   <div
@@ -109,17 +111,17 @@ export default function HeroSection() {
               </div>
             </div>
             <AnimatedGroup
-              variants={{
+              variants={defineVariants({
                 container: {
                   visible: {
-                    transition: {
+                    transition: defineTransition({
                       staggerChildren: 0.05,
                       delayChildren: 0.75,
-                    },
+                    }),
                   },
                 },
                 ...transitionVariants,
-              }}
+              })}
             >
               <div className="relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
                 <div

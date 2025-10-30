@@ -19,7 +19,7 @@ import {
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import FirecrawlApp from '@mendable/firecrawl-js';
+import Firecrawl from '@mendable/firecrawl-js';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateObject } from 'ai';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -34,8 +34,9 @@ const getFirecrawlClient = () => {
   if (!validateFirecrawlConfig()) {
     throw new Error('Firecrawl API key is not configured');
   }
-  return new FirecrawlApp({
+  return new Firecrawl({
     apiKey: webContentAnalyzerConfig.firecrawl.apiKey,
+    apiUrl: webContentAnalyzerConfig.firecrawl.baseUrl,
   });
 };
 
@@ -150,23 +151,15 @@ async function scrapeWebpage(
     const firecrawl = getFirecrawlClient();
 
     try {
-      const scrapeResponse = await firecrawl.scrapeUrl(url, {
-        formats: ['markdown', 'screenshot'],
+      const scrapeResponse = await firecrawl.scrape(url, {
+        formats: Array.from(webContentAnalyzerConfig.firecrawl.formats),
+        includeTags: Array.from(webContentAnalyzerConfig.firecrawl.includeTags),
+        excludeTags: Array.from(webContentAnalyzerConfig.firecrawl.excludeTags),
         onlyMainContent: webContentAnalyzerConfig.firecrawl.onlyMainContent,
         waitFor: webContentAnalyzerConfig.firecrawl.waitFor,
       });
 
-      if (!scrapeResponse.success) {
-        throw new WebContentAnalyzerError(
-          ErrorType.SCRAPING,
-          scrapeResponse.error || 'Failed to scrape webpage',
-          'Unable to access the webpage. Please check the URL and try again.',
-          ErrorSeverity.MEDIUM,
-          true
-        );
-      }
-
-      const content = scrapeResponse.markdown || '';
+      const content = scrapeResponse.markdown ?? '';
       const screenshot = scrapeResponse.screenshot;
 
       if (!content.trim()) {

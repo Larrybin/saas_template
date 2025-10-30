@@ -32,3 +32,7 @@ runs:
       run: |
         echo "PNPM_HOME=${HOME}/.local/share/pnpm" >> "$GITHUB_ENV"
         echo "${HOME}/.local/share/pnpm" >> "$GITHUB_PATH"
+        if [ -n "${PNPM_CACHE_FOLDER:-}" ]; then
+          mkdir -p "${GITHUB_WORKSPACE}/${PNPM_CACHE_FOLDER}"
+          pnpm config set store-dir "${GITHUB_WORKSPACE}/${PNPM_CACHE_FOLDER}"
+        fi

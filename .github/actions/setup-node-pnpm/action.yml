@@ -21,18 +21,20 @@ runs:
       with:
         version: ${{ inputs.pnpm-version }}
         run_install: false
+    - name: Configure pnpm store path
+      shell: bash
+      run: |
+        echo "PNPM_HOME=${HOME}/.local/share/pnpm" >> "$GITHUB_ENV"
+        echo "${HOME}/.local/share/pnpm" >> "$GITHUB_PATH"
+        STORE_PATH="${HOME}/.pnpm-store"
+        if [ -n "${PNPM_CACHE_FOLDER:-}" ]; then
+          STORE_PATH="${GITHUB_WORKSPACE}/${PNPM_CACHE_FOLDER}"
+        fi
+        mkdir -p "${STORE_PATH}"
+        pnpm config set store-dir "${STORE_PATH}"
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
         cache-dependency-path: ${{ inputs.cache-dependency-path }}
-    - name: Configure pnpm store path
-      shell: bash
-      run: |
-        echo "PNPM_HOME=${HOME}/.local/share/pnpm" >> "$GITHUB_ENV"
-        echo "${HOME}/.local/share/pnpm" >> "$GITHUB_PATH"
-        if [ -n "${PNPM_CACHE_FOLDER:-}" ]; then
-          mkdir -p "${GITHUB_WORKSPACE}/${PNPM_CACHE_FOLDER}"
-          pnpm config set store-dir "${GITHUB_WORKSPACE}/${PNPM_CACHE_FOLDER}"
-        fi

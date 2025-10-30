@@ -43,7 +43,7 @@ jobs:
           args: detect --no-banner --source . --verbose --redact --report-format sarif --report-path gitleaks.sarif
 
       - name: Upload gitleaks report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: gitleaks-report
           path: gitleaks.sarif
@@ -75,7 +75,7 @@ jobs:
         run: pnpm dlx -y @google/osv-scanner --lockfile=pnpm-lock.yaml --skip-git --format sarif --output osv-results.sarif
 
       - name: Upload OSV report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: osv-results
           path: osv-results.sarif

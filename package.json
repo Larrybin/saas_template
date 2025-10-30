@@ -102,7 +102,7 @@
     "embla-carousel-react": "^8.5.2",
     "framer-motion": "^12.23.24",
     "fumadocs-core": "^15.6.7",
-    "fumadocs-mdx": "^11.7.3",
+    "fumadocs-mdx": "^13.0.3",
     "fumadocs-ui": "^15.6.7",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.483.0",

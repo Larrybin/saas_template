@@ -34,7 +34,7 @@ export function useHasCredentialProvider(userId: string | undefined) {
   const { data: accounts, isLoading, error } = useUserAccounts(userId);
 
   const hasCredentialProvider =
-    accounts?.some((account) => account.provider === 'credential') ?? false;
+    accounts?.some((account) => account.providerId === 'credential') ?? false;
 
   return {
     hasCredentialProvider,

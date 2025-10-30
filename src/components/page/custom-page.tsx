@@ -10,7 +10,7 @@ interface CustomPageProps {
 
 export function CustomPage({ page }: CustomPageProps) {
   const { title, description, date } = page.data;
-  const formattedDate = formatDate(new Date(date));
+  const formattedDate = date ? formatDate(new Date(date)) : undefined;
   const MDX = page.data.body;
 
   return (
@@ -23,10 +23,12 @@ export function CustomPage({ page }: CustomPageProps) {
         <p className="text-center text-lg text-muted-foreground">
           {description}
         </p>
-        <div className="flex items-center justify-center gap-2">
-          <CalendarIcon className="size-4 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">{formattedDate}</p>
-        </div>
+        {formattedDate && (
+          <div className="flex items-center justify-center gap-2">
+            <CalendarIcon className="size-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">{formattedDate}</p>
+          </div>
+        )}
       </div>
 
       {/* Content */}

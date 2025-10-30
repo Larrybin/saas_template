@@ -1,3 +1,10 @@
+import type {
+  BlogAuthorEntry,
+  BlogCategoryEntry,
+  BlogDocEntry,
+  ChangelogEntry,
+  MarketingPageEntry,
+} from '@/types/content';
 import { type InferPageType, loader } from 'fumadocs-core/source';
 import { createMDXSource } from 'fumadocs-mdx';
 import * as LucideIcons from 'lucide-react';
@@ -36,7 +43,7 @@ export const source = loader({
 export const changelogSource = loader({
   baseUrl: '/changelog',
   i18n: docsI18nConfig,
-  source: createMDXSource(changelog),
+  source: createMDXSource<ChangelogEntry, never>(changelog as ChangelogEntry[]),
 });
 
 /**
@@ -47,7 +54,9 @@ export const changelogSource = loader({
 export const pagesSource = loader({
   baseUrl: '/pages',
   i18n: docsI18nConfig,
-  source: createMDXSource(pages),
+  source: createMDXSource<MarketingPageEntry, never>(
+    pages as MarketingPageEntry[]
+  ),
 });
 
 /**
@@ -56,7 +65,7 @@ export const pagesSource = loader({
 export const authorSource = loader({
   baseUrl: '/author',
   i18n: docsI18nConfig,
-  source: createMDXSource(author),
+  source: createMDXSource<BlogAuthorEntry, never>(author as BlogAuthorEntry[]),
 });
 
 /**
@@ -65,7 +74,9 @@ export const authorSource = loader({
 export const categorySource = loader({
   baseUrl: '/category',
   i18n: docsI18nConfig,
-  source: createMDXSource(category),
+  source: createMDXSource<BlogCategoryEntry, never>(
+    category as BlogCategoryEntry[]
+  ),
 });
 
 /**
@@ -74,7 +85,7 @@ export const categorySource = loader({
 export const blogSource = loader({
   baseUrl: '/blog',
   i18n: docsI18nConfig,
-  source: createMDXSource(blog),
+  source: createMDXSource<BlogDocEntry, never>(blog as BlogDocEntry[]),
   transformers: [
     (page) => {
       // console.log('page', page);

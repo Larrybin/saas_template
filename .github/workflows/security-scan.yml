@@ -1,0 +1,98 @@
+name: Security Scan
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: '20'
+      pnpm-version:
+        required: false
+        type: string
+        default: '9'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ inputs.node-version }}
+          pnpm-version: ${{ inputs.pnpm-version }}
+
+      - name: Install dependencies (production)
+        run: pnpm install --frozen-lockfile --prefer-offline --prod
+
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --no-banner --source . --verbose --redact --report-format sarif --report-path gitleaks.sarif
+
+      - name: Upload gitleaks report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks.sarif
+          retention-days: 5
+
+      - name: npm audit (high and critical)
+        run: |
+          set -eo pipefail
+          pnpm audit --prod --audit-level high
+
+      - name: npm audit (moderate warnings)
+        run: |
+          set -eo pipefail
+          pnpm audit --prod --audit-level moderate || echo "::warning::Moderate vulnerabilities detected. Please review the audit output."
+
+      - name: Check duplicate dependencies
+        run: |
+          set -e
+          if pnpm dedupe --check; then
+            echo "No duplicate dependencies found."
+          else
+            echo "::warning::Duplicate dependencies detected. Consider running 'pnpm dedupe'."
+          fi
+
+      - name: License compliance summary
+        run: pnpm dlx license-checker --summary --excludePrivatePackages || echo "::warning::License checker reported issues."
+
+      - name: OSV Scanner
+        uses: google/osv-scanner-action@v2.2.4
+        with:
+          scan-args: >-
+            --lockfile=pnpm-lock.yaml
+            --skip-git
+            --format sarif
+            --output osv-results.sarif
+
+      - name: Upload OSV report
+        uses: actions/upload-artifact@v4
+        with:
+          name: osv-results
+          path: osv-results.sarif
+          retention-days: 5
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'

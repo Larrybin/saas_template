@@ -27,16 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          pnpm-version: '9'
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies (frozen)
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -56,16 +51,11 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          pnpm-version: '9'
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies (frozen)
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -74,77 +64,8 @@ jobs:
       - name: Build application
         run: pnpm build
 
-  check-secrets:
-    name: Check Secrets
-    runs-on: ubuntu-latest
-    outputs:
-      has_database_url: ${{ steps.guard.outputs.has_database_url }}
-    steps:
-      - name: Guard DATABASE_URL
-        id: guard
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          if [ -n "$DATABASE_URL" ]; then
-            echo "has_database_url=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_database_url=false" >> "$GITHUB_OUTPUT"
-          fi
-
   security:
-    name: Security Scan
-    runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - name: Install dependencies (frozen)
-        run: pnpm install --frozen-lockfile --prefer-offline
-      - name: npm audit (blocking on moderate+)
-        run: pnpm audit --audit-level=moderate
-      - name: OSV Scanner
-        uses: google/osv-scanner-action@v1.6.1
-        with:
-          scan-args: >-
-            --lockfile=pnpm-lock.yaml
-            --skip-git
-            --severity=MEDIUM
-
-  drizzle-drift:
-    name: Drizzle Schema Drift (dry run)
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - check-secrets
-    env:
-      NODE_ENV: test
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-    if: github.event_name != 'pull_request' && needs.check-secrets.outputs.has_database_url == 'true'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - name: Install dependencies (frozen)
-        run: pnpm install --frozen-lockfile --prefer-offline
-      - name: Check schema drift (dry run)
-        run: pnpm db:push --dry-run
+    uses: ./.github/workflows/security-scan.yml
+    secrets: inherit
 

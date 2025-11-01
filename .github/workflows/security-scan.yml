@@ -74,7 +74,7 @@ jobs:
         run: pnpm dlx license-checker --summary --excludePrivatePackages || echo "::warning::License checker reported issues."
 
       - name: OSV Scanner
-        run: pnpm dlx --yes @google/osv-scanner --lockfile=pnpm-lock.yaml --skip-git --format sarif --output osv-results.sarif
+        run: pnpm --yes dlx @google/osv-scanner --lockfile=pnpm-lock.yaml --skip-git --format sarif --output osv-results.sarif
 
       - name: Upload OSV report
         uses: actions/upload-artifact@v5

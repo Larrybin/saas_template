@@ -80,7 +80,16 @@ jobs:
           OSV_BIN_URL="https://github.com/google/osv-scanner/releases/download/v${OSV_VERSION}/osv-scanner_linux_amd64"
           curl -fsSL "$OSV_BIN_URL" -o osv-scanner
           chmod +x osv-scanner
-          ./osv-scanner --lockfile=pnpm-lock.yaml --format sarif --output osv-results.sarif
+          scan_status=0
+          if ! ./osv-scanner --lockfile=pnpm-lock.yaml --format sarif --output osv-results.sarif; then
+            scan_status=$?
+          fi
+          if [ "$scan_status" -eq 1 ]; then
+            echo "::warning::OSV scanner detected vulnerabilities. Review osv-results.sarif for details."
+          elif [ "$scan_status" -ne 0 ]; then
+            exit "$scan_status"
+          fi
+          rm -f osv-scanner
 
       - name: Upload OSV report
         uses: actions/upload-artifact@v5

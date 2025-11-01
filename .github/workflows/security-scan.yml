@@ -74,7 +74,13 @@ jobs:
         run: pnpm dlx license-checker --summary --excludePrivatePackages || echo "::warning::License checker reported issues."
 
       - name: OSV Scanner
-        run: pnpm --yes dlx @google/osv-scanner --lockfile=pnpm-lock.yaml --skip-git --format sarif --output osv-results.sarif
+        run: |
+          set -euo pipefail
+          OSV_VERSION='2.2.4'
+          OSV_BIN_URL="https://github.com/google/osv-scanner/releases/download/v${OSV_VERSION}/osv-scanner_linux_amd64"
+          curl -sSL "$OSV_BIN_URL" -o osv-scanner
+          chmod +x osv-scanner
+          ./osv-scanner --lockfile=pnpm-lock.yaml --skip-git --format sarif --output osv-results.sarif
 
       - name: Upload OSV report
         uses: actions/upload-artifact@v5

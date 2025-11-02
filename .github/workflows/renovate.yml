@@ -24,5 +24,6 @@ jobs:
           renovate-version: 37
           configurationFile: renovate.json
           token: ${{ secrets.RENOVATE_TOKEN }}
-
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
 

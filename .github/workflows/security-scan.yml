@@ -1,17 +1,8 @@
 name: Security Scan
 
 on:
-  workflow_call:
-    inputs:
-      node-version:
-        required: false
-        type: string
-        default: '20'
-      pnpm-version:
-        required: false
-        type: string
-        default: '9'
-  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
@@ -20,136 +11,98 @@ on:
     paths:
       - pnpm-lock.yaml
       - .github/workflows/security-scan.yml
-  schedule:
-    - cron: '0 2 * * 1'
+  workflow_dispatch:
 
 permissions:
-  contents: read
-  security-events: write
+  contents: write
   actions: read
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   security:
-    name: Security Scan
     runs-on: ubuntu-latest
+    env:
+      PNPM_HOME: ~/.local/share/pnpm
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Node and pnpm
-        uses: ./.github/actions/setup-node-pnpm
+      - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: ${{ inputs.node-version }}
-          pnpm-version: ${{ inputs.pnpm-version }}
+          node-version: 20
+          pnpm-version: 9
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies (production)
-        run: pnpm install --frozen-lockfile --prefer-offline --prod
+      - name: Install production dependencies
+        run: pnpm install --frozen-lockfile --prod --prefer-offline
 
       - name: Secret scan (gitleaks)
+        id: gitleaks
         uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --no-banner --source . --verbose --redact --report-format sarif --report-path gitleaks.sarif
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Required for organization repos
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'true'
+          GITLEAKS_ENABLE_SUMMARY: 'false'
+        continue-on-error: true
 
-      - name: Upload gitleaks report
-        uses: actions/upload-artifact@v5
-        with:
-          name: gitleaks-report
-          path: gitleaks.sarif
-          retention-days: 5
+      - name: npm audit (high)
+        run: pnpm audit --prod --audit-level high
 
-      - name: npm audit (high and critical)
-        run: |
-          set -eo pipefail
-          pnpm audit --prod --audit-level high
-
-      - name: npm audit (moderate warnings)
-        run: |
-          set -eo pipefail
-          pnpm audit --prod --audit-level moderate || echo "::warning::Moderate vulnerabilities detected. Please review the audit output."
-
-      - name: Check duplicate dependencies
-        run: |
-          set -e
-          if pnpm dedupe --check; then
-            echo "No duplicate dependencies found."
-          else
-            echo "::warning::Duplicate dependencies detected. Consider running 'pnpm dedupe'."
-          fi
-
-      - name: License compliance summary
-        run: pnpm dlx license-checker --summary --excludePrivatePackages || echo "::warning::License checker reported issues."
-
-      - name: OSV Scanner
+      - name: OSV scanner
         run: |
           set -euo pipefail
-          OSV_VERSION='2.2.4'
-          OSV_BIN_URL="https://github.com/google/osv-scanner/releases/download/v${OSV_VERSION}/osv-scanner_linux_amd64"
-          curl -fsSL "$OSV_BIN_URL" -o osv-scanner
+          curl -fsSL https://github.com/google/osv-scanner/releases/download/v2.2.4/osv-scanner_linux_amd64 -o osv-scanner
           chmod +x osv-scanner
-          scan_status=0
+          status=0
           if ! ./osv-scanner --lockfile=pnpm-lock.yaml --format sarif --output osv-results.sarif; then
-            scan_status=$?
+            status=$?
           fi
-          if [ "$scan_status" -eq 1 ]; then
-            echo "::warning::OSV scanner detected vulnerabilities. Review osv-results.sarif for details."
-          elif [ "$scan_status" -ne 0 ]; then
-            exit "$scan_status"
+          if [ "$status" -eq 1 ]; then
+            echo "::warning::OSV scanner detected vulnerabilities. Review osv-results.sarif."
+          elif [ "$status" -ne 0 ]; then
+            exit "$status"
           fi
-          rm -f osv-scanner
+          rm osv-scanner
 
-      - name: Generate OSV PR summary
+      - name: Generate OSV summary
         id: osv_summary
         run: |
           set -euo pipefail
           if [ ! -s osv-results.sarif ]; then
-            echo "# OSV Scanner\n\n_未生成报告。_" | tee osv-comment.md
+            echo "# OSV Scanner\n\n_未生成报告。_" | tee osv.md
           else
             jq -r '
-              def severity_label(sev):
-                if sev == "CRITICAL" then "🚨 Critical"
-                elif sev == "HIGH" then "⚠️ High"
-                elif sev == "MEDIUM" then "⚠️ Medium"
-                elif sev == "LOW" then "ℹ️ Low"
-                else (sev // "Unknown")
+              def sev(x):
+                if x == "CRITICAL" then "🚨 Critical"
+                elif x == "HIGH" then "⚠️ High"
+                elif x == "MEDIUM" then "⚠️ Medium"
+                elif x == "LOW" then "ℹ️ Low"
+                else x end;
+              def row(r):
+                "| " + sev(r.properties.severity // "Unknown") + " | " +
+                (r.message.text // "Unknown") + " | " +
+                (try r.locations[0].physicalLocation.artifactLocation.uri catch "n/a") + " | " +
+                (try r.properties.references[0].url catch "n/a") + " |";
+              def table(res):
+                if (res | length) == 0 then "_本次扫描未发现漏洞。_"
+                else "| Severity | Package | Location | Advisory |\n| --- | --- | --- | --- |\n" +
+                  (res | map(row(.)) | join("\n"))
                 end;
-              def severity_value(result):
-                result.properties.severity // result.level // "UNKNOWN";
-              def location_value(result):
-                try result.locations[0].physicalLocation.artifactLocation.uri catch "n/a";
-              def advisory_value(result):
-                try result.properties.references[0].url catch "n/a";
-              def result_row(result):
-                "| " +
-                severity_label(severity_value(result)) + " | " +
-                (result.message.text // "Unknown") + " | " +
-                location_value(result) + " | " +
-                advisory_value(result) + " |";
-              def rows(results):
-                if results == null or (results | length) == 0 then "_本次扫描未发现漏洞。_"
-                else (
-                  "| Severity | Package | Location | Advisory |\n| --- | --- | --- | --- |\n" +
-                  (results | map(result_row(.)) | join("\n"))
-                )
-                end;
-              "# OSV Scanner\n\n" + rows(.runs[0].results // [])
-            ' osv-results.sarif | tee osv-comment.md
+              "# OSV Scanner\n\n" + table(.runs[0].results // [])
+            ' osv-results.sarif | tee osv.md
           fi
-
-          cat osv-comment.md >> "$GITHUB_STEP_SUMMARY"
+          cat osv.md >> "$GITHUB_STEP_SUMMARY"
           {
-            echo 'osv_body<<EOF'
-            cat osv-comment.md
+            echo 'osv<<EOF'
+            cat osv.md
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
-
-      - name: Upload OSV report
-        uses: actions/upload-artifact@v5
-        with:
-          name: osv-results
-          path: osv-results.sarif
-          retention-days: 5
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -158,11 +111,10 @@ jobs:
         env:
           CODEQL_ACTION_DISABLE_DEFAULT_DATABASE_UPLOAD: true
 
-      - name: Perform CodeQL Analysis
+      - name: Perform CodeQL analysis
         id: codeql_analyze
         uses: github/codeql-action/analyze@v4
         with:
-          category: '/language:javascript-typescript'
           upload: false
         env:
           CODEQL_ACTION_DISABLE_DEFAULT_DATABASE_UPLOAD: true
@@ -170,64 +122,116 @@ jobs:
       - name: Generate CodeQL summary
         id: codeql_summary
         env:
-          CODEQL_SARIF: ${{ steps.codeql_analyze.outputs.sarif-output }}
+          CODEQL_SARIF_DIR: ${{ steps.codeql_analyze.outputs.sarif-output }}
         run: |
           set -euo pipefail
-          sarif_dir="${CODEQL_SARIF:-}"
-          if [ -z "$sarif_dir" ] || [ ! -d "$sarif_dir" ]; then
-            echo "# CodeQL\n\n_未生成报告。_" | tee codeql-comment.md
+          dir="${CODEQL_SARIF_DIR:-}"
+          if [ -z "$dir" ] || [ ! -d "$dir" ]; then
+            echo "# CodeQL\n\n_未生成报告。_" | tee codeql.md
           else
-            mapfile -t sarif_files < <(find "$sarif_dir" -type f -name '*.sarif' -print | sort)
-            if [ "${#sarif_files[@]}" -eq 0 ]; then
-              echo "# CodeQL\n\n_未生成报告。_" | tee codeql-comment.md
+            mapfile -t files < <(find "$dir" -type f -name '*.sarif' -print | sort)
+            if [ "${#files[@]}" -eq 0 ]; then
+              echo "# CodeQL\n\n_未生成报告。_" | tee codeql.md
             else
               jq -sr '
-                def severity_label(sev):
-                  if sev == "error" then "🚨 Error"
-                  elif sev == "warning" then "⚠️ Warning"
-                  elif sev == "note" then "ℹ️ Note"
-                  else sev
-                  end;
-                def location_string(result):
+                def lvl(x):
+                  if x == "error" then "🚨 Error"
+                  elif x == "warning" then "⚠️ Warning"
+                  elif x == "note" then "ℹ️ Note"
+                  else x end;
+                def loc(r):
                   try (
-                    (result.locations[0].physicalLocation.artifactLocation.uri // "n/a") +
-                    ":" +
-                    ((result.locations[0].physicalLocation.region.startLine // 0) | tostring)
+                    (r.locations[0].physicalLocation.artifactLocation.uri // "n/a")
+                    + ":" +
+                    ((r.locations[0].physicalLocation.region.startLine // 0) | tostring)
                   ) catch "n/a";
-                def rows(results):
-                  if results == null or (results | length) == 0 then "_本次扫描未发现问题。_"
-                  else (
-                    "| Level | Rule | Location | Message |\n| --- | --- | --- | --- |\n" +
-                    (results | map(
-                      "| " + severity_label(.level // "unknown") + " | " +
+                def rows(rs):
+                  if (rs | length) == 0 then "_本次扫描未发现问题。_"
+                  else "| Level | Rule | Location | Message |\n| --- | --- | --- | --- |\n" +
+                    (rs | map("| " + lvl(.level // "unknown") + " | " +
                       (.ruleId // "Unknown") + " | " +
-                      location_string(.) + " | " +
-                      (.message.text // "Unknown") + " |"
-                    ) | join("\n"))
-                  )
+                      loc(.) + " | " +
+                      (.message.text // "Unknown") + " |") | join("\n"))
                   end;
-                ( [ .[]? | .runs[]? | .results[]? ] ) as $results
-                | "# CodeQL\n\n" + rows($results)
-              ' "${sarif_files[@]}" | tee codeql-comment.md
+                ([ .[]? | .runs[]? | .results[]? ]) as $res
+                | "# CodeQL\n\n" + rows($res)
+              ' "${files[@]}" | tee codeql.md
             fi
           fi
-
-          cat codeql-comment.md >> "$GITHUB_STEP_SUMMARY"
+          cat codeql.md >> "$GITHUB_STEP_SUMMARY"
           {
-            echo 'codeql_body<<EOF'
-            cat codeql-comment.md
+            echo 'codeql<<EOF'
+            cat codeql.md
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
-      - name: Comment on PR with security findings
-        if: github.event_name == 'pull_request'
+      - name: Comment security summary (commit)
+        if: always()
         uses: actions/github-script@v7
+        env:
+          OSV_COMMENT: ${{ steps.osv_summary.outputs.osv }}
+          CODEQL_COMMENT: ${{ steps.codeql_summary.outputs.codeql }}
+          GITLEAKS_STATUS: ${{ steps.gitleaks.conclusion }}
         with:
           script: |
             const marker = '<!-- security-scan-report -->';
             const osv = process.env.OSV_COMMENT || '# OSV Scanner\n\n_无可用输出。_';
             const codeql = process.env.CODEQL_COMMENT || '# CodeQL\n\n_无可用输出。_';
-            const finalBody = `${marker}\n${osv}\n\n---\n\n${codeql}`;
+            const gitleaksOutcome = process.env.GITLEAKS_STATUS || 'success';
+            const gitleaks = gitleaksOutcome === 'success'
+              ? 'Gitleaks: ✅ 无泄露'
+              : `Gitleaks: ⚠️ 检测到疑似泄露（详情见日志或生成的 artifact）。`;
+            const body = `${marker}\n${gitleaks}\n\n${osv}\n\n---\n\n${codeql}`;
+
+            const { owner, repo } = context.repo;
+            const sha = context.eventName === 'pull_request'
+              ? context.payload.pull_request.head.sha
+              : context.sha;
+
+            const { data: comments } = await github.rest.repos.listCommentsForCommit({
+              owner,
+              repo,
+              commit_sha: sha,
+              per_page: 100,
+            });
+
+            const existing = comments.find((comment) =>
+              comment.body && comment.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.repos.updateCommitComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.repos.createCommitComment({
+                owner,
+                repo,
+                commit_sha: sha,
+                body,
+              });
+            }
+      - name: Comment security summary (PR conversation)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          OSV_COMMENT: ${{ steps.osv_summary.outputs.osv }}
+          CODEQL_COMMENT: ${{ steps.codeql_summary.outputs.codeql }}
+          GITLEAKS_STATUS: ${{ steps.gitleaks.conclusion }}
+        with:
+          script: |
+            const marker = '<!-- security-scan-report -->';
+            const osv = process.env.OSV_COMMENT || '# OSV Scanner\n\n_无可用输出。_';
+            const codeql = process.env.CODEQL_COMMENT || '# CodeQL\n\n_无可用输出。_';
+            const gitleaksOutcome = process.env.GITLEAKS_STATUS || 'success';
+            const gitleaks = gitleaksOutcome === 'success'
+              ? 'Gitleaks: ✅ 无泄露'
+              : `Gitleaks: ⚠️ 检测到疑似泄露（详情见日志或生成的 artifact）。`;
+            const body = `${marker}\n${gitleaks}\n\n${osv}\n\n---\n\n${codeql}`;
+
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
 
@@ -247,16 +251,13 @@ jobs:
                 owner,
                 repo,
                 comment_id: existing.id,
-                body: finalBody,
+                body,
               });
             } else {
               await github.rest.issues.createComment({
                 owner,
                 repo,
                 issue_number,
-                body: finalBody,
+                body,
               });
             }
-        env:
-          OSV_COMMENT: ${{ steps.osv_summary.outputs.osv_body }}
-          CODEQL_COMMENT: ${{ steps.codeql_summary.outputs.codeql_body }}

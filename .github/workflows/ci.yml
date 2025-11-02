@@ -91,15 +91,24 @@ jobs:
       - name: Install dependencies (re-use cache)
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Run tests
+        id: run_tests
         run: |
-          set -euo pipefail
+          set -uo pipefail
           if node -e "const pkg=require('./package.json'); process.exit(pkg.scripts && pkg.scripts.test ? 0 : 1)"; then
-            pnpm test -- --runInBand || pnpm test
+            echo "has_tests=true" >> "$GITHUB_OUTPUT"
+            pnpm test -- --runInBand
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              pnpm test
+              status=$?
+            fi
+            exit "$status"
           else
             echo "No test script configured, skipping."
+            echo "has_tests=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Publish unit test results
-        if: always()
+        if: steps.run_tests.outputs.has_tests == 'true' && always()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |

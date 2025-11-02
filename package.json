@@ -103,7 +103,7 @@
     "framer-motion": "^12.23.24",
     "fumadocs-core": "^15.6.7",
     "fumadocs-mdx": "^13.0.3",
-    "fumadocs-ui": "^15.6.7",
+    "fumadocs-ui": "^15.8.5",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.483.0",
     "motion": "^12.4.3",

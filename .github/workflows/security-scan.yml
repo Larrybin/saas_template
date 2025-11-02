@@ -31,15 +31,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 20
-          cache: pnpm
-          package-manager: pnpm@9
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+          pnpm-version: 9
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install production dependencies
         run: pnpm install --frozen-lockfile --prod --prefer-offline

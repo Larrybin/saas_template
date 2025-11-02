@@ -139,9 +139,11 @@ jobs:
                   elif x == "note" then "ℹ️ Note"
                   else x end;
                 def loc(r):
-                  try (r.locations[0].physicalLocation.artifactLocation.uri // "n/a")
-                      + ":" + ((r.locations[0].physicalLocation.region.startLine // 0)|tostring)
-                  catch "n/a";
+                  try (
+                    (r.locations[0].physicalLocation.artifactLocation.uri // "n/a")
+                    + ":" +
+                    ((r.locations[0].physicalLocation.region.startLine // 0) | tostring)
+                  ) catch "n/a";
                 def rows(rs):
                   if (rs | length) == 0 then "_本次扫描未发现问题。_"
                   else "| Level | Rule | Location | Message |\n| --- | --- | --- | --- |\n" +

@@ -27,8 +27,8 @@ importers:
         specifier: ^2.0.22
         version: 2.0.22(react@19.0.0)(zod@4.0.17)
       '@ai-sdk/replicate':
-        specifier: ^1.0.0
-        version: 1.0.0(zod@4.0.17)
+        specifier: ^1.0.10
+        version: 1.0.10(zod@4.0.17)
       '@base-ui-components/react':
         specifier: 1.0.0-beta.0
         version: 1.0.0-beta.0(@types/react@19.0.9)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -491,8 +491,8 @@ packages:
       zod:
         optional: true
 
-  '@ai-sdk/replicate@1.0.0':
-    resolution: {integrity: sha512-whCL8u2aKXJcD8LmxK9oZOL3I/XkLgY7PqNsqLzemP5AlchjZTn8LLvwx5LBc2W3nkEXOz4Kt1oJGv1rQRxbnA==}
+  '@ai-sdk/replicate@1.0.10':
+    resolution: {integrity: sha512-xIP6VybXfjlmw7ldEya+NMAQIeiz5YYArF5i4An6IdQoax94ZVsZruse4iGOPL1ra0UGTCNuiZQL3XhLxxcP3A==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
@@ -6866,10 +6866,10 @@ snapshots:
     optionalDependencies:
       zod: 4.0.17
 
-  '@ai-sdk/replicate@1.0.0(zod@4.0.17)':
+  '@ai-sdk/replicate@1.0.10(zod@4.0.17)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.0(zod@4.0.17)
+      '@ai-sdk/provider-utils': 3.0.9(zod@4.0.17)
       zod: 4.0.17
 
   '@alloc/quick-lru@5.2.0': {}

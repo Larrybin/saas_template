@@ -155,6 +155,8 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
+        env:
+          CODEQL_ACTION_DISABLE_DEFAULT_DATABASE_UPLOAD: true
 
       - name: Perform CodeQL Analysis
         id: codeql_analyze
@@ -162,6 +164,8 @@ jobs:
         with:
           category: '/language:javascript-typescript'
           upload: false
+        env:
+          CODEQL_ACTION_DISABLE_DEFAULT_DATABASE_UPLOAD: true
 
       - name: Generate CodeQL summary
         id: codeql_summary

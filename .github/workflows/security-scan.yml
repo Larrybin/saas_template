@@ -139,9 +139,9 @@ jobs:
 
           cat osv-comment.md >> "$GITHUB_STEP_SUMMARY"
           {
-            echo "body<<'EOF'"
+            echo 'body<<EOF'
             cat osv-comment.md
-            echo "EOF"
+            echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
       - name: Upload OSV report

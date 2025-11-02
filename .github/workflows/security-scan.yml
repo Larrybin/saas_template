@@ -139,7 +139,7 @@ jobs:
 
           cat osv-comment.md >> "$GITHUB_STEP_SUMMARY"
           {
-            echo 'body<<EOF'
+            echo 'osv_body<<EOF'
             cat osv-comment.md
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
@@ -151,14 +151,73 @@ jobs:
           path: osv-results.sarif
           retention-days: 5
 
-      - name: Comment on PR with OSV findings
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+
+      - name: Perform CodeQL Analysis
+        id: codeql_analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:javascript-typescript'
+          upload: false
+
+      - name: Generate CodeQL summary
+        id: codeql_summary
+        env:
+          CODEQL_SARIF: ${{ steps.codeql_analyze.outputs.sarif-output }}
+        run: |
+          set -euo pipefail
+          sarif_file="${CODEQL_SARIF:-}"
+          if [ -z "$sarif_file" ] || [ ! -s "$sarif_file" ]; then
+            echo "# CodeQL\n\n_未生成报告。_" | tee codeql-comment.md
+          else
+            jq -r '
+              def severity_label(sev):
+                if sev == "error" then "🚨 Error"
+                elif sev == "warning" then "⚠️ Warning"
+                elif sev == "note" then "ℹ️ Note"
+                else sev
+                end;
+              def rows(results):
+                if results == null or (results | length) == 0 then "_本次扫描未发现问题。_"
+                else (
+                  "| Level | Rule | Location | Message |\n| --- | --- | --- | --- |\n" +
+                  (results | map(
+                    "| " + severity_label(.level // "unknown") + " | " +
+                    (.ruleId // "Unknown") + " | " +
+                    (
+                      try (
+                        .locations[0].physicalLocation.artifactLocation.uri +
+                        ":" +
+                        (.locations[0].physicalLocation.region.startLine | tostring)
+                      ) catch "n/a"
+                    ) + " | " +
+                    (.message.text // "Unknown") + " |"
+                  ) | join("\n"))
+                )
+                end;
+              "# CodeQL\n\n" + rows(.runs[0].results // [])
+            ' "$sarif_file" | tee codeql-comment.md
+          fi
+
+          cat codeql-comment.md >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo 'codeql_body<<EOF'
+            cat codeql-comment.md
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Comment on PR with security findings
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
-            const marker = '<!-- osv-scanner-report -->';
-            const body = process.env.OSV_COMMENT || '# OSV Scanner\n\n_无可用输出。_';
-            const finalBody = `${marker}\n${body}`;
+            const marker = '<!-- security-scan-report -->';
+            const osv = process.env.OSV_COMMENT || '# OSV Scanner\n\n_无可用输出。_';
+            const codeql = process.env.CODEQL_COMMENT || '# CodeQL\n\n_无可用输出。_';
+            const finalBody = `${marker}\n${osv}\n\n---\n\n${codeql}`;
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
 
@@ -189,14 +248,5 @@ jobs:
               });
             }
         env:
-          OSV_COMMENT: ${{ steps.osv_summary.outputs.body }}
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: javascript-typescript
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: '/language:javascript-typescript'
+          OSV_COMMENT: ${{ steps.osv_summary.outputs.osv_body }}
+          CODEQL_COMMENT: ${{ steps.codeql_summary.outputs.codeql_body }}

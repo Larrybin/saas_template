@@ -169,37 +169,43 @@ jobs:
           CODEQL_SARIF: ${{ steps.codeql_analyze.outputs.sarif-output }}
         run: |
           set -euo pipefail
-          sarif_file="${CODEQL_SARIF:-}"
-          if [ -z "$sarif_file" ] || [ ! -s "$sarif_file" ]; then
+          sarif_dir="${CODEQL_SARIF:-}"
+          if [ -z "$sarif_dir" ] || [ ! -d "$sarif_dir" ]; then
             echo "# CodeQL\n\n_未生成报告。_" | tee codeql-comment.md
           else
-            jq -r '
-              def severity_label(sev):
-                if sev == "error" then "🚨 Error"
-                elif sev == "warning" then "⚠️ Warning"
-                elif sev == "note" then "ℹ️ Note"
-                else sev
-                end;
-              def rows(results):
-                if results == null or (results | length) == 0 then "_本次扫描未发现问题。_"
-                else (
-                  "| Level | Rule | Location | Message |\n| --- | --- | --- | --- |\n" +
-                  (results | map(
-                    "| " + severity_label(.level // "unknown") + " | " +
-                    (.ruleId // "Unknown") + " | " +
-                    (
-                      try (
-                        .locations[0].physicalLocation.artifactLocation.uri +
-                        ":" +
-                        (.locations[0].physicalLocation.region.startLine | tostring)
-                      ) catch "n/a"
-                    ) + " | " +
-                    (.message.text // "Unknown") + " |"
-                  ) | join("\n"))
-                )
-                end;
-              "# CodeQL\n\n" + rows(.runs[0].results // [])
-            ' "$sarif_file" | tee codeql-comment.md
+            mapfile -t sarif_files < <(find "$sarif_dir" -type f -name '*.sarif' -print | sort)
+            if [ "${#sarif_files[@]}" -eq 0 ]; then
+              echo "# CodeQL\n\n_未生成报告。_" | tee codeql-comment.md
+            else
+              jq -sr '
+                def severity_label(sev):
+                  if sev == "error" then "🚨 Error"
+                  elif sev == "warning" then "⚠️ Warning"
+                  elif sev == "note" then "ℹ️ Note"
+                  else sev
+                  end;
+                def location_string(result):
+                  try (
+                    (result.locations[0].physicalLocation.artifactLocation.uri // "n/a") +
+                    ":" +
+                    ((result.locations[0].physicalLocation.region.startLine // 0) | tostring)
+                  ) catch "n/a";
+                def rows(results):
+                  if results == null or (results | length) == 0 then "_本次扫描未发现问题。_"
+                  else (
+                    "| Level | Rule | Location | Message |\n| --- | --- | --- | --- |\n" +
+                    (results | map(
+                      "| " + severity_label(.level // "unknown") + " | " +
+                      (.ruleId // "Unknown") + " | " +
+                      location_string(.) + " | " +
+                      (.message.text // "Unknown") + " |"
+                    ) | join("\n"))
+                  )
+                  end;
+                ( [ .[]? | .runs[]? | .results[]? ] ) as $results
+                | "# CodeQL\n\n" + rows($results)
+              ' "${sarif_files[@]}" | tee codeql-comment.md
+            fi
           fi
 
           cat codeql-comment.md >> "$GITHUB_STEP_SUMMARY"

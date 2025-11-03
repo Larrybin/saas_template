@@ -73,8 +73,8 @@ importers:
         specifier: ^3.1.16
         version: 3.1.16
       '@orama/tokenizers':
-        specifier: ^3.1.4
-        version: 3.1.4
+        specifier: ^3.1.16
+        version: 3.1.16
       '@radix-ui/react-accordion':
         specifier: ^1.2.3
         version: 1.2.12(@types/react-dom@19.0.3(@types/react@19.0.9))(@types/react@19.0.9)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -1213,13 +1213,9 @@ packages:
     resolution: {integrity: sha512-scSmQBD8eANlMUOglxHrN1JdSW8tDghsPuS83otqealBiIeMukCQMOf/wc0JJjDXomqwNdEQFLXLGHrU6PGxuA==}
     engines: {node: '>= 20.0.0'}
 
-  '@orama/orama@3.1.4':
-    resolution: {integrity: sha512-7tTuIdkzgRscJ7sGHVsoK9GtXSpwbfrj3WYnuSu/SepXHhshYiQaOeXc/aeLh4MfgIre6tEs/caIop8wrhMi3g==}
-    engines: {node: '>= 16.0.0'}
-
-  '@orama/tokenizers@3.1.4':
-    resolution: {integrity: sha512-OKyw/uKDZqlS4Vwwyp2l+d1ISGtBt3qMORbTp3jyfeGjXllTLJrH/erzlVYKWdNp5bPrWGVrQbtgWgE5nLV1Ng==}
-    engines: {node: '>= 18.0.0'}
+  '@orama/tokenizers@3.1.16':
+    resolution: {integrity: sha512-QLYWlcFNs3G2ikJJewxSsC/JSz3Ltz5uZED1yAubhMg5Vk3jG/3P4UkDYt5SzuimkQYwYnHXVGlw93ZzsP+M0w==}
+    engines: {node: '>= 20.0.0'}
 
   '@oxc-resolver/binding-darwin-arm64@11.2.0':
     resolution: {integrity: sha512-ruKLkS+Dm/YIJaUhzEB7zPI+jh3EXxu0QnNV8I7t9jf0lpD2VnltuyRbhrbJEkksklZj//xCMyFFsILGjiU2Mg==}
@@ -5789,11 +5785,9 @@ snapshots:
 
   '@orama/orama@3.1.16': {}
 
-  '@orama/orama@3.1.4': {}
-
-  '@orama/tokenizers@3.1.4':
+  '@orama/tokenizers@3.1.16':
     dependencies:
-      '@orama/orama': 3.1.4
+      '@orama/orama': 3.1.16
 
   '@oxc-resolver/binding-darwin-arm64@11.2.0':
     optional: true

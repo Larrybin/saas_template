@@ -292,7 +292,7 @@ importers:
         specifier: ^7.62.0
         version: 7.62.0(react@19.0.0)
       react-remove-scroll:
-        specifier: ^2.6.3
+        specifier: ^2.7.1
         version: 2.7.1(@types/react@19.0.9)(react@19.0.0)
       react-resizable-panels:
         specifier: ^2.1.7

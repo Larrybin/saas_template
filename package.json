@@ -152,7 +152,7 @@
     "@types/react-dom": "^19",
     "@types/react-syntax-highlighter": "^15.5.13",
     "drizzle-kit": "^0.30.4",
-    "knip": "^5.61.2",
+    "knip": "^5.67.1",
     "postcss": "^8",
     "react-email": "4.3.2",
     "tailwindcss": "^4.0.14",

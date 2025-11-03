@@ -118,7 +118,7 @@
     "react-day-picker": "8.10.1",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.62.0",
-    "react-remove-scroll": "^2.6.3",
+    "react-remove-scroll": "^2.7.1",
     "react-resizable-panels": "^2.1.7",
     "react-syntax-highlighter": "^16.1.0",
     "react-tweet": "^3.2.2",

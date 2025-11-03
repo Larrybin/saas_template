@@ -127,7 +127,7 @@ jobs:
       - name: Build Next.js app
         run: pnpm build
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: next-build
           path: .next

@@ -96,7 +96,7 @@
     "crisp-sdk-web": "^1.0.25",
     "date-fns": "^4.1.0",
     "deepmerge": "^4.3.1",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.6.1",
     "dotted-map": "^2.2.3",
     "drizzle-orm": "^0.39.3",
     "embla-carousel-react": "^8.5.2",

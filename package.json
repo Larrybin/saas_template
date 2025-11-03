@@ -123,7 +123,7 @@
     "react-syntax-highlighter": "^16.1.0",
     "react-tweet": "^3.2.2",
     "react-use-measure": "^2.1.7",
-    "recharts": "^2.15.1",
+    "recharts": "^2.15.4",
     "resend": "^4.4.1",
     "s3mini": "^0.2.0",
     "shiki": "^2.4.2",

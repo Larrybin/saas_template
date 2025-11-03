@@ -151,7 +151,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-syntax-highlighter": "^15.5.13",
-    "drizzle-kit": "^0.30.4",
+    "drizzle-kit": "^0.31.6",
     "knip": "^5.61.2",
     "postcss": "^8",
     "react-email": "4.3.2",

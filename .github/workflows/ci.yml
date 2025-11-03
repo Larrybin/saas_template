@@ -17,6 +17,10 @@ defaults:
   run:
     shell: bash
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
     name: Install & Cache
@@ -30,8 +34,21 @@ jobs:
           node-version: 20
           pnpm-version: 9
           cache-dependency-path: pnpm-lock.yaml
+      - name: Restore pnpm store cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Upload pnpm store cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
   lint:
     name: Lint & Types

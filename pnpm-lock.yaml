@@ -31,8 +31,8 @@ importers:
         specifier: ^2.0.22
         version: 2.0.22(react@19.0.0)(zod@4.1.12)
       '@ai-sdk/replicate':
-        specifier: ^1.0.0
-        version: 1.0.0(zod@4.1.12)
+        specifier: ^1.0.16
+        version: 1.0.16(zod@4.1.12)
       '@base-ui-components/react':
         specifier: 1.0.0-beta.0
         version: 1.0.0-beta.0(@types/react@19.0.9)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -463,6 +463,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4
 
+  '@ai-sdk/provider-utils@3.0.15':
+    resolution: {integrity: sha512-kOc6Pxb7CsRlNt+sLZKL7/VGQUd7ccl3/tIK+Bqf5/QhHR0Qm3qRBMz1IwU1RmjJEZA73x+KB5cUckbDl2WF7Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider-utils@3.0.5':
     resolution: {integrity: sha512-HliwB/yzufw3iwczbFVE2Fiwf1XqROB/I6ng8EKUsPM5+2wnIa8f4VbljZcDx+grhFrPV+PnRZH7zBqi8WZM7Q==}
     engines: {node: '>=18'}
@@ -489,11 +495,11 @@ packages:
       zod:
         optional: true
 
-  '@ai-sdk/replicate@1.0.0':
-    resolution: {integrity: sha512-whCL8u2aKXJcD8LmxK9oZOL3I/XkLgY7PqNsqLzemP5AlchjZTn8LLvwx5LBc2W3nkEXOz4Kt1oJGv1rQRxbnA==}
+  '@ai-sdk/replicate@1.0.16':
+    resolution: {integrity: sha512-ICKhsxO0zUHrdFoPl+38zQlYPNTt8iep1UR984Vh3CYQ25NojU1ahBVlUbr1f7GA1wsmSVRFa4hBlMP2tofjrw==}
     engines: {node: '>=18'}
     peerDependencies:
-      zod: ^3.25.76 || ^4
+      zod: ^3.25.76 || ^4.1.8
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -5110,6 +5116,13 @@ snapshots:
       zod: 4.1.12
       zod-to-json-schema: 3.24.6(zod@4.1.12)
 
+  '@ai-sdk/provider-utils@3.0.15(zod@4.1.12)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.6
+      zod: 4.1.12
+
   '@ai-sdk/provider-utils@3.0.5(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
@@ -5139,10 +5152,10 @@ snapshots:
     optionalDependencies:
       zod: 4.1.12
 
-  '@ai-sdk/replicate@1.0.0(zod@4.1.12)':
+  '@ai-sdk/replicate@1.0.16(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.0(zod@4.1.12)
+      '@ai-sdk/provider-utils': 3.0.15(zod@4.1.12)
       zod: 4.1.12
 
   '@alloc/quick-lru@5.2.0': {}

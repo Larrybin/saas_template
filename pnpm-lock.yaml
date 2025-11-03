@@ -316,7 +316,7 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       shiki:
-        specifier: ^2.4.2
+        specifier: ^2.5.0
         version: 2.5.0
       sonner:
         specifier: ^2.0.0

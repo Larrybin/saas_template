@@ -263,7 +263,7 @@ importers:
         version: 15.5.0(@opentelemetry/api@1.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       next-intl:
         specifier: ^4.0.0
-        version: 4.0.0(next@15.5.0(@opentelemetry/api@1.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react@19.0.0)(typescript@5.8.3)
+        version: 4.0.0(next@15.5.0(@opentelemetry/api@1.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react@19.0.0)(typescript@5.9.3)
       next-safe-action:
         specifier: ^7.10.8
         version: 7.10.8(next@15.5.0(@opentelemetry/api@1.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(zod@4.1.12)
@@ -366,7 +366,7 @@ importers:
         version: 4.1.16
       '@tanstack/eslint-plugin-query':
         specifier: ^5.83.1
-        version: 5.83.1(eslint@9.33.0(jiti@2.6.1))(typescript@5.8.3)
+        version: 5.83.1(eslint@9.33.0(jiti@2.6.1))(typescript@5.9.3)
       '@types/mdx':
         specifier: ^2.0.13
         version: 2.0.13
@@ -390,7 +390,7 @@ importers:
         version: 0.31.6
       knip:
         specifier: ^5.67.1
-        version: 5.67.1(@types/node@20.19.24)(typescript@5.8.3)
+        version: 5.67.1(@types/node@20.19.24)(typescript@5.9.3)
       postcss:
         specifier: ^8
         version: 8.5.2
@@ -404,8 +404,8 @@ importers:
         specifier: ^4.20.6
         version: 4.20.6
       typescript:
-        specifier: ^5.8.3
-        version: 5.8.3
+        specifier: ^5.9.3
+        version: 5.9.3
 
 packages:
 
@@ -4927,8 +4927,8 @@ packages:
   typescript-event-target@1.1.1:
     resolution: {integrity: sha512-dFSOFBKV6uwaloBCCUhxlD3Pr/P1a/tJdcmPrTXCHlEFD3faj0mztjcGn6VBAhQ0/Bdy8K3VWrrqwbt/ffsYsg==}
 
-  typescript@5.8.3:
-    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -7118,9 +7118,9 @@ snapshots:
       postcss: 8.5.2
       tailwindcss: 4.1.16
 
-  '@tanstack/eslint-plugin-query@5.83.1(eslint@9.33.0(jiti@2.6.1))(typescript@5.8.3)':
+  '@tanstack/eslint-plugin-query@5.83.1(eslint@9.33.0(jiti@2.6.1))(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/utils': 8.40.0(eslint@9.33.0(jiti@2.6.1))(typescript@5.8.3)
+      '@typescript-eslint/utils': 8.40.0(eslint@9.33.0(jiti@2.6.1))(typescript@5.9.3)
       eslint: 9.33.0(jiti@2.6.1)
     transitivePeerDependencies:
       - supports-color
@@ -7256,12 +7256,12 @@ snapshots:
 
   '@types/unist@3.0.3': {}
 
-  '@typescript-eslint/project-service@8.40.0(typescript@5.8.3)':
+  '@typescript-eslint/project-service@8.40.0(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.40.0(typescript@5.8.3)
+      '@typescript-eslint/tsconfig-utils': 8.40.0(typescript@5.9.3)
       '@typescript-eslint/types': 8.40.0
       debug: 4.4.3
-      typescript: 5.8.3
+      typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
@@ -7270,16 +7270,16 @@ snapshots:
       '@typescript-eslint/types': 8.40.0
       '@typescript-eslint/visitor-keys': 8.40.0
 
-  '@typescript-eslint/tsconfig-utils@8.40.0(typescript@5.8.3)':
+  '@typescript-eslint/tsconfig-utils@8.40.0(typescript@5.9.3)':
     dependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
 
   '@typescript-eslint/types@8.40.0': {}
 
-  '@typescript-eslint/typescript-estree@8.40.0(typescript@5.8.3)':
+  '@typescript-eslint/typescript-estree@8.40.0(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/project-service': 8.40.0(typescript@5.8.3)
-      '@typescript-eslint/tsconfig-utils': 8.40.0(typescript@5.8.3)
+      '@typescript-eslint/project-service': 8.40.0(typescript@5.9.3)
+      '@typescript-eslint/tsconfig-utils': 8.40.0(typescript@5.9.3)
       '@typescript-eslint/types': 8.40.0
       '@typescript-eslint/visitor-keys': 8.40.0
       debug: 4.4.3
@@ -7287,19 +7287,19 @@ snapshots:
       is-glob: 4.0.3
       minimatch: 9.0.5
       semver: 7.7.3
-      ts-api-utils: 2.1.0(typescript@5.8.3)
-      typescript: 5.8.3
+      ts-api-utils: 2.1.0(typescript@5.9.3)
+      typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@8.40.0(eslint@9.33.0(jiti@2.6.1))(typescript@5.8.3)':
+  '@typescript-eslint/utils@8.40.0(eslint@9.33.0(jiti@2.6.1))(typescript@5.9.3)':
     dependencies:
       '@eslint-community/eslint-utils': 4.9.0(eslint@9.33.0(jiti@2.6.1))
       '@typescript-eslint/scope-manager': 8.40.0
       '@typescript-eslint/types': 8.40.0
-      '@typescript-eslint/typescript-estree': 8.40.0(typescript@5.8.3)
+      '@typescript-eslint/typescript-estree': 8.40.0(typescript@5.9.3)
       eslint: 9.33.0(jiti@2.6.1)
-      typescript: 5.8.3
+      typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
@@ -8398,7 +8398,7 @@ snapshots:
 
   kleur@3.0.3: {}
 
-  knip@5.67.1(@types/node@20.19.24)(typescript@5.8.3):
+  knip@5.67.1(@types/node@20.19.24)(typescript@5.9.3):
     dependencies:
       '@nodelib/fs.walk': 1.2.8
       '@types/node': 20.19.24
@@ -8412,8 +8412,9 @@ snapshots:
       picomatch: 4.0.3
       smol-toml: 1.4.2
       strip-json-comments: 5.0.2
-      typescript: 5.8.3
+      typescript: 5.9.3
       zod: 4.1.12
+      zod-validation-error: 3.5.2(zod@3.25.64)
 
   kysely@0.28.8: {}
 
@@ -9049,7 +9050,7 @@ snapshots:
 
   negotiator@1.0.0: {}
 
-  next-intl@4.0.0(next@15.5.0(@opentelemetry/api@1.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react@19.0.0)(typescript@5.8.3):
+  next-intl@4.0.0(next@15.5.0(@opentelemetry/api@1.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react@19.0.0)(typescript@5.9.3):
     dependencies:
       '@formatjs/intl-localematcher': 0.5.10
       negotiator: 1.0.0
@@ -9057,7 +9058,7 @@ snapshots:
       react: 19.0.0
       use-intl: 4.0.0(react@19.0.0)
     optionalDependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
 
   next-safe-action@7.10.8(next@15.5.0(@opentelemetry/api@1.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(zod@4.1.12):
     dependencies:
@@ -10059,9 +10060,9 @@ snapshots:
 
   trough@2.2.0: {}
 
-  ts-api-utils@2.1.0(typescript@5.8.3):
+  ts-api-utils@2.1.0(typescript@5.9.3):
     dependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
 
   tsconfig-paths@4.2.0:
     dependencies:
@@ -10092,7 +10093,7 @@ snapshots:
 
   typescript-event-target@1.1.1: {}
 
-  typescript@5.8.3: {}
+  typescript@5.9.3: {}
 
   uncrypto@0.1.3: {}
 

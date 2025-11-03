@@ -157,7 +157,7 @@
     "react-email": "4.3.2",
     "tailwindcss": "^4.0.14",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   },
   "pnpm": {
     "overrides": {

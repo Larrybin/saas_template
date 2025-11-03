@@ -217,8 +217,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       crisp-sdk-web:
-        specifier: ^1.0.25
-        version: 1.0.25
+        specifier: ^1.0.26
+        version: 1.0.26
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -2785,8 +2785,8 @@ packages:
     resolution: {integrity: sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g==}
     engines: {node: '>= 0.10'}
 
-  crisp-sdk-web@1.0.25:
-    resolution: {integrity: sha512-CWTHFFeHRV0oqiXoPh/aIAKhFs6xcIM4NenGPnClAMCZUDQgQsF1OWmZWmnVNjJriXUmWRgDfeUxcxygS0dCRA==}
+  crisp-sdk-web@1.0.26:
+    resolution: {integrity: sha512-MBK/+tCNJmt/l9ZYHb0cUUaaF02rCKeqLw1cruY/HU48tPOOnhUM0JdvuPaeq1d5VB2DCILY4rGYE4NeJbXvzg==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -7418,7 +7418,7 @@ snapshots:
       object-assign: 4.1.1
       vary: 1.1.2
 
-  crisp-sdk-web@1.0.25: {}
+  crisp-sdk-web@1.0.26: {}
 
   cross-spawn@7.0.6:
     dependencies:

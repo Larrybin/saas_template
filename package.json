@@ -147,7 +147,7 @@
     "@tanstack/eslint-plugin-query": "^5.83.1",
     "@types/mdx": "^2.0.13",
     "@types/node": "^20.19.0",
-    "@types/pg": "^8.11.11",
+    "@types/pg": "^8.15.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-syntax-highlighter": "^15.5.13",

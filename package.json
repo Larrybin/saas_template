@@ -31,7 +31,7 @@
     "@ai-sdk/google": "^2.0.16",
     "@ai-sdk/openai": "^2.0.0",
     "@ai-sdk/react": "^2.0.86",
-    "@ai-sdk/replicate": "^1.0.0",
+    "@ai-sdk/replicate": "^1.0.16",
     "@base-ui-components/react": "1.0.0-beta.4",
     "@better-fetch/fetch": "^1.1.18",
     "@dnd-kit/core": "^6.3.1",

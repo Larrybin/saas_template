@@ -1,5 +1,9 @@
 'use client';
 
+import { Languages } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { type Locale, useLocale, useTranslations } from 'next-intl';
+import { useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,10 +14,6 @@ import {
 import { websiteConfig } from '@/config/website';
 import { useLocalePathname, useLocaleRouter } from '@/i18n/navigation';
 import { useLocaleStore } from '@/stores/locale-store';
-import { Languages } from 'lucide-react';
-import { type Locale, useLocale, useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
-import { useEffect, useTransition } from 'react';
 
 /**
  * LocaleSwitcher component

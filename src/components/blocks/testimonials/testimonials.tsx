@@ -1,7 +1,7 @@
+import { useTranslations } from 'next-intl';
 import { HeaderSection } from '@/components/layout/header-section';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { useTranslations } from 'next-intl';
 
 type Testimonial = {
   name: string;

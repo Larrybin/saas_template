@@ -1,7 +1,7 @@
 'use client';
 
-import type { PricePlan } from '@/payment/types';
 import { useTranslations } from 'next-intl';
+import type { PricePlan } from '@/payment/types';
 import { websiteConfig } from './website';
 
 /**

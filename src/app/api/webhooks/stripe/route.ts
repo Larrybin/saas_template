@@ -1,5 +1,5 @@
-import { handleWebhookEvent } from '@/payment';
 import { type NextRequest, NextResponse } from 'next/server';
+import { handleWebhookEvent } from '@/payment';
 
 /**
  * Stripe webhook handler

@@ -1,5 +1,15 @@
 'use client';
 
+import {
+  ChartBarIncreasingIcon,
+  Database,
+  Fingerprint,
+  IdCard,
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import Image from 'next/image';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { HeaderSection } from '@/components/layout/header-section';
 import { BorderBeam } from '@/components/magicui/border-beam';
 import {
@@ -8,16 +18,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-  ChartBarIncreasingIcon,
-  Database,
-  Fingerprint,
-  IdCard,
-} from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
-import { useState } from 'react';
 
 /**
  * https://nsui.irung.me/features

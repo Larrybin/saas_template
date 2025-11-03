@@ -1,9 +1,9 @@
+import type { MetadataRoute } from 'next';
+import type { Locale } from 'next-intl';
 import { websiteConfig } from '@/config/website';
 import { getLocalePathname } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
 import { blogSource, categorySource, source } from '@/lib/source';
-import type { MetadataRoute } from 'next';
-import type { Locale } from 'next-intl';
 import { getBaseUrl } from '../lib/urls/urls';
 
 type Href = Parameters<typeof getLocalePathname>[0]['href'];

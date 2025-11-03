@@ -1,12 +1,12 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import type { Locale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { CustomPage } from '@/components/page/custom-page';
 import { constructMetadata } from '@/lib/metadata';
 import { pagesSource } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import type { NextPageProps } from '@/types/next-page-props';
-import type { Metadata } from 'next';
-import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
-import { notFound } from 'next/navigation';
 
 export async function generateMetadata({
   params,

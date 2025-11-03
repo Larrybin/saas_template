@@ -1,7 +1,7 @@
 'use client';
 
-import type { CreditPackage } from '@/credits/types';
 import { useTranslations } from 'next-intl';
+import type { CreditPackage } from '@/credits/types';
 import { websiteConfig } from './website';
 
 /**

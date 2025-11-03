@@ -1,13 +1,13 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import type { Locale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { ReleaseCard } from '@/components/changelog/release-card';
 import Container from '@/components/layout/container';
 import { constructMetadata } from '@/lib/metadata';
 import { changelogSource } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import type { NextPageProps } from '@/types/next-page-props';
-import type { Metadata } from 'next';
-import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
-import { notFound } from 'next/navigation';
 
 import '@/styles/mdx.css';
 

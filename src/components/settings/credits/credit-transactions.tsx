@@ -1,7 +1,5 @@
 'use client';
 
-import { CreditTransactionsTable } from '@/components/settings/credits/credit-transactions-table';
-import { useCreditTransactions } from '@/hooks/use-credits';
 import type { SortingState } from '@tanstack/react-table';
 import { useTranslations } from 'next-intl';
 import {
@@ -11,6 +9,8 @@ import {
   useQueryStates,
 } from 'nuqs';
 import { useMemo } from 'react';
+import { CreditTransactionsTable } from '@/components/settings/credits/credit-transactions-table';
+import { useCreditTransactions } from '@/hooks/use-credits';
 
 /**
  * Credit transactions component

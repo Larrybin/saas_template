@@ -1,5 +1,10 @@
 'use client';
 
+import type { User } from 'better-auth';
+import { LogOutIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { UserAvatar } from '@/components/layout/user-avatar';
 import {
   Drawer,
@@ -13,11 +18,6 @@ import {
 import { getAvatarLinks } from '@/config/avatar-config';
 import { LocaleLink, useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
-import type { User } from 'better-auth';
-import { LogOutIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 interface UserButtonProps {
   user: User;

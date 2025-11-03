@@ -1,5 +1,5 @@
-import { DEFAULT_LOCALE, LOCALES } from '@/i18n/routing';
 import type { I18nConfig } from 'fumadocs-core/i18n';
+import { DEFAULT_LOCALE, LOCALES } from '@/i18n/routing';
 
 /**
  * Internationalization configuration for FumaDocs

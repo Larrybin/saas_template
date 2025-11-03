@@ -1,6 +1,6 @@
+import { CalendarIcon } from 'lucide-react';
 import { formatDate } from '@/lib/formatter';
 import type { PagesType } from '@/lib/source';
-import { CalendarIcon } from 'lucide-react';
 import { getMDXComponents } from '../docs/mdx-components';
 import { Card, CardContent } from '../ui/card';
 

@@ -1,14 +1,14 @@
 'use client';
-import { cn } from '@/lib/utils';
 import {
   AnimatePresence,
+  motion,
   type TargetAndTransition,
   type Transition,
   type Variant,
   type Variants,
-  motion,
 } from 'motion/react';
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 export type PresetType = 'blur' | 'fade-in-blur' | 'scale' | 'fade' | 'slide';
 
@@ -299,7 +299,6 @@ export function CustomTextEffect({
               variants={computedVariants.item}
               per={per}
               segmentWrapperClassName={segmentWrapperClassName}
-              // biome-ignore lint/correctness/noChildrenProp: <explanation>
               children={typeof segment !== 'string' ? segment : undefined}
             />
           ))}

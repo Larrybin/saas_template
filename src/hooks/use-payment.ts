@@ -1,8 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import { getActiveSubscriptionAction } from '@/actions/get-active-subscription';
 import { getLifetimeStatusAction } from '@/actions/get-lifetime-status';
 import { getAllPricePlans } from '@/lib/price-plan';
 import type { PricePlan, Subscription } from '@/payment/types';
-import { useQuery } from '@tanstack/react-query';
 
 // Query keys
 export const paymentKeys = {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
   Carousel,
   type CarouselApi,
@@ -9,7 +10,6 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
 import type { GeneratedImage, ProviderTiming } from '../lib/image-types';
 import type { ProviderKey } from '../lib/provider-config';
 import { ImageDisplay } from './ImageDisplay';

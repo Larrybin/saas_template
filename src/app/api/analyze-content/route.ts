@@ -1,9 +1,17 @@
+import { createDeepSeek } from '@ai-sdk/deepseek';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
+import Firecrawl from '@mendable/firecrawl-js';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { generateObject } from 'ai';
+import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import {
+  classifyError,
   ErrorSeverity,
   ErrorType,
-  WebContentAnalyzerError,
-  classifyError,
   logError,
+  WebContentAnalyzerError,
   withRetry,
 } from '@/ai/text/utils/error-handling';
 import {
@@ -16,14 +24,6 @@ import {
   validateFirecrawlConfig,
   webContentAnalyzerConfig,
 } from '@/ai/text/utils/web-content-analyzer-config';
-import { createDeepSeek } from '@ai-sdk/deepseek';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createOpenAI } from '@ai-sdk/openai';
-import Firecrawl from '@mendable/firecrawl-js';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { generateObject } from 'ai';
-import { type NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 
 // Constants from configuration
 const TIMEOUT_MILLIS = webContentAnalyzerConfig.timeoutMillis;

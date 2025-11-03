@@ -1,5 +1,6 @@
 'use client';
 
+import { MailIcon } from 'lucide-react';
 import { BlueskyIcon } from '@/components/icons/bluesky';
 import { DiscordIcon } from '@/components/icons/discord';
 import { FacebookIcon } from '@/components/icons/facebook';
@@ -12,7 +13,6 @@ import { TikTokIcon } from '@/components/icons/tiktok';
 import { XTwitterIcon } from '@/components/icons/x';
 import { YouTubeIcon } from '@/components/icons/youtube';
 import type { MenuItem } from '@/types';
-import { MailIcon } from 'lucide-react';
 import { websiteConfig } from './website';
 
 /**

@@ -1,5 +1,5 @@
-import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { getTranslations } from 'next-intl/server';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 
 interface CreditsLayoutProps {
   children: React.ReactNode;

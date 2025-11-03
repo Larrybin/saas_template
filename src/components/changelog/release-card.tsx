@@ -1,9 +1,9 @@
+import { CalendarIcon, TagIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { formatDate } from '@/lib/formatter';
 import type { ChangelogType } from '@/lib/source';
-import { CalendarIcon, TagIcon } from 'lucide-react';
 import { getMDXComponents } from '../docs/mdx-components';
 
 interface ReleaseCardProps {

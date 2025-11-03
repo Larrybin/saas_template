@@ -1,8 +1,8 @@
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowUpRight, Loader2, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import { type Suggestion, getRandomSuggestions } from '../lib/suggestions';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { getRandomSuggestions, type Suggestion } from '../lib/suggestions';
 
 type QualityMode = 'performance' | 'quality';
 

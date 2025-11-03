@@ -1,13 +1,13 @@
 'use client';
 
-import { websiteConfig } from '@/config/website';
 import {
-  type ReactNode,
   createContext,
+  type ReactNode,
   useContext,
   useEffect,
   useState,
 } from 'react';
+import { websiteConfig } from '@/config/website';
 
 const COOKIE_NAME = 'active_theme';
 const DEFAULT_THEME = websiteConfig.ui.theme?.defaultTheme ?? 'default';

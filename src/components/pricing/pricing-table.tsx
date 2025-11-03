@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { getPricePlans } from '@/config/price-config';
 import { cn } from '@/lib/utils';
@@ -9,8 +11,6 @@ import {
   PlanIntervals,
   type PricePlan,
 } from '@/payment/types';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
 import { PricingCard } from './pricing-card';
 
 interface PricingTableProps {

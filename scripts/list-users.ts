@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { getDb } from '../src/db/index.js';
 import { user } from '../src/db/schema.js';
+
 dotenv.config();
 
 export default async function listUsers() {

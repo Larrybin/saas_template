@@ -1,11 +1,11 @@
-import { ImagePlayground } from '@/ai/image/components/ImagePlayground';
-import { getRandomSuggestions } from '@/ai/image/lib/suggestions';
-import { constructMetadata } from '@/lib/metadata';
-import { getUrlWithLocale } from '@/lib/urls/urls';
 import { ImageIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
+import { ImagePlayground } from '@/ai/image/components/ImagePlayground';
+import { getRandomSuggestions } from '@/ai/image/lib/suggestions';
+import { constructMetadata } from '@/lib/metadata';
+import { getUrlWithLocale } from '@/lib/urls/urls';
 
 export async function generateMetadata({
   params,

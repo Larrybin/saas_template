@@ -1,11 +1,11 @@
 'use client';
 
+import { CoinsIcon, Loader2Icon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { websiteConfig } from '@/config/website';
 import { useCreditBalance } from '@/hooks/use-credits';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { Routes } from '@/routes';
-import { CoinsIcon, Loader2Icon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 export function CreditsBalanceMenu() {
   // If credits are not enabled, return null

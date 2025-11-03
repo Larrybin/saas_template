@@ -1,5 +1,9 @@
 'use client';
 
+import { User2Icon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { FormError } from '@/components/shared/form-error';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -15,10 +19,6 @@ import { websiteConfig } from '@/config/website';
 import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import { uploadFileFromBrowser } from '@/storage/client';
-import { User2Icon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 interface UpdateAvatarCardProps {
   className?: string;

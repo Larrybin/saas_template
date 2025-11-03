@@ -1,5 +1,5 @@
-import { routing } from '@/i18n/routing';
 import type { Locale } from 'next-intl';
+import { routing } from '@/i18n/routing';
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL ??

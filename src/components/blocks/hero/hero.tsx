@@ -1,11 +1,11 @@
+import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { Ripple } from '@/components/magicui/ripple';
 import { AnimatedGroup } from '@/components/tailark/motion/animated-group';
 import { TextEffect } from '@/components/tailark/motion/text-effect';
 import { Button } from '@/components/ui/button';
 import { LocaleLink } from '@/i18n/navigation';
-import { ArrowRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
 
 import { defineTransition, defineVariants } from '@/lib/motion';
 

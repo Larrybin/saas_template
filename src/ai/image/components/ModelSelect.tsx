@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
@@ -8,14 +9,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { imageHelpers } from '../lib/image-helpers';
 import type { ProviderTiming } from '../lib/image-types';
 import {
   FireworksIcon,
+  falAILogo,
   OpenAIIcon,
   ReplicateIcon,
-  falAILogo,
 } from '../lib/logos';
 import type { ProviderKey } from '../lib/provider-config';
 import { ImageDisplay } from './ImageDisplay';

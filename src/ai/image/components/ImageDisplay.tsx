@@ -1,3 +1,6 @@
+import { AlertCircle, Download, ImageIcon, Share } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -7,9 +10,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { AlertCircle, Download, ImageIcon, Share } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { imageHelpers } from '../lib/image-helpers';
 import type { ProviderTiming } from '../lib/image-types';
 import { Stopwatch } from './Stopwatch';

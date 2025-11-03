@@ -1,3 +1,9 @@
+import { CalendarIcon, FileTextIcon } from 'lucide-react';
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import type { Locale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import AllPostsButton from '@/components/blog/all-posts-button';
 import BlogGrid from '@/components/blog/blog-grid';
 import { getMDXComponents } from '@/components/docs/mdx-components';
@@ -7,18 +13,12 @@ import { LocaleLink } from '@/i18n/navigation';
 import { formatDate } from '@/lib/formatter';
 import { constructMetadata } from '@/lib/metadata';
 import {
-  type BlogType,
   authorSource,
+  type BlogType,
   blogSource,
   categorySource,
 } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
-import { CalendarIcon, FileTextIcon } from 'lucide-react';
-import type { Metadata } from 'next';
-import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
-import Image from 'next/image';
-import { notFound } from 'next/navigation';
 
 import '@/styles/mdx.css';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';

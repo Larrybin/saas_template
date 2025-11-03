@@ -1,11 +1,11 @@
 'use client';
 
-import { Logo } from '@/components/layout/logo';
-import { Button } from '@/components/ui/button';
-import { useLocaleRouter } from '@/i18n/navigation';
 import { Loader2Icon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTransition } from 'react';
+import { Logo } from '@/components/layout/logo';
+import { Button } from '@/components/ui/button';
+import { useLocaleRouter } from '@/i18n/navigation';
 
 /**
  * 1. Note that error.tsx is loaded right after your app has initialized.

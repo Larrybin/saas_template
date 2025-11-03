@@ -5,10 +5,10 @@ import type {
   CreateCheckoutParams,
   CreateCreditCheckoutParams,
   CreatePortalParams,
+  getSubscriptionsParams,
   PaymentProvider,
   PortalResult,
   Subscription,
-  getSubscriptionsParams,
 } from './types';
 
 /**

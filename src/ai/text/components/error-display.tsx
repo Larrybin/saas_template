@@ -1,8 +1,5 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import {
   AlertCircleIcon,
   AlertTriangleIcon,
@@ -16,11 +13,14 @@ import {
   WifiOffIcon,
 } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import {
   ErrorSeverity,
   ErrorType,
-  type WebContentAnalyzerError,
   getRecoveryActions,
+  type WebContentAnalyzerError,
 } from '../utils/error-handling';
 
 interface ErrorDisplayProps {

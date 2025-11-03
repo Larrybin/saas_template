@@ -1,5 +1,10 @@
 'use client';
 
+import { CheckCircleIcon, ClockIcon, RefreshCwIcon } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { CustomerPortalButton } from '@/components/pricing/customer-portal-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,11 +25,6 @@ import { authClient } from '@/lib/auth-client';
 import { formatDate } from '@/lib/formatter';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
-import { CheckCircleIcon, ClockIcon, RefreshCwIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 
 export default function BillingCard() {
   const t = useTranslations('Dashboard.settings.billing');

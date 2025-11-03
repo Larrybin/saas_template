@@ -1,11 +1,11 @@
 'use client';
 
-import { FormMessage } from '@/components/ui/form';
-import { websiteConfig } from '@/config/website';
+import dynamic from 'next/dynamic';
 import { useLocale } from 'next-intl';
 import { useTheme } from 'next-themes';
-import dynamic from 'next/dynamic';
 import { type ComponentProps, forwardRef } from 'react';
+import { FormMessage } from '@/components/ui/form';
+import { websiteConfig } from '@/config/website';
 
 const Turnstile = dynamic(
   () => import('@marsidev/react-turnstile').then((mod) => mod.Turnstile),

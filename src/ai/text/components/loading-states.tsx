@@ -1,9 +1,9 @@
 'use client';
 
-import type { LoadingStatesProps } from '@/ai/text/utils/web-content-analyzer';
-import { Progress } from '@/components/ui/progress';
 import { BotIcon, Globe2Icon, Loader2Icon, SearchIcon } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
+import type { LoadingStatesProps } from '@/ai/text/utils/web-content-analyzer';
+import { Progress } from '@/components/ui/progress';
 
 export const LoadingStates = memo(function LoadingStates({
   stage,

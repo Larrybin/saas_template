@@ -17,12 +17,16 @@ defaults:
   run:
     shell: bash
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
     name: Install & Cache
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-node-pnpm
@@ -30,15 +34,28 @@ jobs:
           node-version: 20
           pnpm-version: 9
           cache-dependency-path: pnpm-lock.yaml
+      - name: Restore pnpm store cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Upload pnpm store cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
   lint:
     name: Lint & Types
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 20
@@ -56,7 +73,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 20
@@ -83,7 +100,7 @@ jobs:
           fi
       - name: Publish unit test results
         if: steps.run_tests.outputs.has_tests == 'true' && always()
-        uses: EnricoMi/publish-unit-test-result-action@34d7c956a59aed1bfebf31df77b8de55db9bbaaf # v2
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
             **/junit-*.xml
@@ -94,7 +111,7 @@ jobs:
     needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-node-pnpm
@@ -109,7 +126,7 @@ jobs:
       - name: Build Next.js app
         run: pnpm build
       - name: Upload build artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@v4
         with:
           name: next-build
           path: .next

@@ -28,7 +28,7 @@ jobs:
     env:
       PNPM_HOME: ~/.local/share/pnpm
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -43,7 +43,7 @@ jobs:
 
       - name: Secret scan (gitleaks)
         id: gitleaks
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Required for organization repos
@@ -105,7 +105,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@0499de31b99561a6d14a36a5f662c2a54f91beee # v4
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
         env:
@@ -113,7 +113,7 @@ jobs:
 
       - name: Perform CodeQL analysis
         id: codeql_analyze
-        uses: github/codeql-action/analyze@0499de31b99561a6d14a36a5f662c2a54f91beee # v4
+        uses: github/codeql-action/analyze@v4
         with:
           upload: false
         env:
@@ -167,7 +167,7 @@ jobs:
 
       - name: Comment security summary (commit)
         if: always()
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        uses: actions/github-script@v7
         env:
           OSV_COMMENT: ${{ steps.osv_summary.outputs.osv }}
           CODEQL_COMMENT: ${{ steps.codeql_summary.outputs.codeql }}
@@ -216,7 +216,7 @@ jobs:
             }
       - name: Comment security summary (PR conversation)
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        uses: actions/github-script@v7
         env:
           OSV_COMMENT: ${{ steps.osv_summary.outputs.osv }}
           CODEQL_COMMENT: ${{ steps.codeql_summary.outputs.codeql }}

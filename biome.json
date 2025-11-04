@@ -9,26 +9,26 @@
     "ignoreUnknown": true,
     "includes": [
       "**",
-      "!**/.next/**",
-      "!**/.open-next/**",
-      "!**/.wrangler/**",
-      "!**/.cursor/**",
-      "!**/.claude/**",
-      "!**/.kiro/**",
-      "!**/.vscode/**",
-      "!**/.source/**",
-      "!**/.pnpm-store/**",
-      "!**/node_modules/**",
-      "!**/dist/**",
-      "!**/build/**",
-      "!**/src/db/**",
+      "!**/.next",
+      "!**/.open-next",
+      "!**/.wrangler",
+      "!**/.cursor",
+      "!**/.claude",
+      "!**/.kiro",
+      "!**/.vscode",
+      "!**/.source",
+      "!**/.pnpm-store",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/src/db",
       "!**/tailwind.config.ts",
       "!**/src/components/ui/**/*.tsx",
       "!**/src/components/magicui/**/*.tsx",
       "!**/src/components/animate-ui/**/*.tsx",
       "!**/src/components/tailark/**/*.tsx",
       "!**/src/components/ai-elements/**/*.tsx",
-      "!**/src/app/\\[\\[\\]locale\\]/preview/**",
+      "!**/src/app/\\[\\[\\]locale\\]/preview",
       "!**/src/payment/types.ts",
       "!**/src/credits/types.ts",
       "!**/src/types/index.d.ts"
@@ -41,6 +41,13 @@
     "lineWidth": 80,
     "formatWithErrors": true,
     "useEditorconfig": true
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
@@ -64,7 +71,13 @@
       "style": {
         "useTemplate": "off",
         "noNonNullAssertion": "off",
-        "useNodejsImportProtocol": "off"
+        "useNodejsImportProtocol": "off",
+        "useConsistentArrayType": {
+          "level": "off",
+          "options": {
+            "syntax": "shorthand"
+          }
+        }
       },
       "a11y": {
         "useValidAnchor": "off",
@@ -74,26 +87,26 @@
     },
     "includes": [
       "**",
-      "!**/.next/**",
-      "!**/.open-next/**",
-      "!**/.wrangler/**",
-      "!**/.cursor/**",
-      "!**/.claude/**",
-      "!**/.kiro/**",
-      "!**/.vscode/**",
-      "!**/.source/**",
-      "!**/.pnpm-store/**",
-      "!**/node_modules/**",
-      "!**/dist/**",
-      "!**/build/**",
-      "!**/src/db/**",
+      "!**/.next",
+      "!**/.open-next",
+      "!**/.wrangler",
+      "!**/.cursor",
+      "!**/.claude",
+      "!**/.kiro",
+      "!**/.vscode",
+      "!**/.source",
+      "!**/.pnpm-store",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/src/db",
       "!**/tailwind.config.ts",
       "!**/src/components/ui/**/*.tsx",
       "!**/src/components/magicui/**/*.tsx",
       "!**/src/components/animate-ui/**/*.tsx",
       "!**/src/components/tailark/**/*.tsx",
       "!**/src/components/ai-elements/**/*.tsx",
-      "!**/src/app/\\[\\[\\]locale\\]/preview/**",
+      "!**/src/app/\\[\\[\\]locale\\]/preview",
       "!**/src/payment/types.ts",
       "!**/src/credits/types.ts",
       "!**/src/types/index.d.ts"

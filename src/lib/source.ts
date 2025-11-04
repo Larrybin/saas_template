@@ -86,12 +86,6 @@ export const blogSource = loader({
   baseUrl: '/blog',
   i18n: docsI18nConfig,
   source: createMDXSource<BlogDocEntry, never>(blog as BlogDocEntry[]),
-  transformers: [
-    (page) => {
-      // console.log('page', page);
-      return page;
-    },
-  ],
 });
 
 export type ChangelogType = InferPageType<typeof changelogSource>;

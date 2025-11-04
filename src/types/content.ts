@@ -1,6 +1,6 @@
 import type { StructuredData } from 'fumadocs-core/mdx-plugins';
-import type { TableOfContents } from 'fumadocs-core/server';
 import type { PageData } from 'fumadocs-core/source';
+import type { TableOfContents } from 'fumadocs-core/toc';
 import type { ExtractedReference } from 'fumadocs-mdx';
 import type { MDXContent } from 'mdx/types';
 

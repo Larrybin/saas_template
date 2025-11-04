@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LocaleLink } from '@/i18n/navigation';
+import { getBlogData } from '@/lib/blog/utils';
 import { formatDate } from '@/lib/formatter';
 import { authorSource, type BlogType, categorySource } from '@/lib/source';
 import BlogImage from './blog-image';
@@ -11,7 +12,8 @@ interface BlogCardProps {
 }
 
 export default function BlogCard({ locale, post }: BlogCardProps) {
-  const { date, title, description, image, author, categories } = post.data;
+  const blogData = getBlogData(post);
+  const { date, title, description, image, author, categories } = blogData;
   const publishDate = formatDate(new Date(date));
   const blogAuthor = authorSource.getPage([author], locale);
   const blogCategories = categorySource

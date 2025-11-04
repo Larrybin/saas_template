@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import BlogGridWithPagination from '@/components/blog/blog-grid-with-pagination';
 import { websiteConfig } from '@/config/website';
 import { LOCALES } from '@/i18n/routing';
+import { getBlogData, isPublishedBlogPost } from '@/lib/blog/utils';
 import { constructMetadata } from '@/lib/metadata';
 import { blogSource, categorySource } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
@@ -56,12 +57,15 @@ export default async function BlogCategoryPage({
   }
 
   const localePosts = blogSource.getPages(locale);
-  const publishedPosts = localePosts.filter((post) => post.data.published);
+  const publishedPosts = localePosts.filter(isPublishedBlogPost);
   const filteredPosts = publishedPosts.filter((post) =>
-    post.data.categories.some((cat) => cat === category.slugs[0])
+    getBlogData(post).categories.some((cat) => cat === category.slugs[0])
   );
   const sortedPosts = filteredPosts.sort((a, b) => {
-    return new Date(b.data.date).getTime() - new Date(a.data.date).getTime();
+    return (
+      new Date(getBlogData(b).date).getTime() -
+      new Date(getBlogData(a).date).getTime()
+    );
   });
   const currentPage = 1;
   const blogPageSize = websiteConfig.blog.paginationSize;

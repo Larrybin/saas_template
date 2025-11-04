@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Logo } from '@/components/layout/logo';
 import {
   Gemini,
@@ -10,7 +11,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { LocaleLink } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
 
 export default function Integration2Section() {
   const t = useTranslations('HomePage.integration2');

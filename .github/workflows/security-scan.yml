@@ -28,7 +28,7 @@ jobs:
     env:
       PNPM_HOME: ~/.local/share/pnpm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -36,7 +36,6 @@ jobs:
         with:
           node-version: 20
           pnpm-version: 9
-          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install production dependencies
         run: pnpm install --frozen-lockfile --prod --prefer-offline
@@ -167,7 +166,7 @@ jobs:
 
       - name: Comment security summary (commit)
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           OSV_COMMENT: ${{ steps.osv_summary.outputs.osv }}
           CODEQL_COMMENT: ${{ steps.codeql_summary.outputs.codeql }}
@@ -216,7 +215,7 @@ jobs:
             }
       - name: Comment security summary (PR conversation)
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           OSV_COMMENT: ${{ steps.osv_summary.outputs.osv }}
           CODEQL_COMMENT: ${{ steps.codeql_summary.outputs.codeql }}

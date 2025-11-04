@@ -1,10 +1,10 @@
 'use server';
 
+import { getLocale } from 'next-intl/server';
+import { z } from 'zod';
 import { actionClient } from '@/lib/safe-action';
 import { sendEmail } from '@/mail';
 import { subscribe } from '@/newsletter';
-import { getLocale } from 'next-intl/server';
-import { z } from 'zod';
 
 // Newsletter schema for validation
 const newsletterSchema = z.object({

@@ -1,3 +1,6 @@
+import { ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import type * as React from 'react';
 import { HeaderSection } from '@/components/layout/header-section';
 import {
   Gemini,
@@ -10,9 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { LocaleLink } from '@/i18n/navigation';
-import { ChevronRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import type * as React from 'react';
 
 export default function IntegrationSection() {
   const t = useTranslations('HomePage.integration');

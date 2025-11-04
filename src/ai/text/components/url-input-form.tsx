@@ -1,5 +1,10 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { LinkIcon, Loader2Icon, SparklesIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import type { UrlInputFormProps } from '@/ai/text/utils/web-content-analyzer';
 import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-analyzer-config';
 import { Button } from '@/components/ui/button';
@@ -18,11 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { LinkIcon, Loader2Icon, SparklesIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { useDebounce } from '../utils/performance';
 
 // Form schema for URL input
@@ -78,81 +78,79 @@ export function UrlInputForm({
   const isFormDisabled = isLoading || disabled;
 
   return (
-    <>
-      <div className="w-full max-w-2xl mx-auto">
-        {/* Model Provider Selection (for mobile/smaller screens, optional) */}
-        <div className="flex justify-end items-center mb-4">
-          <Select
-            value={modelProvider}
-            onValueChange={setModelProvider}
-            disabled={isLoading || disabled}
-          >
-            <SelectTrigger id="model-provider-select-form" className="w-40">
-              <SelectValue placeholder="Select model" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="openrouter">OpenRouter</SelectItem>
-              <SelectItem value="openai">OpenAI GPT-4o</SelectItem>
-              <SelectItem value="gemini">Google Gemini</SelectItem>
-              <SelectItem value="deepseek">DeepSeek R1</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Form {...form}>
-          <form onSubmit={handleFormSubmit} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground size-4" />
-                      <Input
-                        {...field}
-                        type="url"
-                        placeholder="https://example.com"
-                        disabled={isFormDisabled}
-                        className="pl-10"
-                        autoComplete="url"
-                        autoFocus
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {!mounted ? (
-              // Show loading state during hydration to prevent mismatch
-              <Button type="button" disabled className="w-full" size="lg">
-                <Loader2Icon className="size-4 animate-spin" />
-                <span>Loading...</span>
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={isFormDisabled || !urlValue?.trim()}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2Icon className="size-4 animate-spin" />
-                    <span>Analyzing...</span>
-                  </>
-                ) : (
-                  <>
-                    <SparklesIcon className="size-4" />
-                    <span>Analyze Website</span>
-                  </>
-                )}
-              </Button>
-            )}
-          </form>
-        </Form>
+    <div className="w-full max-w-2xl mx-auto">
+      {/* Model Provider Selection (for mobile/smaller screens, optional) */}
+      <div className="flex justify-end items-center mb-4">
+        <Select
+          value={modelProvider}
+          onValueChange={setModelProvider}
+          disabled={isLoading || disabled}
+        >
+          <SelectTrigger id="model-provider-select-form" className="w-40">
+            <SelectValue placeholder="Select model" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="openrouter">OpenRouter</SelectItem>
+            <SelectItem value="openai">OpenAI GPT-4o</SelectItem>
+            <SelectItem value="gemini">Google Gemini</SelectItem>
+            <SelectItem value="deepseek">DeepSeek R1</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-    </>
+      <Form {...form}>
+        <form onSubmit={handleFormSubmit} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="url"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground size-4" />
+                    <Input
+                      {...field}
+                      type="url"
+                      placeholder="https://example.com"
+                      disabled={isFormDisabled}
+                      className="pl-10"
+                      autoComplete="url"
+                      autoFocus
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {!mounted ? (
+            // Show loading state during hydration to prevent mismatch
+            <Button type="button" disabled className="w-full" size="lg">
+              <Loader2Icon className="size-4 animate-spin" />
+              <span>Loading...</span>
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              disabled={isFormDisabled || !urlValue?.trim()}
+              className="w-full"
+              size="lg"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2Icon className="size-4 animate-spin" />
+                  <span>Analyzing...</span>
+                </>
+              ) : (
+                <>
+                  <SparklesIcon className="size-4" />
+                  <span>Analyze Website</span>
+                </>
+              )}
+            </Button>
+          )}
+        </form>
+      </Form>
+    </div>
   );
 }

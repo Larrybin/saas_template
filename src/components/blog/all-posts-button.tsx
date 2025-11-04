@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { LocaleLink } from '@/i18n/navigation';
 import { ArrowLeftIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
+import { LocaleLink } from '@/i18n/navigation';
 
 export default function AllPostsButton() {
   const t = useTranslations('BlogPage');

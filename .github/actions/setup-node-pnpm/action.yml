@@ -9,10 +9,6 @@ inputs:
     description: pnpm version to install
     required: false
     default: '9'
-  cache-dependency-path:
-    description: Path used to seed pnpm cache
-    required: false
-    default: pnpm-lock.yaml
 runs:
   using: composite
   steps:
@@ -33,8 +29,6 @@ runs:
         mkdir -p "${STORE_PATH}"
         pnpm config set store-dir "${STORE_PATH}"
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
-        cache: pnpm
-        cache-dependency-path: ${{ inputs.cache-dependency-path }}

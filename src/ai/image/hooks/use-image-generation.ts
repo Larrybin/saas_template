@@ -6,8 +6,8 @@ import type {
   ProviderTiming,
 } from '../lib/image-types';
 import {
-  type ProviderKey,
   initializeProviderRecord,
+  type ProviderKey,
 } from '../lib/provider-config';
 
 interface UseImageGenerationReturn {

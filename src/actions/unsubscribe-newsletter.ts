@@ -1,8 +1,8 @@
 'use server';
 
+import { z } from 'zod';
 import { userActionClient } from '@/lib/safe-action';
 import { unsubscribe } from '@/newsletter';
-import { z } from 'zod';
 
 // Newsletter schema for validation
 const newsletterSchema = z.object({

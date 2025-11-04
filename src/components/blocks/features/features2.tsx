@@ -1,12 +1,12 @@
-import { HeaderSection } from '@/components/layout/header-section';
 import {
   ActivityIcon,
   DraftingCompassIcon,
   MailIcon,
   ZapIcon,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
+import { HeaderSection } from '@/components/layout/header-section';
 
 /**
  * https://nsui.irung.me/features

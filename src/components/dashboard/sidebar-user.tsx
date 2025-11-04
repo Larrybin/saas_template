@@ -1,5 +1,19 @@
 'use client';
 
+import type { User } from 'better-auth';
+import {
+  ChevronsUpDown,
+  Languages,
+  LaptopIcon,
+  LogOut,
+  MoonIcon,
+  SunIcon,
+} from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { type Locale, useTranslations } from 'next-intl';
+import { useTheme } from 'next-themes';
+import { useTransition } from 'react';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,20 +37,6 @@ import { useLocalePathname, useLocaleRouter } from '@/i18n/navigation';
 import { LOCALES, routing } from '@/i18n/routing';
 import { authClient } from '@/lib/auth-client';
 import { useLocaleStore } from '@/stores/locale-store';
-import type { User } from 'better-auth';
-import {
-  ChevronsUpDown,
-  Languages,
-  LaptopIcon,
-  LogOut,
-  MoonIcon,
-  SunIcon,
-} from 'lucide-react';
-import { type Locale, useTranslations } from 'next-intl';
-import { useTheme } from 'next-themes';
-import { useParams } from 'next/navigation';
-import { useTransition } from 'react';
-import { toast } from 'sonner';
 import { UserAvatar } from '../layout/user-avatar';
 
 interface SidebarUserProps {

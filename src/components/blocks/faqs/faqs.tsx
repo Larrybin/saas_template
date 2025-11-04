@@ -1,5 +1,7 @@
 'use client';
 
+import type { IconName } from 'lucide-react/dynamic';
+import { useLocale, useTranslations } from 'next-intl';
 import { HeaderSection } from '@/components/layout/header-section';
 import {
   Accordion,
@@ -7,8 +9,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import type { IconName } from 'lucide-react/dynamic';
-import { useLocale, useTranslations } from 'next-intl';
 
 type FAQItem = {
   id: string;

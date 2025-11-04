@@ -1,14 +1,14 @@
-import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
-import type { ProviderKey } from '@/ai/image/lib/provider-config';
 import { createFal } from '@ai-sdk/fal';
 import { fireworks } from '@ai-sdk/fireworks';
 import { openai } from '@ai-sdk/openai';
 import { replicate } from '@ai-sdk/replicate';
 import {
-  type ImageModel,
   experimental_generateImage as generateImage,
+  type ImageModel,
 } from 'ai';
 import { type NextRequest, NextResponse } from 'next/server';
+import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
+import type { ProviderKey } from '@/ai/image/lib/provider-config';
 
 /**
  * Intended to be slightly less than the maximum execution time allowed by the

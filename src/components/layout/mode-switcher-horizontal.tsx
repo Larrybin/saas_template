@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { websiteConfig } from '@/config/website';
-import { cn } from '@/lib/utils';
 import { LaptopIcon, MoonIcon, SunIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { websiteConfig } from '@/config/website';
+import { cn } from '@/lib/utils';
 
 /**
  * Mode switcher component, used in the footer

@@ -1,5 +1,8 @@
 'use client';
 
+import { useParams } from 'next/navigation';
+import { type Locale, useLocale } from 'next-intl';
+import { useEffect, useTransition } from 'react';
 import {
   Select,
   SelectContent,
@@ -11,9 +14,6 @@ import { websiteConfig } from '@/config/website';
 import { useLocalePathname, useLocaleRouter } from '@/i18n/navigation';
 import { DEFAULT_LOCALE } from '@/i18n/routing';
 import { useLocaleStore } from '@/stores/locale-store';
-import { type Locale, useLocale } from 'next-intl';
-import { useParams } from 'next/navigation';
-import { useEffect, useTransition } from 'react';
 
 /**
  * 1. LocaleSelector

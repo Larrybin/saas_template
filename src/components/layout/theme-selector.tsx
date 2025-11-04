@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -10,7 +11,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { websiteConfig } from '@/config/website';
-import { useTranslations } from 'next-intl';
 import { useThemeConfig } from './active-theme-provider';
 
 /**

@@ -1,7 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { checkNewsletterStatusAction } from '@/actions/check-newsletter-status';
 import { subscribeNewsletterAction } from '@/actions/subscribe-newsletter';
 import { unsubscribeNewsletterAction } from '@/actions/unsubscribe-newsletter';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Query keys
 export const newsletterKeys = {

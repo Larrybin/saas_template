@@ -1,4 +1,3 @@
-import type { BaseEmailProps } from '@/mail/types';
 import {
   Container,
   Font,
@@ -10,6 +9,7 @@ import {
   Text,
 } from '@react-email/components';
 import { createTranslator } from 'use-intl/core';
+import type { BaseEmailProps } from '@/mail/types';
 
 interface EmailLayoutProps extends BaseEmailProps {
   children: React.ReactNode;

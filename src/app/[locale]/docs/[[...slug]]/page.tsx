@@ -1,3 +1,14 @@
+import Link from 'fumadocs-core/link';
+import {
+  DocsBody,
+  DocsDescription,
+  DocsPage,
+  DocsTitle,
+} from 'fumadocs-ui/page';
+import { notFound } from 'next/navigation';
+import type { Locale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+import type { ReactNode } from 'react';
 import * as Preview from '@/components/docs';
 import { getMDXComponents } from '@/components/docs/mdx-components';
 import {
@@ -9,17 +20,11 @@ import { LOCALES } from '@/i18n/routing';
 import { constructMetadata } from '@/lib/metadata';
 import { source } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
-import Link from 'fumadocs-core/link';
-import {
-  DocsBody,
-  DocsDescription,
-  DocsPage,
-  DocsTitle,
-} from 'fumadocs-ui/page';
-import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
-import { notFound } from 'next/navigation';
-import type { ReactNode } from 'react';
+
+const getVirtualDir = (path: string): string | undefined => {
+  const segments = path.split('/');
+  return segments.length > 1 ? segments.slice(0, -1).join('/') : undefined;
+};
 
 export function generateStaticParams() {
   const slugParams = source.generateParams();
@@ -88,6 +93,7 @@ export default async function DocPage({ params }: DocPageProps) {
   const preview = page.data.preview;
 
   const MDX = page.data.body;
+  const pageDir = getVirtualDir(page.path);
 
   return (
     <DocsPage
@@ -107,9 +113,10 @@ export default async function DocPage({ params }: DocPageProps) {
         <MDX
           components={getMDXComponents({
             a: ({ href, ...props }: { href?: string; [key: string]: any }) => {
-              const found = source.getPageByHref(href ?? '', {
-                dir: page.file.dirname,
-              });
+              const found = source.getPageByHref(
+                href ?? '',
+                pageDir ? { dir: pageDir } : undefined
+              );
 
               if (!found) return <Link href={href} {...props} />;
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ResetPasswordCard } from '@/components/settings/security/reset-password-card';
 import { UpdatePasswordCard } from '@/components/settings/security/update-password-card';
 import {
@@ -14,7 +15,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useHasCredentialProvider } from '@/hooks/use-auth';
 import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
 
 /**
  * PasswordCardWrapper renders either:

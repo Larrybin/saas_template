@@ -1,10 +1,10 @@
+import { Resend } from 'resend';
 import type {
   CheckSubscribeStatusParams,
   NewsletterProvider,
   SubscribeNewsletterParams,
   UnsubscribeNewsletterParams,
 } from '@/newsletter/types';
-import { Resend } from 'resend';
 
 /**
  * Implementation of the NewsletterProvider interface using Resend

@@ -1,7 +1,7 @@
 'use client';
 
-import { websiteConfig } from '@/config/website';
 import Script from 'next/script';
+import { websiteConfig } from '@/config/website';
 
 /**
  * PromoteKit

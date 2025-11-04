@@ -1,7 +1,7 @@
-import { getUsersAction } from '@/actions/get-users';
-import { authClient } from '@/lib/auth-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SortingState } from '@tanstack/react-table';
+import { getUsersAction } from '@/actions/get-users';
+import { authClient } from '@/lib/auth-client';
 
 // Query keys
 export const usersKeys = {

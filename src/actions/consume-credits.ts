@@ -1,9 +1,9 @@
 'use server';
 
+import { z } from 'zod';
 import { consumeCredits } from '@/credits/credits';
 import type { User } from '@/lib/auth-types';
 import { userActionClient } from '@/lib/safe-action';
-import { z } from 'zod';
 
 // consume credits schema
 const consumeSchema = z.object({

@@ -1,5 +1,8 @@
 'use client';
 
+import { useChat } from '@ai-sdk/react';
+import { GlobeIcon } from 'lucide-react';
+import { useState } from 'react';
 import {
   Conversation,
   ConversationContent,
@@ -32,9 +35,6 @@ import {
   SourcesContent,
   SourcesTrigger,
 } from '@/components/ai-elements/source';
-import { useChat } from '@ai-sdk/react';
-import { GlobeIcon } from 'lucide-react';
-import { useState } from 'react';
 
 const models = [
   {

@@ -1,3 +1,4 @@
+import { Resend } from 'resend';
 import { websiteConfig } from '@/config/website';
 import { getTemplate } from '@/mail';
 import type {
@@ -6,7 +7,6 @@ import type {
   SendRawEmailParams,
   SendTemplateParams,
 } from '@/mail/types';
-import { Resend } from 'resend';
 
 /**
  * Resend mail provider implementation

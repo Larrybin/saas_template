@@ -1,11 +1,11 @@
 'use client';
 
+import { CoinsIcon, Loader2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { websiteConfig } from '@/config/website';
 import { useCreditBalance } from '@/hooks/use-credits';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { Routes } from '@/routes';
-import { CoinsIcon, Loader2Icon } from 'lucide-react';
 
 export function CreditsBalanceButton() {
   // If credits are not enabled, return null

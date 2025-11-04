@@ -1,5 +1,10 @@
 'use client';
 
+import type { User } from 'better-auth';
+import { LogOutIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { UserAvatar } from '@/components/layout/user-avatar';
 import {
   DropdownMenu,
@@ -12,11 +17,6 @@ import { getAvatarLinks } from '@/config/avatar-config';
 import { websiteConfig } from '@/config/website';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
-import type { User } from 'better-auth';
-import { LogOutIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-import { toast } from 'sonner';
 import { CreditsBalanceMenu } from './credits-balance-menu';
 
 interface UserButtonProps {

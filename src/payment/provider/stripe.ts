@@ -537,6 +537,9 @@ export class StripeProvider implements PaymentProvider {
       return;
     }
 
+    const { periodStart, periodEnd } =
+      this.getSubscriptionPeriodBounds(stripeSubscription);
+
     // create fields
     const createFields: any = {
       id: randomUUID(),
@@ -549,12 +552,8 @@ export class StripeProvider implements PaymentProvider {
       status: this.mapSubscriptionStatusToPaymentStatus(
         stripeSubscription.status
       ),
-      periodStart: stripeSubscription.current_period_start
-        ? new Date(stripeSubscription.current_period_start * 1000)
-        : null,
-      periodEnd: stripeSubscription.current_period_end
-        ? new Date(stripeSubscription.current_period_end * 1000)
-        : null,
+      periodStart,
+      periodEnd,
       cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
       trialStart: stripeSubscription.trial_start
         ? new Date(stripeSubscription.trial_start * 1000)
@@ -614,12 +613,12 @@ export class StripeProvider implements PaymentProvider {
       .limit(1);
 
     // get new period start and end
-    const newPeriodStart = stripeSubscription.current_period_start
-      ? new Date(stripeSubscription.current_period_start * 1000)
-      : undefined;
-    const newPeriodEnd = stripeSubscription.current_period_end
-      ? new Date(stripeSubscription.current_period_end * 1000)
-      : undefined;
+    const {
+      periodStart: derivedPeriodStart,
+      periodEnd: derivedPeriodEnd,
+    } = this.getSubscriptionPeriodBounds(stripeSubscription);
+    const newPeriodStart = derivedPeriodStart ?? undefined;
+    const newPeriodEnd = derivedPeriodEnd ?? undefined;
 
     // Check if this is a renewal (period has changed and subscription is active)
     const isRenewal =
@@ -911,6 +910,47 @@ export class StripeProvider implements PaymentProvider {
     };
 
     return statusMap[status] || 'failed';
+  }
+
+  /**
+   * Derive the current billing period boundaries from subscription items
+   * @param subscription Stripe subscription payload
+   * @returns Period start/end converted to Date, or null when unavailable
+   */
+  private getSubscriptionPeriodBounds(
+    subscription: Stripe.Subscription
+  ): {
+    periodStart: Date | null;
+    periodEnd: Date | null;
+  } {
+    const items = subscription.items?.data ?? [];
+
+    if (items.length === 0) {
+      return { periodStart: null, periodEnd: null };
+    }
+
+    let earliestStart: number | null = null;
+    let latestEnd: number | null = null;
+
+    for (const item of items) {
+      const { current_period_start: itemStart, current_period_end: itemEnd } =
+        item;
+
+      if (earliestStart === null || itemStart < earliestStart) {
+        earliestStart = itemStart;
+      }
+
+      if (latestEnd === null || itemEnd > latestEnd) {
+        latestEnd = itemEnd;
+      }
+    }
+
+    return {
+      periodStart:
+        typeof earliestStart === 'number' ? new Date(earliestStart * 1000) : null,
+      periodEnd:
+        typeof latestEnd === 'number' ? new Date(latestEnd * 1000) : null,
+    };
   }
 
   /**

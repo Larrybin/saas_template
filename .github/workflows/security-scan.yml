@@ -34,7 +34,7 @@ jobs:
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 20
+          node-version: 24
           pnpm-version: 9
 
       - name: Install production dependencies

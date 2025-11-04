@@ -21,6 +21,11 @@ import { constructMetadata } from '@/lib/metadata';
 import { source } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 
+const getVirtualDir = (path: string): string | undefined => {
+  const segments = path.split('/');
+  return segments.length > 1 ? segments.slice(0, -1).join('/') : undefined;
+};
+
 export function generateStaticParams() {
   const slugParams = source.generateParams();
   const params = LOCALES.flatMap((locale) =>
@@ -88,6 +93,7 @@ export default async function DocPage({ params }: DocPageProps) {
   const preview = page.data.preview;
 
   const MDX = page.data.body;
+  const pageDir = getVirtualDir(page.path);
 
   return (
     <DocsPage
@@ -107,9 +113,10 @@ export default async function DocPage({ params }: DocPageProps) {
         <MDX
           components={getMDXComponents({
             a: ({ href, ...props }: { href?: string; [key: string]: any }) => {
-              const found = source.getPageByHref(href ?? '', {
-                dir: page.file.dirname,
-              });
+              const found = source.getPageByHref(
+                href ?? '',
+                pageDir ? { dir: pageDir } : undefined
+              );
 
               if (!found) return <Link href={href} {...props} />;
 

@@ -1,3 +1,7 @@
+import { type InferPageType, loader } from 'fumadocs-core/source';
+import { createMDXSource } from 'fumadocs-mdx/runtime/next';
+import * as LucideIcons from 'lucide-react';
+import { createElement } from 'react';
 import type {
   BlogAuthorEntry,
   BlogCategoryEntry,
@@ -5,10 +9,6 @@ import type {
   ChangelogEntry,
   MarketingPageEntry,
 } from '@/types/content';
-import { type InferPageType, loader } from 'fumadocs-core/source';
-import { createMDXSource } from 'fumadocs-mdx/runtime/next';
-import * as LucideIcons from 'lucide-react';
-import { createElement } from 'react';
 import { author, blog, category, changelog, docs, pages } from '../../.source';
 import { docsI18nConfig } from './docs/i18n';
 

@@ -1,5 +1,5 @@
-import { defaultMessages } from '@/i18n/messages';
 import type { MetadataRoute } from 'next';
+import { defaultMessages } from '@/i18n/messages';
 
 /**
  * Generates the Web App Manifest for the application

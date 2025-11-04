@@ -1,6 +1,6 @@
+import type { Metadata } from 'next';
 import { websiteConfig } from '@/config/website';
 import { defaultMessages } from '@/i18n/messages';
-import type { Metadata } from 'next';
 import { getBaseUrl, getImageUrl } from './urls/urls';
 
 /**

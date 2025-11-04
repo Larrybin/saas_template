@@ -1,3 +1,8 @@
+import { betterAuth, type User } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { admin } from 'better-auth/plugins';
+import { parse as parseCookies } from 'cookie';
+import type { Locale } from 'next-intl';
 import { websiteConfig } from '@/config/website';
 import {
   addMonthlyFreeCredits,
@@ -8,11 +13,6 @@ import { defaultMessages } from '@/i18n/messages';
 import { LOCALE_COOKIE_NAME, routing } from '@/i18n/routing';
 import { sendEmail } from '@/mail';
 import { subscribe } from '@/newsletter';
-import { type User, betterAuth } from 'better-auth';
-import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { admin } from 'better-auth/plugins';
-import { parse as parseCookies } from 'cookie';
-import type { Locale } from 'next-intl';
 import { getAllPricePlans } from './price-plan';
 import { getBaseUrl, getUrlWithLocaleInCallbackUrl } from './urls/urls';
 

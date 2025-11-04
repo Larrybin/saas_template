@@ -1,6 +1,3 @@
-import { ImageWrapper } from '@/components/docs/image-wrapper';
-import { Wrapper } from '@/components/docs/wrapper';
-import { YoutubeVideo } from '@/components/docs/youtube-video';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
@@ -11,6 +8,9 @@ import defaultMdxComponents from 'fumadocs-ui/mdx';
 import * as LucideIcons from 'lucide-react';
 import type { MDXComponents } from 'mdx/types';
 import type { ComponentProps, FC } from 'react';
+import { ImageWrapper } from '@/components/docs/image-wrapper';
+import { Wrapper } from '@/components/docs/wrapper';
+import { YoutubeVideo } from '@/components/docs/youtube-video';
 
 /**
  * Enhanced MDX Content component that includes commonly used MDX components

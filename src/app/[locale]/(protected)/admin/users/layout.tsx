@@ -1,8 +1,8 @@
+import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { isDemoWebsite } from '@/lib/demo';
 import { getSession } from '@/lib/server';
-import { getTranslations } from 'next-intl/server';
-import { notFound } from 'next/navigation';
 
 interface UsersLayoutProps {
   children: React.ReactNode;

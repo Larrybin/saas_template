@@ -1,9 +1,9 @@
-import { ForgotPasswordForm } from '@/components/auth/forgot-password-form';
-import { constructMetadata } from '@/lib/metadata';
-import { getUrlWithLocale } from '@/lib/urls/urls';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
+import { ForgotPasswordForm } from '@/components/auth/forgot-password-form';
+import { constructMetadata } from '@/lib/metadata';
+import { getUrlWithLocale } from '@/lib/urls/urls';
 
 export async function generateMetadata({
   params,

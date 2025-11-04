@@ -1,8 +1,8 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { NewsletterForm } from '@/components/newsletter/newsletter-form';
 import { websiteConfig } from '@/config/website';
-import { useTranslations } from 'next-intl';
 import { HeaderSection } from '../layout/header-section';
 
 export function NewsletterCard() {

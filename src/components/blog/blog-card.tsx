@@ -1,8 +1,8 @@
+import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LocaleLink } from '@/i18n/navigation';
 import { formatDate } from '@/lib/formatter';
-import { type BlogType, authorSource, categorySource } from '@/lib/source';
-import Image from 'next/image';
+import { authorSource, type BlogType, categorySource } from '@/lib/source';
 import BlogImage from './blog-image';
 
 interface BlogCardProps {

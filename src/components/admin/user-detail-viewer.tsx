@@ -1,3 +1,14 @@
+import {
+  CalendarIcon,
+  Loader2Icon,
+  MailCheckIcon,
+  MailQuestionIcon,
+  UserRoundCheckIcon,
+  UserRoundXIcon,
+} from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { UserAvatar } from '@/components/layout/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,17 +37,6 @@ import { isDemoWebsite } from '@/lib/demo';
 import { formatDate } from '@/lib/formatter';
 import { getStripeDashboardCustomerUrl } from '@/lib/urls/urls';
 import { cn } from '@/lib/utils';
-import {
-  CalendarIcon,
-  Loader2Icon,
-  MailCheckIcon,
-  MailQuestionIcon,
-  UserRoundCheckIcon,
-  UserRoundXIcon,
-} from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 interface UserDetailViewerProps {
   user: User;

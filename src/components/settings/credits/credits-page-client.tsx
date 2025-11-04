@@ -1,11 +1,11 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { CreditPackages } from '@/components/settings/credits/credit-packages';
 import { CreditTransactions } from '@/components/settings/credits/credit-transactions';
 import CreditsBalanceCard from '@/components/settings/credits/credits-balance-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTranslations } from 'next-intl';
-import { parseAsStringLiteral, useQueryState } from 'nuqs';
 
 /**
  * Credits page client, show credit balance and transactions

@@ -1,7 +1,7 @@
-import { AuthCard } from '@/components/auth/auth-card';
-import { Routes } from '@/routes';
 import { TriangleAlertIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { AuthCard } from '@/components/auth/auth-card';
+import { Routes } from '@/routes';
 
 export const ErrorCard = () => {
   const t = useTranslations('AuthPage.error');

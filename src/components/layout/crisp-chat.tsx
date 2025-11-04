@@ -1,8 +1,8 @@
 'use client';
 
-import { websiteConfig } from '@/config/website';
 import { Crisp } from 'crisp-sdk-web';
 import { useEffect } from 'react';
+import { websiteConfig } from '@/config/website';
 
 /**
  * Crisp chat component

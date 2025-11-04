@@ -1,8 +1,8 @@
+import { getTranslations } from 'next-intl/server';
+import type { PropsWithChildren } from 'react';
 import { BlogCategoryFilter } from '@/components/blog/blog-category-filter';
 import Container from '@/components/layout/container';
 import { categorySource } from '@/lib/source';
-import { getTranslations } from 'next-intl/server';
-import type { PropsWithChildren } from 'react';
 
 interface BlogListLayoutProps extends PropsWithChildren {
   params: Promise<{ locale: string }>;

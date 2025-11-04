@@ -1,10 +1,10 @@
 'use server';
 
+import { getLocale } from 'next-intl/server';
+import { z } from 'zod';
 import { websiteConfig } from '@/config/website';
 import { actionClient } from '@/lib/safe-action';
 import { sendEmail } from '@/mail';
-import { getLocale } from 'next-intl/server';
-import { z } from 'zod';
 
 /**
  * DOC: When using Zod for validation, how can I localize error messages?

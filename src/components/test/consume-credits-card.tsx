@@ -1,10 +1,10 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { useConsumeCredits, useCreditBalance } from '@/hooks/use-credits';
 import { CoinsIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { useConsumeCredits, useCreditBalance } from '@/hooks/use-credits';
 
 const CONSUME_CREDITS = 10;
 

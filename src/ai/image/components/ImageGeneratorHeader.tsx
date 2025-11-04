@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button';
 import { ArrowUpRightIcon } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { QualityModeToggle } from './QualityModeToggle';
 
 export const ImageGeneratorHeader = () => {

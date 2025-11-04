@@ -1,4 +1,3 @@
-import { HeaderSection } from '@/components/layout/header-section';
 import {
   CpuIcon,
   FingerprintIcon,
@@ -8,6 +7,7 @@ import {
   ZapIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { HeaderSection } from '@/components/layout/header-section';
 
 /**
  * https://nsui.irung.me/features

@@ -1,3 +1,14 @@
+import Link from 'fumadocs-core/link';
+import {
+  DocsBody,
+  DocsDescription,
+  DocsPage,
+  DocsTitle,
+} from 'fumadocs-ui/page';
+import { notFound } from 'next/navigation';
+import type { Locale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+import type { ReactNode } from 'react';
 import * as Preview from '@/components/docs';
 import { getMDXComponents } from '@/components/docs/mdx-components';
 import {
@@ -9,17 +20,6 @@ import { LOCALES } from '@/i18n/routing';
 import { constructMetadata } from '@/lib/metadata';
 import { source } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
-import Link from 'fumadocs-core/link';
-import {
-  DocsBody,
-  DocsDescription,
-  DocsPage,
-  DocsTitle,
-} from 'fumadocs-ui/page';
-import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
-import { notFound } from 'next/navigation';
-import type { ReactNode } from 'react';
 
 export function generateStaticParams() {
   const slugParams = source.generateParams();

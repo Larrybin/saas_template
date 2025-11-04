@@ -1,5 +1,8 @@
 'use server';
 
+import { eq } from 'drizzle-orm';
+import { getLocale } from 'next-intl/server';
+import { z } from 'zod';
 import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
@@ -7,9 +10,6 @@ import { userActionClient } from '@/lib/safe-action';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { createCustomerPortal } from '@/payment';
 import type { CreatePortalParams } from '@/payment/types';
-import { eq } from 'drizzle-orm';
-import { getLocale } from 'next-intl/server';
-import { z } from 'zod';
 
 // Portal schema for validation
 const portalSchema = z.object({

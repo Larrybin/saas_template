@@ -1,3 +1,4 @@
+import { AlertCircle, ChevronDown, Settings } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -5,16 +6,15 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { AlertCircle, ChevronDown, Settings } from 'lucide-react';
 import type {
   GeneratedImage,
   ImageError,
   ProviderTiming,
 } from '../lib/image-types';
 import {
+  initializeProviderRecord,
   PROVIDER_ORDER,
   type ProviderKey,
-  initializeProviderRecord,
 } from '../lib/provider-config';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageDisplay } from './ImageDisplay';

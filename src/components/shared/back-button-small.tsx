@@ -1,9 +1,9 @@
 'use client';
 
+import { ArrowLeftIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LocaleLink, useLocaleRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
-import { ArrowLeftIcon } from 'lucide-react';
 
 interface BackButtonSmallProps {
   href?: string;

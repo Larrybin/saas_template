@@ -1,9 +1,9 @@
 'use server';
 
+import { z } from 'zod';
 import type { User } from '@/lib/auth-types';
 import { userActionClient } from '@/lib/safe-action';
 import { getSubscriptions } from '@/payment';
-import { z } from 'zod';
 
 // Input schema
 const schema = z.object({

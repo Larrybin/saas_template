@@ -1,11 +1,11 @@
 'use server';
 
+import { asc, desc, ilike, or, sql } from 'drizzle-orm';
+import { z } from 'zod';
 import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import { isDemoWebsite } from '@/lib/demo';
 import { adminActionClient } from '@/lib/safe-action';
-import { asc, desc, ilike, or, sql } from 'drizzle-orm';
-import { z } from 'zod';
 
 // Define the schema for getUsers parameters
 const getUsersSchema = z.object({

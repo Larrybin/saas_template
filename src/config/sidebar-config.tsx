@@ -1,8 +1,5 @@
 'use client';
 
-import { isDemoWebsite } from '@/lib/demo';
-import { Routes } from '@/routes';
-import type { NestedMenuItem } from '@/types';
 import {
   BellIcon,
   CircleUserRoundIcon,
@@ -15,6 +12,9 @@ import {
   UsersRoundIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { isDemoWebsite } from '@/lib/demo';
+import { Routes } from '@/routes';
+import type { NestedMenuItem } from '@/types';
 import { websiteConfig } from './website';
 
 /**

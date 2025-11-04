@@ -1,6 +1,6 @@
+import { type NextRequest, NextResponse } from 'next/server';
 import { uploadFile } from '@/storage';
 import { StorageError } from '@/storage/types';
-import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,12 +55,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Increase the body size limit for file uploads (default is 4MB)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};

@@ -1,5 +1,5 @@
-import { distributeCreditsToAllUsers } from '@/credits/distribute';
 import { NextResponse } from 'next/server';
+import { distributeCreditsToAllUsers } from '@/credits/distribute';
 
 // Basic authentication middleware
 function validateBasicAuth(request: Request): boolean {

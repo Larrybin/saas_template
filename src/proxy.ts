@@ -1,10 +1,10 @@
 import { betterFetch } from '@better-fetch/fetch';
-import createMiddleware from 'next-intl/middleware';
 import { type NextRequest, NextResponse } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
 import {
   DEFAULT_LOCALE,
-  LOCALES,
   LOCALE_COOKIE_NAME,
+  LOCALES,
   routing,
 } from './i18n/routing';
 import type { Session } from './lib/auth-types';

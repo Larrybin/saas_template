@@ -1,6 +1,6 @@
-import { websiteConfig } from '@/config/website';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { websiteConfig } from '@/config/website';
 import { AhrefsAnalytics } from './ahrefs-analytics';
 import DataFastAnalytics from './data-fast-analytics';
 import GoogleAnalytics from './google-analytics';

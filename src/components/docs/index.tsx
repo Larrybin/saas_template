@@ -1,13 +1,3 @@
-import {
-  Banner,
-  DynamicCodeBlock,
-  File,
-  Files,
-  Folder,
-  ImageZoom,
-  InlineTOC,
-} from '@/components/docs/lazy';
-import BannerImage from '@/public/images/docs/banner.png';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Card } from 'fumadocs-ui/components/card';
@@ -18,6 +8,16 @@ import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Home } from 'lucide-react';
 import type { ReactNode } from 'react';
+import {
+  Banner,
+  DynamicCodeBlock,
+  File,
+  Files,
+  Folder,
+  ImageZoom,
+  InlineTOC,
+} from '@/components/docs/lazy';
+import BannerImage from '@/public/images/docs/banner.png';
 import { Wrapper } from './wrapper';
 
 export function heading(): ReactNode {

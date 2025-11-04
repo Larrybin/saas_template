@@ -1,5 +1,9 @@
 'use client';
 
+import { Loader2Icon } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { DividerWithText } from '@/components/auth/divider-with-text';
 import { GitHubIcon } from '@/components/icons/github';
 import { GoogleIcon } from '@/components/icons/google';
@@ -8,10 +12,6 @@ import { websiteConfig } from '@/config/website';
 import { authClient } from '@/lib/auth-client';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
-import { Loader2Icon } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
 
 interface SocialLoginButtonProps {
   callbackUrl?: string;

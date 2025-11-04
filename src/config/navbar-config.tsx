@@ -1,7 +1,5 @@
 'use client';
 
-import { Routes } from '@/routes';
-import type { NestedMenuItem } from '@/types';
 import {
   AudioLinesIcon,
   BuildingIcon,
@@ -18,8 +16,8 @@ import {
   ListChecksIcon,
   LockKeyholeIcon,
   LogInIcon,
-  MailIcon,
   MailboxIcon,
+  MailIcon,
   MessageCircleIcon,
   NewspaperIcon,
   RocketIcon,
@@ -35,6 +33,8 @@ import {
   WandSparklesIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Routes } from '@/routes';
+import type { NestedMenuItem } from '@/types';
 import { websiteConfig } from './website';
 
 /**

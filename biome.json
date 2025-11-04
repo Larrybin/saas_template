@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.3/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -7,30 +7,31 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": [
-      ".next/**",
-      ".open-next/**",
-      ".wrangler/**",
-      ".cursor/**",
-      ".claude/**",
-      ".kiro/**",
-      ".vscode/**",
-      ".source/**",
-      ".pnpm-store/**",
-      "node_modules/**",
-      "dist/**",
-      "build/**",
-      "src/db/**",
-      "tailwind.config.ts",
-      "src/components/ui/*.tsx",
-      "src/components/magicui/*.tsx",
-      "src/components/animate-ui/*.tsx",
-      "src/components/tailark/*.tsx",
-      "src/components/ai-elements/*.tsx",
-      "src/app/[[]locale]/preview/**",
-      "src/payment/types.ts",
-      "src/credits/types.ts",
-      "src/types/index.d.ts"
+    "includes": [
+      "**",
+      "!**/.next",
+      "!**/.open-next",
+      "!**/.wrangler",
+      "!**/.cursor",
+      "!**/.claude",
+      "!**/.kiro",
+      "!**/.vscode",
+      "!**/.source",
+      "!**/.pnpm-store",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/src/db",
+      "!**/tailwind.config.ts",
+      "!**/src/components/ui/**/*.tsx",
+      "!**/src/components/magicui/**/*.tsx",
+      "!**/src/components/animate-ui/**/*.tsx",
+      "!**/src/components/tailark/**/*.tsx",
+      "!**/src/components/ai-elements/**/*.tsx",
+      "!**/src/app/\\[\\[\\]locale\\]/preview",
+      "!**/src/payment/types.ts",
+      "!**/src/credits/types.ts",
+      "!**/src/types/index.d.ts"
     ]
   },
   "formatter": {
@@ -41,13 +42,17 @@
     "formatWithErrors": true,
     "useEditorconfig": true
   },
-  "organizeImports": {
-    "enabled": true
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "recommended": false,
       "suspicious": {
         "noSparseArray": "off",
         "noArrayIndexKey": "off",
@@ -60,11 +65,19 @@
       "correctness": {
         "useExhaustiveDependencies": "off"
       },
+      "performance": {
+        "noImgElement": "off"
+      },
       "style": {
         "useTemplate": "off",
         "noNonNullAssertion": "off",
-        "useShorthandArrayType": "off",
-        "useNodejsImportProtocol": "off"
+        "useNodejsImportProtocol": "off",
+        "useConsistentArrayType": {
+          "level": "off",
+          "options": {
+            "syntax": "shorthand"
+          }
+        }
       },
       "a11y": {
         "useValidAnchor": "off",
@@ -72,30 +85,31 @@
         "useKeyWithClickEvents": "off"
       }
     },
-    "ignore": [
-      ".next/**",
-      ".open-next/**",
-      ".wrangler/**",
-      ".cursor/**",
-      ".claude/**",
-      ".kiro/**",
-      ".vscode/**",
-      ".source/**",
-      ".pnpm-store/**",
-      "node_modules/**",
-      "dist/**",
-      "build/**",
-      "src/db/**",
-      "tailwind.config.ts",
-      "src/components/ui/*.tsx",
-      "src/components/magicui/*.tsx",
-      "src/components/animate-ui/*.tsx",
-      "src/components/tailark/*.tsx",
-      "src/components/ai-elements/*.tsx",
-      "src/app/[[]locale]/preview/**",
-      "src/payment/types.ts",
-      "src/credits/types.ts",
-      "src/types/index.d.ts"
+    "includes": [
+      "**",
+      "!**/.next",
+      "!**/.open-next",
+      "!**/.wrangler",
+      "!**/.cursor",
+      "!**/.claude",
+      "!**/.kiro",
+      "!**/.vscode",
+      "!**/.source",
+      "!**/.pnpm-store",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/src/db",
+      "!**/tailwind.config.ts",
+      "!**/src/components/ui/**/*.tsx",
+      "!**/src/components/magicui/**/*.tsx",
+      "!**/src/components/animate-ui/**/*.tsx",
+      "!**/src/components/tailark/**/*.tsx",
+      "!**/src/components/ai-elements/**/*.tsx",
+      "!**/src/app/\\[\\[\\]locale\\]/preview",
+      "!**/src/payment/types.ts",
+      "!**/src/credits/types.ts",
+      "!**/src/types/index.d.ts"
     ]
   },
   "javascript": {
@@ -103,6 +117,11 @@
       "quoteStyle": "single",
       "trailingCommas": "es5",
       "semicolons": "always"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }

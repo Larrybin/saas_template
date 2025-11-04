@@ -1,7 +1,7 @@
+import { useTranslations } from 'next-intl';
 import { Logo } from '@/components/layout/logo';
 import { Button } from '@/components/ui/button';
 import { LocaleLink } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
 
 /**
  * Note that `app/[locale]/[...rest]/page.tsx`

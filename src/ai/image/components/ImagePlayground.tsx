@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { useImageGeneration } from '../hooks/use-image-generation';
 import {
+  initializeProviderRecord,
   MODEL_CONFIGS,
   type ModelMode,
-  PROVIDERS,
   PROVIDER_ORDER,
+  PROVIDERS,
   type ProviderKey,
-  initializeProviderRecord,
 } from '../lib/provider-config';
 import type { Suggestion } from '../lib/suggestions';
 import { ImageGeneratorHeader } from './ImageGeneratorHeader';

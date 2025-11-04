@@ -1,6 +1,6 @@
+import { useTranslations } from 'next-intl';
 import { HeaderSection } from '@/components/layout/header-section';
 import { PricingTable } from '@/components/pricing/pricing-table';
-import { useTranslations } from 'next-intl';
 
 export default function PricingSection() {
   const t = useTranslations('HomePage.pricing');

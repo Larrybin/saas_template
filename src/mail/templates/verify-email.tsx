@@ -1,10 +1,10 @@
+import { Text } from '@react-email/components';
+import { createTranslator } from 'use-intl/core';
 import { defaultMessages } from '@/i18n/messages';
 import { routing } from '@/i18n/routing';
 import EmailButton from '@/mail/components/email-button';
 import EmailLayout from '@/mail/components/email-layout';
 import type { BaseEmailProps } from '@/mail/types';
-import { Text } from '@react-email/components';
-import { createTranslator } from 'use-intl/core';
 
 interface VerifyEmailProps extends BaseEmailProps {
   url: string;

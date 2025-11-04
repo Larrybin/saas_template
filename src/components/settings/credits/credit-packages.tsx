@@ -1,5 +1,7 @@
 'use client';
 
+import { CircleCheckBigIcon, CoinsIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -15,8 +17,6 @@ import { useCurrentPlan } from '@/hooks/use-payment';
 import { authClient } from '@/lib/auth-client';
 import { formatPrice } from '@/lib/formatter';
 import { cn } from '@/lib/utils';
-import { CircleCheckBigIcon, CoinsIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { CreditCheckoutButton } from './credit-checkout-button';
 
 /**

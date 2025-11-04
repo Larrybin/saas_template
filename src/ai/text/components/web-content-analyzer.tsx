@@ -1,5 +1,7 @@
 'use client';
 
+import { Component, useCallback, useReducer, useState } from 'react';
+import { toast } from 'sonner';
 import type {
   AnalysisState,
   AnalyzeContentResponse,
@@ -8,14 +10,12 @@ import type {
 } from '@/ai/text/utils/web-content-analyzer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Component, useCallback, useReducer, useState } from 'react';
-import { toast } from 'sonner';
 import {
+  classifyError,
   ErrorSeverity,
   ErrorType,
-  WebContentAnalyzerError,
-  classifyError,
   logError,
+  WebContentAnalyzerError,
   withRetry,
 } from '../utils/error-handling';
 import { AnalysisResults as AnalysisResultsComponent } from './analysis-results';

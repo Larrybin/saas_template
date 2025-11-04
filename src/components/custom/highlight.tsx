@@ -2,9 +2,9 @@
 
 import {
   type HTMLMotionProps,
+  motion,
   type Transition,
   type UseInViewOptions,
-  motion,
   useInView,
 } from 'motion/react';
 import * as React from 'react';

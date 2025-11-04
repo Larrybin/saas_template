@@ -1,13 +1,13 @@
 'use client';
 
-import { Routes } from '@/routes';
-import type { MenuItem } from '@/types';
 import {
   CreditCardIcon,
   LayoutDashboardIcon,
   Settings2Icon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Routes } from '@/routes';
+import type { MenuItem } from '@/types';
 
 /**
  * Get avatar config with translations

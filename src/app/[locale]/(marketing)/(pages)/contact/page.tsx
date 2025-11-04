@@ -1,10 +1,10 @@
+import type { Metadata } from 'next';
+import type { Locale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { ContactFormCard } from '@/components/contact/contact-form-card';
 import Container from '@/components/layout/container';
 import { constructMetadata } from '@/lib/metadata';
 import { getUrlWithLocale } from '@/lib/urls/urls';
-import type { Metadata } from 'next';
-import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
 
 export async function generateMetadata({
   params,

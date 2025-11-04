@@ -1,3 +1,8 @@
+import { notFound } from 'next/navigation';
+import { hasLocale, type Locale, NextIntlClientProvider } from 'next-intl';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import type { ReactNode } from 'react';
+import { Toaster } from 'sonner';
 import { Analytics } from '@/analytics/analytics';
 import {
   fontBricolageGrotesque,
@@ -10,11 +15,6 @@ import PromotekitScript from '@/components/affiliate/promotekit';
 import { TailwindIndicator } from '@/components/layout/tailwind-indicator';
 import { routing } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
-import { type Locale, NextIntlClientProvider, hasLocale } from 'next-intl';
-import { notFound } from 'next/navigation';
-import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import type { ReactNode } from 'react';
-import { Toaster } from 'sonner';
 import { Providers } from './providers';
 
 import '@/styles/globals.css';

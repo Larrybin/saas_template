@@ -1,7 +1,5 @@
 'use client';
 
-import { UsersTable } from '@/components/admin/users-table';
-import { useUsers } from '@/hooks/use-users';
 import type { SortingState } from '@tanstack/react-table';
 import { useTranslations } from 'next-intl';
 import {
@@ -11,6 +9,8 @@ import {
   useQueryStates,
 } from 'nuqs';
 import { useMemo } from 'react';
+import { UsersTable } from '@/components/admin/users-table';
+import { useUsers } from '@/hooks/use-users';
 
 export function UsersPageClient() {
   const t = useTranslations('Dashboard.admin.users');

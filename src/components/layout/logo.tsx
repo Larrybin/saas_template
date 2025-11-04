@@ -1,10 +1,10 @@
 'use client';
 
+import Image from 'next/image';
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 import { websiteConfig } from '@/config/website';
 import { cn } from '@/lib/utils';
-import { useTheme } from 'next-themes';
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
 
 export function Logo({ className }: { className?: string }) {
   const { theme } = useTheme();

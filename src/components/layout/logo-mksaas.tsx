@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 export function MkSaaSLogo({ className }: { className?: string }) {
   return (

@@ -1,9 +1,10 @@
+import type { MetadataRoute } from 'next';
+import type { Locale } from 'next-intl';
 import { websiteConfig } from '@/config/website';
 import { getLocalePathname } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
+import { getBlogData, isPublishedBlogPost } from '@/lib/blog/utils';
 import { blogSource, categorySource, source } from '@/lib/source';
-import type { MetadataRoute } from 'next';
-import type { Locale } from 'next-intl';
 import { getBaseUrl } from '../lib/urls/urls';
 
 type Href = Parameters<typeof getLocalePathname>[0]['href'];
@@ -64,9 +65,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // add paginated blog list pages
     routing.locales.forEach((locale) => {
-      const posts = blogSource
-        .getPages(locale)
-        .filter((post) => post.data.published);
+      const posts = blogSource.getPages(locale).filter(isPublishedBlogPost);
       const totalPages = Math.max(
         1,
         Math.ceil(posts.length / websiteConfig.blog.paginationSize)
@@ -89,9 +88,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // posts in this category and locale
         const postsInCategory = blogSource
           .getPages(locale)
-          .filter((post) => post.data.published)
+          .filter(isPublishedBlogPost)
           .filter((post) =>
-            post.data.categories.some((cat) => cat === category.slugs[0])
+            getBlogData(post).categories.some(
+              (cat) => cat === category.slugs[0]
+            )
           );
         const totalPages = Math.max(
           1,
@@ -121,16 +122,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // add posts (single post pages)
     sitemapList.push(
-      ...blogSource.getPages().flatMap((post) =>
-        routing.locales
-          .filter((locale) => post.locale === locale)
-          .map((locale) => ({
-            url: getUrl(`/blog/${post.slugs.join('/')}`, locale),
-            lastModified: new Date(),
-            priority: 0.8,
-            changeFrequency: 'weekly' as const,
-          }))
-      )
+      ...blogSource
+        .getPages()
+        .filter(isPublishedBlogPost)
+        .flatMap((post) =>
+          routing.locales
+            .filter((locale) => post.locale === locale)
+            .map((locale) => ({
+              url: getUrl(`/blog/${post.slugs.join('/')}`, locale),
+              lastModified: new Date(),
+              priority: 0.8,
+              changeFrequency: 'weekly' as const,
+            }))
+        )
     );
   }
 

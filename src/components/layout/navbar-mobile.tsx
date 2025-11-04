@@ -1,5 +1,17 @@
 'use client';
 
+import { Portal } from '@radix-ui/react-portal';
+import {
+  ArrowUpRightIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  MenuIcon,
+  XIcon,
+} from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
+import { RemoveScroll } from 'react-remove-scroll';
 import LocaleSelector from '@/components/layout/locale-selector';
 import { Logo } from '@/components/layout/logo';
 import { ModeSwitcherHorizontal } from '@/components/layout/mode-switcher-horizontal';
@@ -14,18 +26,6 @@ import { LocaleLink, useLocalePathname } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
-import { Portal } from '@radix-ui/react-portal';
-import {
-  ArrowUpRightIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  MenuIcon,
-  XIcon,
-} from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { RemoveScroll } from 'react-remove-scroll';
 import { Skeleton } from '../ui/skeleton';
 import { UserButtonMobile } from './user-button-mobile';
 

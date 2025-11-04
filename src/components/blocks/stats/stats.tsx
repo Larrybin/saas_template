@@ -1,5 +1,5 @@
-import { HeaderSection } from '@/components/layout/header-section';
 import { useTranslations } from 'next-intl';
+import { HeaderSection } from '@/components/layout/header-section';
 
 export default function StatsSection() {
   const t = useTranslations('HomePage.stats');

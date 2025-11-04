@@ -1,8 +1,8 @@
+import { render } from '@react-email/render';
+import type { Locale, Messages } from 'next-intl';
 import { websiteConfig } from '@/config/website';
 import { getMessagesForLocale } from '@/i18n/messages';
 import { routing } from '@/i18n/routing';
-import { render } from '@react-email/render';
-import type { Locale, Messages } from 'next-intl';
 import { ResendProvider } from './provider/resend';
 import {
   type EmailTemplate,

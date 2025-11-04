@@ -26,14 +26,13 @@ jobs:
     name: Install & Cache
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 20
           pnpm-version: 9
-          cache-dependency-path: pnpm-lock.yaml
       - name: Restore pnpm store cache
         id: pnpm-store-cache
         uses: actions/cache@v4
@@ -56,12 +55,11 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 20
           pnpm-version: 9
-          cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies (re-use cache)
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Biome lint
@@ -74,12 +72,11 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 20
           pnpm-version: 9
-          cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies (re-use cache)
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Run tests
@@ -112,14 +109,13 @@ jobs:
     needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 20
           pnpm-version: 9
-          cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Generate docs/content
@@ -127,7 +123,7 @@ jobs:
       - name: Build Next.js app
         run: pnpm build
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: next-build
           path: .next

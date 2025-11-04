@@ -1,10 +1,10 @@
-import { WebContentAnalyzer } from '@/ai/text/components/web-content-analyzer';
-import { constructMetadata } from '@/lib/metadata';
-import { getUrlWithLocale } from '@/lib/urls/urls';
 import { BotIcon, FileTextIcon, GlobeIcon, ZapIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
+import { WebContentAnalyzer } from '@/ai/text/components/web-content-analyzer';
+import { constructMetadata } from '@/lib/metadata';
+import { getUrlWithLocale } from '@/lib/urls/urls';
 
 export async function generateMetadata({
   params,

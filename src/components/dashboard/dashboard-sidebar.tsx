@@ -1,5 +1,8 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import type * as React from 'react';
+import { useEffect, useState } from 'react';
 import { SidebarMain } from '@/components/dashboard/sidebar-main';
 import { SidebarUser } from '@/components/dashboard/sidebar-user';
 import {
@@ -16,9 +19,6 @@ import { getSidebarLinks } from '@/config/sidebar-config';
 import { LocaleLink } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
 import { Routes } from '@/routes';
-import { useTranslations } from 'next-intl';
-import type * as React from 'react';
-import { useEffect, useState } from 'react';
 import { Logo } from '../layout/logo';
 import { UpgradeCard } from './upgrade-card';
 

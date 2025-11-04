@@ -1,5 +1,12 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react';
+import { notFound, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { AuthCard } from '@/components/auth/auth-card';
 import { FormError } from '@/components/shared/form-error';
 import { FormSuccess } from '@/components/shared/form-success';
@@ -16,13 +23,6 @@ import { Input } from '@/components/ui/input';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
 import { Routes } from '@/routes';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { notFound, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 
 /**
  * https://www.better-auth.com/docs/authentication/email-password#forget-password

@@ -1,8 +1,8 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Routes } from '@/routes';
 import type { NestedMenuItem } from '@/types';
-import { useTranslations } from 'next-intl';
 import { websiteConfig } from './website';
 
 /**

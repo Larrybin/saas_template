@@ -1,24 +1,25 @@
+import { CalendarIcon, FileTextIcon } from 'lucide-react';
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import type { Locale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import AllPostsButton from '@/components/blog/all-posts-button';
 import BlogGrid from '@/components/blog/blog-grid';
 import { getMDXComponents } from '@/components/docs/mdx-components';
 import { NewsletterCard } from '@/components/newsletter/newsletter-card';
 import { websiteConfig } from '@/config/website';
 import { LocaleLink } from '@/i18n/navigation';
+import { getBlogData, isPublishedBlogPost } from '@/lib/blog/utils';
 import { formatDate } from '@/lib/formatter';
 import { constructMetadata } from '@/lib/metadata';
 import {
-  type BlogType,
   authorSource,
+  type BlogType,
   blogSource,
   categorySource,
 } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
-import { CalendarIcon, FileTextIcon } from 'lucide-react';
-import type { Metadata } from 'next';
-import type { Locale } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
-import Image from 'next/image';
-import { notFound } from 'next/navigation';
 
 import '@/styles/mdx.css';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
@@ -30,7 +31,7 @@ import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
 async function getRelatedPosts(post: BlogType) {
   const relatedPosts = blogSource
     .getPages(post.locale)
-    .filter((p) => p.data.published)
+    .filter(isPublishedBlogPost)
     .filter((p) => p.slugs.join('/') !== post.slugs.join('/'))
     .sort(() => Math.random() - 0.5)
     .slice(0, websiteConfig.blog.relatedPostsSize);
@@ -41,7 +42,7 @@ async function getRelatedPosts(post: BlogType) {
 export function generateStaticParams() {
   return blogSource
     .getPages()
-    .filter((post) => post.data.published)
+    .filter(isPublishedBlogPost)
     .flatMap((post) => {
       return {
         locale: post.locale,
@@ -60,12 +61,13 @@ export async function generateMetadata({
   }
 
   const t = await getTranslations({ locale, namespace: 'Metadata' });
+  const blogData = getBlogData(post);
 
   return constructMetadata({
-    title: `${post.data.title} | ${t('title')}`,
-    description: post.data.description,
+    title: `${blogData.title} | ${t('title')}`,
+    description: blogData.description,
     canonicalUrl: getUrlWithLocale(`/blog/${slug}`, locale),
-    image: post.data.image,
+    image: blogData.image,
   });
 }
 
@@ -83,7 +85,9 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
     notFound();
   }
 
-  const { date, title, description, image, author, categories } = post.data;
+  const blogData = getBlogData(post);
+  const { date, title, description, image, author, categories, body, toc } =
+    blogData;
   const publishDate = formatDate(new Date(date));
 
   const blogAuthor = authorSource.getPage([author], locale);
@@ -91,7 +95,7 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
     .getPages(locale)
     .filter((category) => categories.includes(category.slugs[0] ?? ''));
 
-  const MDX = post.data.body;
+  const MDX = body;
 
   // getTranslations may cause error DYNAMIC_SERVER_USAGE, so we set dynamic to force-static
   const t = await getTranslations('BlogPage');
@@ -195,9 +199,9 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
 
             {/* table of contents */}
             <div className="max-h-[calc(100vh-18rem)] overflow-y-auto">
-              {post.data.toc && (
+              {toc && (
                 <InlineTOC
-                  items={post.data.toc}
+                  items={toc}
                   open={true}
                   defaultOpen={true}
                   className="bg-muted/50 border-none"

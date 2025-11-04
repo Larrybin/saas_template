@@ -1,7 +1,7 @@
-import { docsI18nConfig } from '@/lib/docs/i18n';
-import { source } from '@/lib/source';
 import { createTokenizer } from '@orama/tokenizers/mandarin';
 import { createI18nSearchAPI } from 'fumadocs-core/search/server';
+import { docsI18nConfig } from '@/lib/docs/i18n';
+import { source } from '@/lib/source';
 
 /**
  * Fumadocs i18n search configuration

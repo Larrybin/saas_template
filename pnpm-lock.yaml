@@ -325,8 +325,8 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0(@types/react@19.2.2)(react@19.2.0)
       stripe:
-        specifier: ^17.7.0
-        version: 17.7.0
+        specifier: ^19.2.0
+        version: 19.2.0(@types/node@20.19.24)
       swiper:
         specifier: ^12.0.3
         version: 12.0.3
@@ -5106,9 +5106,14 @@ packages:
     resolution: {integrity: sha512-4X2FR3UwhNUE9G49aIsJW5hRRR3GXGTBTZRMfv568O60ojM8HcWjV/VxAxCDW3SUND33O6ZY66ZuRcdkj73q2g==}
     engines: {node: '>=14.16'}
 
-  stripe@17.7.0:
-    resolution: {integrity: sha512-aT2BU9KkizY9SATf14WhhYVv2uOapBWX0OFWF4xvcj1mPaNotlSc2CsxpS4DS46ZueSppmCF5BX1sNYBtwBvfw==}
-    engines: {node: '>=12.*'}
+  stripe@19.2.0:
+    resolution: {integrity: sha512-strzN8luMGMC1LEleGKg7pJGXFx0kSS4y/uSjK8yPQV9SUBMtJVAp/v8XMQLRnMbXaSaWLrIaHcMlKcsizdRDQ==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/node': '>=16'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   style-to-js@1.1.16:
     resolution: {integrity: sha512-/Q6ld50hKYPH3d/r6nr117TZkHR0w0kGGIVfpG9N6D8NymRPM9RqCUv4pRpJ62E5DqOYx2AFpbZMyCPnjQCnOw==}
@@ -10705,10 +10710,11 @@ snapshots:
 
   strip-json-comments@5.0.2: {}
 
-  stripe@17.7.0:
+  stripe@19.2.0(@types/node@20.19.24):
     dependencies:
-      '@types/node': 20.19.24
       qs: 6.14.0
+    optionalDependencies:
+      '@types/node': 20.19.24
 
   style-to-js@1.1.16:
     dependencies:

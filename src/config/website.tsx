@@ -79,8 +79,8 @@ export const websiteConfig: WebsiteConfig = {
   },
   mail: {
     provider: 'resend',
-    fromEmail: clientEnv.mail.from || 'Bin <support@labubuwholesale.com>',
-    supportEmail: clientEnv.mail.support || 'Bin <support@labubuwholesale.com>',
+    fromEmail: clientEnv.mail.from,
+    supportEmail: clientEnv.mail.support,
   },
   newsletter: {
     enable: true,

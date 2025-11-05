@@ -3,6 +3,7 @@ import { addDays } from 'date-fns';
 import { and, eq, gt, inArray, isNull, lt, not, or, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { creditTransaction, payment, user, userCredit } from '@/db/schema';
+import { getLogger } from '@/lib/logger';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { PlanIntervals } from '@/payment/types';
 import { canAddCreditsByType } from './credits';
@@ -12,13 +13,16 @@ import { CREDIT_TRANSACTION_TYPE } from './types';
  * Distribute credits to all users based on their plan type
  * This function is designed to be called by a cron job
  */
+const baseLogger = getLogger({ span: 'credits.distribute' });
+
 export async function distributeCreditsToAllUsers() {
-  console.log('>>> distribute credits start');
+  const log = baseLogger.child({ span: 'distributeCreditsToAllUsers' });
+  log.info('Starting credit distribution job');
 
   // Process expired credits first before distributing new credits
-  console.log('Processing expired credits before distribution...');
+  log.debug('Processing expired credits before distribution');
   const expiredResult = await batchProcessExpiredCredits();
-  console.log('Expired credits processed:', expiredResult);
+  log.debug({ expiredResult }, 'Finished processing expired credits');
 
   const db = await getDb();
 
@@ -58,7 +62,10 @@ export async function distributeCreditsToAllUsers() {
     )
     .where(or(isNull(user.banned), eq(user.banned, false)));
 
-  console.log('distribute credits, users count:', usersWithPayments.length);
+  log.info(
+    { usersWithPayments: usersWithPayments.length },
+    'Loaded users for credit distribution'
+  );
 
   const usersCount = usersWithPayments.length;
   let processedCount = 0;
@@ -105,8 +112,13 @@ export async function distributeCreditsToAllUsers() {
     }
   });
 
-  console.log(
-    `distribute credits, lifetime users: ${lifetimeUsers.length}, free users: ${freeUserIds.length}, yearly users: ${yearlyUsers.length}`
+  log.debug(
+    {
+      lifetimeUsers: lifetimeUsers.length,
+      freeUsers: freeUserIds.length,
+      yearlyUsers: yearlyUsers.length,
+    },
+    'Partitioned users for credit distribution'
   );
 
   const batchSize = 100;
@@ -118,17 +130,22 @@ export async function distributeCreditsToAllUsers() {
       await batchAddMonthlyFreeCredits(batch);
       processedCount += batch.length;
     } catch (error) {
-      console.error(
-        `batchAddMonthlyFreeCredits error for batch ${i / batchSize + 1}:`,
-        error
+      log.error(
+        { error, batch: i / batchSize + 1 },
+        'Failed to distribute monthly free credits'
       );
       errorCount += batch.length;
     }
 
     // Log progress for large datasets
     if (freeUserIds.length > 1000) {
-      console.log(
-        `free credits progress: ${Math.min(i + batchSize, freeUserIds.length)}/${freeUserIds.length}`
+      log.debug(
+        {
+          processed: Math.min(i + batchSize, freeUserIds.length),
+          total: freeUserIds.length,
+          segment: 'free',
+        },
+        'Progress distributing credits'
       );
     }
   }
@@ -140,17 +157,22 @@ export async function distributeCreditsToAllUsers() {
       await batchAddLifetimeMonthlyCredits(batch);
       processedCount += batch.length;
     } catch (error) {
-      console.error(
-        `batchAddLifetimeMonthlyCredits error for batch ${i / batchSize + 1}:`,
-        error
+      log.error(
+        { error, batch: i / batchSize + 1 },
+        'Failed to distribute lifetime monthly credits'
       );
       errorCount += batch.length;
     }
 
     // Log progress for large datasets
     if (lifetimeUsers.length > 1000) {
-      console.log(
-        `lifetime credits progress: ${Math.min(i + batchSize, lifetimeUsers.length)}/${lifetimeUsers.length}`
+      log.debug(
+        {
+          processed: Math.min(i + batchSize, lifetimeUsers.length),
+          total: lifetimeUsers.length,
+          segment: 'lifetime',
+        },
+        'Progress distributing credits'
       );
     }
   }
@@ -162,23 +184,29 @@ export async function distributeCreditsToAllUsers() {
       await batchAddYearlyUsersMonthlyCredits(batch);
       processedCount += batch.length;
     } catch (error) {
-      console.error(
-        `batchAddYearlyUsersMonthlyCredits error for batch ${i / batchSize + 1}:`,
-        error
+      log.error(
+        { error, batch: i / batchSize + 1 },
+        'Failed to distribute yearly monthly credits'
       );
       errorCount += batch.length;
     }
 
     // Log progress for large datasets
     if (yearlyUsers.length > 1000) {
-      console.log(
-        `yearly subscription credits progress: ${Math.min(i + batchSize, yearlyUsers.length)}/${yearlyUsers.length}`
+      log.debug(
+        {
+          processed: Math.min(i + batchSize, yearlyUsers.length),
+          total: yearlyUsers.length,
+          segment: 'yearly',
+        },
+        'Progress distributing credits'
       );
     }
   }
 
-  console.log(
-    `<<< distribute credits end, users: ${usersCount}, processed: ${processedCount}, errors: ${errorCount}`
+  log.info(
+    { usersCount, processedCount, errorCount },
+    'Finished credit distribution job'
   );
   return { usersCount, processedCount, errorCount };
 }
@@ -188,8 +216,12 @@ export async function distributeCreditsToAllUsers() {
  * @param userIds - Array of user IDs
  */
 export async function batchAddMonthlyFreeCredits(userIds: string[]) {
+  const log = baseLogger.child({
+    span: 'batchAddMonthlyFreeCredits',
+    userCount: userIds.length,
+  });
   if (userIds.length === 0) {
-    console.log('batchAddMonthlyFreeCredits, no users to add credits');
+    log.debug('No users to add credits');
     return;
   }
 
@@ -203,7 +235,7 @@ export async function batchAddMonthlyFreeCredits(userIds: string[]) {
       plan.credits?.amount > 0
   );
   if (!freePlan) {
-    console.log('batchAddMonthlyFreeCredits, no available free plan');
+    log.warn('No available free plan for monthly credits');
     return;
   }
 
@@ -242,7 +274,7 @@ export async function batchAddMonthlyFreeCredits(userIds: string[]) {
     }
 
     if (eligibleUserIds.length === 0) {
-      console.log('batchAddMonthlyFreeCredits, no eligible users');
+      baseLogger.info('batchAddMonthlyFreeCredits, no eligible users');
       return;
     }
 
@@ -301,7 +333,7 @@ export async function batchAddMonthlyFreeCredits(userIds: string[]) {
     }
   });
 
-  console.log(
+  baseLogger.info(
     `batchAddMonthlyFreeCredits, ${credits} credits for ${processedCount} users, date: ${now.getFullYear()}-${now.getMonth() + 1}`
   );
 }
@@ -314,7 +346,7 @@ export async function batchAddLifetimeMonthlyCredits(
   users: Array<{ userId: string; priceId: string }>
 ) {
   if (users.length === 0) {
-    console.log('batchAddLifetimeMonthlyCredits, no users to add credits');
+    baseLogger.info('batchAddLifetimeMonthlyCredits, no users to add credits');
     return;
   }
 
@@ -342,7 +374,7 @@ export async function batchAddLifetimeMonthlyCredits(
       !pricePlan.credits?.enable ||
       !pricePlan.credits?.amount
     ) {
-      console.log(
+      baseLogger.info(
         `batchAddLifetimeMonthlyCredits, invalid plan for priceId: ${priceId}`
       );
       continue;
@@ -381,7 +413,7 @@ export async function batchAddLifetimeMonthlyCredits(
       }
 
       if (eligibleUserIds.length === 0) {
-        console.log(
+        baseLogger.info(
           `batchAddLifetimeMonthlyCredits, no eligible users for priceId: ${priceId}`
         );
         return;
@@ -443,12 +475,12 @@ export async function batchAddLifetimeMonthlyCredits(
     });
 
     totalProcessedCount += processedCount;
-    console.log(
+    baseLogger.info(
       `batchAddLifetimeMonthlyCredits, ${credits} credits for ${processedCount} users with priceId ${priceId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
     );
   }
 
-  console.log(
+  baseLogger.info(
     `batchAddLifetimeMonthlyCredits, total processed: ${totalProcessedCount} users`
   );
 }
@@ -461,7 +493,9 @@ export async function batchAddYearlyUsersMonthlyCredits(
   users: Array<{ userId: string; priceId: string }>
 ) {
   if (users.length === 0) {
-    console.log('batchAddYearlyUsersMonthlyCredits, no users to add credits');
+    baseLogger.info(
+      'batchAddYearlyUsersMonthlyCredits, no users to add credits'
+    );
     return;
   }
 
@@ -483,7 +517,7 @@ export async function batchAddYearlyUsersMonthlyCredits(
   for (const [priceId, userIds] of usersByPriceId) {
     const pricePlan = findPlanByPriceId(priceId);
     if (!pricePlan || !pricePlan.credits || !pricePlan.credits.enable) {
-      console.log(
+      baseLogger.info(
         `batchAddYearlyUsersMonthlyCredits, plan disabled or credits disabled for priceId: ${priceId}`
       );
       continue;
@@ -522,7 +556,7 @@ export async function batchAddYearlyUsersMonthlyCredits(
       }
 
       if (eligibleUserIds.length === 0) {
-        console.log(
+        baseLogger.info(
           `batchAddYearlyUsersMonthlyCredits, no eligible users for priceId: ${priceId}`
         );
         return;
@@ -584,12 +618,12 @@ export async function batchAddYearlyUsersMonthlyCredits(
     });
 
     totalProcessedCount += processedCount;
-    console.log(
+    baseLogger.info(
       `batchAddYearlyUsersMonthlyCredits, ${credits} credits for ${processedCount} users with priceId: ${priceId}, date: ${now.getFullYear()}-${now.getMonth() + 1}`
     );
   }
 
-  console.log(
+  baseLogger.info(
     `batchAddYearlyUsersMonthlyCredits completed, total processed: ${totalProcessedCount} users`
   );
 }
@@ -599,7 +633,7 @@ export async function batchAddYearlyUsersMonthlyCredits(
  * This function is designed to be called by a cron job
  */
 export async function batchProcessExpiredCredits() {
-  console.log('>>> batch process expired credits start');
+  baseLogger.info('>>> batch process expired credits start');
 
   const db = await getDb();
   const now = new Date();
@@ -626,7 +660,7 @@ export async function batchProcessExpiredCredits() {
       )
     );
 
-  console.log(
+  baseLogger.info(
     'batch process expired credits, users count:',
     usersWithExpirableCredits.length
   );
@@ -648,7 +682,7 @@ export async function batchProcessExpiredCredits() {
       processedCount += batchResult.processedCount;
       totalExpiredCredits += batchResult.expiredCredits;
     } catch (error) {
-      console.error(
+      baseLogger.error(
         `batchProcessExpiredCredits error for batch ${i / batchSize + 1}:`,
         error
       );
@@ -657,13 +691,13 @@ export async function batchProcessExpiredCredits() {
 
     // Log progress for large datasets
     if (usersWithExpirableCredits.length > 1000) {
-      console.log(
+      baseLogger.info(
         `expired credits progress: ${Math.min(i + batchSize, usersWithExpirableCredits.length)}/${usersWithExpirableCredits.length}`
       );
     }
   }
 
-  console.log(
+  baseLogger.info(
     `<<< batch process expired credits end, users: ${usersCount}, processed: ${processedCount}, errors: ${errorCount}, total expired credits: ${totalExpiredCredits}`
   );
   return { usersCount, processedCount, errorCount, totalExpiredCredits };
@@ -675,7 +709,7 @@ export async function batchProcessExpiredCredits() {
  */
 export async function batchProcessExpiredCreditsForUsers(userIds: string[]) {
   if (userIds.length === 0) {
-    console.log('batchProcessExpiredCreditsForUsers, no users to process');
+    baseLogger.info('batchProcessExpiredCreditsForUsers, no users to process');
     return { processedCount: 0, expiredCredits: 0 };
   }
 
@@ -758,7 +792,7 @@ export async function batchProcessExpiredCreditsForUsers(userIds: string[]) {
         });
 
         totalExpiredCredits += expiredTotal;
-        console.log(
+        baseLogger.info(
           `batchProcessExpiredCreditsForUsers, ${expiredTotal} credits expired for user ${userId}`
         );
       }
@@ -767,7 +801,7 @@ export async function batchProcessExpiredCreditsForUsers(userIds: string[]) {
     }
   });
 
-  console.log(
+  baseLogger.info(
     `batchProcessExpiredCreditsForUsers, processed ${totalProcessedCount} users, total expired credits: ${totalExpiredCredits}`
   );
 

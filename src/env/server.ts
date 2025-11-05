@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { getLogger } from '@/lib/logger';
+
+const log = getLogger({ span: 'env.server' });
 
 const optionalString = z
   .string()
@@ -10,10 +13,17 @@ const booleanString = z
   .optional()
   .transform((value) => value === 'true');
 
+const telemetryString = z
+  .enum(['0', '1', 'true', 'false'], {
+    required_error: 'NEXT_TELEMETRY_DISABLED is required',
+  })
+  .default('1');
+
 const serverSchema = z
   .object({
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     BETTER_AUTH_SECRET: z.string().min(1, 'BETTER_AUTH_SECRET is required'),
+    NEXT_TELEMETRY_DISABLED: telemetryString,
     STRIPE_SECRET_KEY: optionalString,
     STRIPE_WEBHOOK_SECRET: optionalString,
     RESEND_API_KEY: optionalString,
@@ -47,6 +57,11 @@ const serverSchema = z
   .transform((value) => ({
     databaseUrl: value.DATABASE_URL,
     betterAuthSecret: value.BETTER_AUTH_SECRET,
+    telemetry: {
+      disabled:
+        value.NEXT_TELEMETRY_DISABLED === '1' ||
+        value.NEXT_TELEMETRY_DISABLED === 'true',
+    },
     stripeSecretKey: value.STRIPE_SECRET_KEY,
     stripeWebhookSecret: value.STRIPE_WEBHOOK_SECRET,
     resendApiKey: value.RESEND_API_KEY,
@@ -93,7 +108,7 @@ const serverSchema = z
 const parsedServerEnv = serverSchema.safeParse(process.env);
 
 if (!parsedServerEnv.success) {
-  console.error('❌ Invalid server environment variables:', {
+  log.error('❌ Invalid server environment variables', {
     issues: parsedServerEnv.error.format(),
   });
   throw new Error('Invalid server environment variables');

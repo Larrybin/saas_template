@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { websiteConfig } from '@/config/website';
 import { serverEnv } from '@/env/server';
+import { getLogger } from '@/lib/logger';
 import { getTemplate } from '@/mail';
 import type {
   MailProvider,
@@ -18,6 +19,7 @@ import type {
 export class ResendProvider implements MailProvider {
   private resend: Resend;
   private from: string;
+  private readonly logger = getLogger({ span: 'mail.resend' });
 
   /**
    * Initialize Resend provider with API key
@@ -71,7 +73,7 @@ export class ResendProvider implements MailProvider {
         text: mailTemplate.text,
       });
     } catch (error) {
-      console.error('Error sending template email:', error);
+      this.logger.error({ error }, 'Error sending template email');
       return {
         success: false,
         error,
@@ -90,11 +92,10 @@ export class ResendProvider implements MailProvider {
     const { to, subject, html, text } = params;
 
     if (!this.from || !to || !subject || !html) {
-      console.warn('Missing required fields for email send', {
+      this.logger.warn('Missing required fields for email send', {
         from: this.from,
         to,
         subject,
-        html,
       });
       return {
         success: false,
@@ -112,7 +113,7 @@ export class ResendProvider implements MailProvider {
       });
 
       if (error) {
-        console.error('Error sending email', error);
+        this.logger.error({ error }, 'Error sending email');
         return {
           success: false,
           error,
@@ -124,7 +125,7 @@ export class ResendProvider implements MailProvider {
         messageId: data?.id,
       };
     } catch (error) {
-      console.error('Error sending email:', error);
+      this.logger.error({ error }, 'Error sending email');
       return {
         success: false,
         error,

@@ -85,13 +85,12 @@ jobs:
           set -uo pipefail
           if node -e "const pkg=require('./package.json'); process.exit(pkg.scripts && pkg.scripts.test ? 0 : 1)"; then
             echo "has_tests=true" >> "$GITHUB_OUTPUT"
-            pnpm test -- --runInBand
-            status=$?
-            if [ "$status" -ne 0 ]; then
+            if pnpm test -- --runInBand; then
+              exit 0
+            else
               pnpm test
-              status=$?
+              exit $?
             fi
-            exit "$status"
           else
             echo "No test script configured, skipping."
             echo "has_tests=false" >> "$GITHUB_OUTPUT"

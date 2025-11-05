@@ -1,4 +1,3 @@
-import { betterFetch } from '@better-fetch/fetch';
 import { type NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import {
@@ -7,13 +6,13 @@ import {
   LOCALES,
   routing,
 } from './i18n/routing';
-import type { Session } from './lib/auth-types';
-import { getBaseUrl } from './lib/urls/urls';
 import {
-  DEFAULT_LOGIN_REDIRECT,
-  protectedRoutes,
-  routesNotAllowedByLoggedInUsers,
-} from './routes';
+  buildSafeCallbackUrl,
+  evaluateRouteAccess,
+  getPathnameWithoutLocale,
+  hasBetterAuthSessionCookie,
+} from './proxy/helpers';
+import { DEFAULT_LOGIN_REDIRECT } from './routes';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -29,8 +28,6 @@ const intlMiddleware = createMiddleware(routing);
  */
 export default async function middleware(req: NextRequest) {
   const { nextUrl } = req;
-  console.log('>> middleware start, pathname', nextUrl.pathname);
-
   // Handle internal docs link redirection for internationalization
   // Check if this is a docs page without locale prefix
   if (nextUrl.pathname.startsWith('/docs/') || nextUrl.pathname === '/docs') {
@@ -45,81 +42,28 @@ export default async function middleware(req: NextRequest) {
       LOCALES.includes(preferredLocale)
     ) {
       const localizedPath = `/${preferredLocale}${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
-      console.log(
-        '<< middleware end, redirecting docs link to preferred locale:',
-        localizedPath
-      );
       return NextResponse.redirect(new URL(localizedPath, nextUrl));
     }
   }
 
-  // do not use getSession() here, it will cause error related to edge runtime
-  // const session = await getSession();
-  const { data: session } = await betterFetch<Session>(
-    '/api/auth/get-session',
-    {
-      baseURL: getBaseUrl(),
-      headers: {
-        cookie: req.headers.get('cookie') || '', // Forward the cookies from the request
-      },
-    }
-  );
-  const isLoggedIn = !!session;
-  // console.log('middleware, isLoggedIn', isLoggedIn);
+  const isLoggedIn = hasBetterAuthSessionCookie(req.cookies.getAll());
+  const pathnameWithoutLocale = getPathnameWithoutLocale(nextUrl.pathname);
+  const routeDecision = evaluateRouteAccess(isLoggedIn, pathnameWithoutLocale);
 
-  // Get the pathname of the request (e.g. /zh/dashboard to /dashboard)
-  const pathnameWithoutLocale = getPathnameWithoutLocale(
-    nextUrl.pathname,
-    LOCALES
-  );
-
-  // If the route can not be accessed by logged in users, redirect if the user is logged in
-  if (isLoggedIn) {
-    const isNotAllowedRoute = routesNotAllowedByLoggedInUsers.some((route) =>
-      new RegExp(`^${route}$`).test(pathnameWithoutLocale)
-    );
-    if (isNotAllowedRoute) {
-      console.log(
-        '<< middleware end, not allowed route, already logged in, redirecting to dashboard'
-      );
-      return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
-    }
+  if (routeDecision === 'redirect-dashboard') {
+    return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
   }
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    new RegExp(`^${route}$`).test(pathnameWithoutLocale)
-  );
-  // console.log('middleware, isProtectedRoute', isProtectedRoute);
-
-  // If the route is a protected route, redirect to login if user is not logged in
-  if (!isLoggedIn && isProtectedRoute) {
-    let callbackUrl = nextUrl.pathname;
-    if (nextUrl.search) {
-      callbackUrl += nextUrl.search;
-    }
-    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-    console.log(
-      '<< middleware end, not logged in, redirecting to login, callbackUrl',
-      callbackUrl
-    );
+  if (routeDecision === 'redirect-login') {
+    const callbackUrl = buildSafeCallbackUrl(nextUrl);
     return NextResponse.redirect(
-      new URL(`/auth/login?callbackUrl=${encodedCallbackUrl}`, nextUrl)
+      new URL(`/auth/login?callbackUrl=${callbackUrl}`, nextUrl)
     );
   }
 
   // Apply intlMiddleware for all routes
-  console.log('<< middleware end, applying intlMiddleware');
   return intlMiddleware(req);
 }
-
-/**
- * Get the pathname of the request (e.g. /zh/dashboard to /dashboard)
- */
-function getPathnameWithoutLocale(pathname: string, locales: string[]): string {
-  const localePattern = new RegExp(`^/(${locales.join('|')})/`);
-  return pathname.replace(localePattern, '/');
-}
-
 /**
  * Next.js internationalized routing
  * specify the routes the middleware applies to

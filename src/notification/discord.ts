@@ -1,4 +1,5 @@
 import { websiteConfig } from '@/config/website';
+import { serverEnv } from '@/env/server';
 import { defaultMessages } from '@/i18n/messages';
 import { getBaseUrl } from '@/lib/urls/urls';
 
@@ -16,7 +17,7 @@ export async function sendMessageToDiscord(
   amount: number
 ): Promise<void> {
   try {
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    const webhookUrl = serverEnv.discordWebhookUrl;
 
     if (!webhookUrl) {
       console.warn(

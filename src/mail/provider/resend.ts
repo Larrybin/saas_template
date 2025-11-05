@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { websiteConfig } from '@/config/website';
+import { serverEnv } from '@/env/server';
 import { getTemplate } from '@/mail';
 import type {
   MailProvider,
@@ -22,7 +23,7 @@ export class ResendProvider implements MailProvider {
    * Initialize Resend provider with API key
    */
   constructor() {
-    if (!process.env.RESEND_API_KEY) {
+    if (!serverEnv.resendApiKey) {
       throw new Error('RESEND_API_KEY environment variable is not set.');
     }
 
@@ -32,8 +33,7 @@ export class ResendProvider implements MailProvider {
       );
     }
 
-    const apiKey = process.env.RESEND_API_KEY;
-    this.resend = new Resend(apiKey);
+    this.resend = new Resend(serverEnv.resendApiKey);
     this.from = websiteConfig.mail.fromEmail;
   }
 

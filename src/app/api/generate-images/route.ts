@@ -9,6 +9,7 @@ import {
 import { type NextRequest, NextResponse } from 'next/server';
 import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
 import type { ProviderKey } from '@/ai/image/lib/provider-config';
+import { serverEnv } from '@/env/server';
 
 /**
  * Intended to be slightly less than the maximum execution time allowed by the
@@ -19,9 +20,11 @@ const TIMEOUT_MILLIS = 55 * 1000;
 const DEFAULT_IMAGE_SIZE = '1024x1024';
 const DEFAULT_ASPECT_RATIO = '1:1';
 
-const fal = createFal({
-  apiKey: process.env.FAL_API_KEY,
-});
+const fal = serverEnv.ai.falApiKey
+  ? createFal({
+      apiKey: serverEnv.ai.falApiKey,
+    })
+  : null;
 
 interface ProviderConfig {
   createImageModel: (modelId: string) => ImageModel;
@@ -42,7 +45,12 @@ const providerConfig: Record<ProviderKey, ProviderConfig> = {
     dimensionFormat: 'size',
   },
   fal: {
-    createImageModel: fal.image,
+    createImageModel: (modelId: string) => {
+      if (!fal) {
+        throw new Error('FAL_API_KEY is not configured');
+      }
+      return fal.image(modelId);
+    },
     dimensionFormat: 'size',
   },
 };

@@ -73,6 +73,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
+import { clientEnv } from '@/env/client';
 import { formatDate } from '@/lib/formatter';
 import { Badge } from '../../ui/badge';
 import { Label } from '../../ui/label';
@@ -200,7 +201,7 @@ export function CreditTransactionsTable({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   // show fake data in demo website
-  const isDemo = process.env.NEXT_PUBLIC_DEMO_WEBSITE === 'true';
+  const isDemo = clientEnv.isDemoWebsite;
 
   // Map column IDs to translation keys
   const columnIdToTranslationKey = {

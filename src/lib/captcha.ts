@@ -1,4 +1,5 @@
 import { websiteConfig } from '@/config/website';
+import { serverEnv } from '@/env/server';
 
 interface TurnstileResponse {
   success: boolean;
@@ -15,7 +16,7 @@ export async function validateTurnstileToken(token: string) {
     return false;
   }
 
-  if (!process.env.TURNSTILE_SECRET_KEY) {
+  if (!serverEnv.turnstileSecretKey) {
     console.error('validateTurnstileToken, TURNSTILE_SECRET_KEY is not set');
     return false;
   }
@@ -28,7 +29,7 @@ export async function validateTurnstileToken(token: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        secret: process.env.TURNSTILE_SECRET_KEY,
+        secret: serverEnv.turnstileSecretKey,
         response: token,
       }),
     }

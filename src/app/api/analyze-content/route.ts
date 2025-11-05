@@ -24,6 +24,7 @@ import {
   validateFirecrawlConfig,
   webContentAnalyzerConfig,
 } from '@/ai/text/utils/web-content-analyzer-config';
+import { serverEnv } from '@/env/server';
 
 // Constants from configuration
 const TIMEOUT_MILLIS = webContentAnalyzerConfig.timeoutMillis;
@@ -39,6 +40,28 @@ const getFirecrawlClient = () => {
     apiUrl: webContentAnalyzerConfig.firecrawl.baseUrl,
   });
 };
+
+const openAIClient = serverEnv.ai.openaiApiKey
+  ? createOpenAI({ apiKey: serverEnv.ai.openaiApiKey })
+  : null;
+
+const geminiClient = serverEnv.ai.googleGenerativeAiApiKey
+  ? createGoogleGenerativeAI({
+      apiKey: serverEnv.ai.googleGenerativeAiApiKey,
+    })
+  : null;
+
+const deepseekClient = serverEnv.ai.deepseekApiKey
+  ? createDeepSeek({
+      apiKey: serverEnv.ai.deepseekApiKey,
+    })
+  : null;
+
+const openRouterClient = serverEnv.ai.openrouterApiKey
+  ? createOpenRouter({
+      apiKey: serverEnv.ai.openrouterApiKey,
+    })
+  : null;
 
 // AI analysis schema for structured output
 const analysisSchema = z.object({
@@ -200,30 +223,60 @@ async function analyzeContent(
       let maxTokens: number | undefined;
       switch (provider) {
         case 'openai':
-          model = createOpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
-          }).chat(webContentAnalyzerConfig.openai.model);
+          if (!openAIClient) {
+            throw new WebContentAnalyzerError(
+              ErrorType.SERVICE_UNAVAILABLE,
+              'OpenAI API key is not configured',
+              'OpenAI provider is temporarily unavailable.',
+              ErrorSeverity.CRITICAL,
+              false
+            );
+          }
+          model = openAIClient.chat(webContentAnalyzerConfig.openai.model);
           temperature = webContentAnalyzerConfig.openai.temperature;
           maxTokens = webContentAnalyzerConfig.openai.maxTokens;
           break;
         case 'gemini':
-          model = createGoogleGenerativeAI({
-            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-          }).chat(webContentAnalyzerConfig.gemini.model);
+          if (!geminiClient) {
+            throw new WebContentAnalyzerError(
+              ErrorType.SERVICE_UNAVAILABLE,
+              'Google Generative AI key is not configured',
+              'Gemini provider is temporarily unavailable.',
+              ErrorSeverity.CRITICAL,
+              false
+            );
+          }
+          model = geminiClient.chat(webContentAnalyzerConfig.gemini.model);
           temperature = webContentAnalyzerConfig.gemini.temperature;
           maxTokens = webContentAnalyzerConfig.gemini.maxTokens;
           break;
         case 'deepseek':
-          model = createDeepSeek({
-            apiKey: process.env.DEEPSEEK_API_KEY,
-          }).chat(webContentAnalyzerConfig.deepseek.model);
+          if (!deepseekClient) {
+            throw new WebContentAnalyzerError(
+              ErrorType.SERVICE_UNAVAILABLE,
+              'DeepSeek API key is not configured',
+              'DeepSeek provider is temporarily unavailable.',
+              ErrorSeverity.CRITICAL,
+              false
+            );
+          }
+          model = deepseekClient.chat(webContentAnalyzerConfig.deepseek.model);
           temperature = webContentAnalyzerConfig.deepseek.temperature;
           maxTokens = webContentAnalyzerConfig.deepseek.maxTokens;
           break;
         case 'openrouter':
-          model = createOpenRouter({
-            apiKey: process.env.OPENROUTER_API_KEY,
-          }).chat(webContentAnalyzerConfig.openrouter.model);
+          if (!openRouterClient) {
+            throw new WebContentAnalyzerError(
+              ErrorType.SERVICE_UNAVAILABLE,
+              'OpenRouter API key is not configured',
+              'OpenRouter provider is temporarily unavailable.',
+              ErrorSeverity.CRITICAL,
+              false
+            );
+          }
+          model = openRouterClient.chat(
+            webContentAnalyzerConfig.openrouter.model
+          );
           temperature = webContentAnalyzerConfig.openrouter.temperature;
           maxTokens = webContentAnalyzerConfig.openrouter.maxTokens;
           break;

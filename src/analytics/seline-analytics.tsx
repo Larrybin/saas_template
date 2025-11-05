@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import { clientEnv } from '@/env';
 
 /**
  * Seline Analytics
@@ -15,7 +16,7 @@ export function SelineAnalytics() {
     return null;
   }
 
-  const token = process.env.NEXT_PUBLIC_SELINE_TOKEN as string;
+  const token = clientEnv.analytics.selineToken;
   if (!token) {
     return null;
   }

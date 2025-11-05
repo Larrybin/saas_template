@@ -10,6 +10,10 @@
     "lint": "biome check --write .",
     "lint:fix": "biome check --fix --unsafe .",
     "format": "biome format --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -151,6 +155,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@playwright/test": "^1.48.0",
     "drizzle-kit": "^0.31.6",
     "knip": "^5.67.1",
     "postcss": "^8",
@@ -158,7 +163,9 @@
     "tailwindcss": "^4.1.16",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "prettier": "^3.3.3"
+    "prettier": "^3.3.3",
+    "@vitest/coverage-v8": "^1.6.0",
+    "vitest": "^1.6.0"
   },
   "pnpm": {
     "overrides": {

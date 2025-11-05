@@ -1,13 +1,8 @@
 'use server';
 
-import { z } from 'zod';
+import { captchaSchema } from '@/actions/schemas';
 import { validateTurnstileToken } from '@/lib/captcha';
 import { actionClient } from '@/lib/safe-action';
-
-// Captcha validation schema
-const captchaSchema = z.object({
-  captchaToken: z.string().min(1, { error: 'Captcha token is required' }),
-});
 
 // Create a safe action for captcha validation
 export const validateCaptchaAction = actionClient

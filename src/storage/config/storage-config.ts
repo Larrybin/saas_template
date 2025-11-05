@@ -1,3 +1,4 @@
+import { serverEnv } from '@/env/server';
 import type { StorageConfig } from '../types';
 
 /**
@@ -6,11 +7,11 @@ import type { StorageConfig } from '../types';
  * This configuration is loaded from environment variables
  */
 export const storageConfig: StorageConfig = {
-  region: process.env.STORAGE_REGION || '',
-  endpoint: process.env.STORAGE_ENDPOINT,
-  accessKeyId: process.env.STORAGE_ACCESS_KEY_ID || '',
-  secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY || '',
-  bucketName: process.env.STORAGE_BUCKET_NAME || '',
-  publicUrl: process.env.STORAGE_PUBLIC_URL,
-  forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE !== 'false',
+  region: serverEnv.storage.region ?? '',
+  endpoint: serverEnv.storage.endpoint,
+  accessKeyId: serverEnv.storage.accessKeyId ?? '',
+  secretAccessKey: serverEnv.storage.secretAccessKey ?? '',
+  bucketName: serverEnv.storage.bucketName ?? '',
+  publicUrl: serverEnv.storage.publicUrl,
+  forcePathStyle: serverEnv.storage.forcePathStyle,
 };

@@ -1,14 +1,10 @@
 'use server';
 
-import { z } from 'zod';
+import { getActiveSubscriptionInputSchema } from '@/actions/schemas';
+import { serverEnv } from '@/env/server';
 import type { User } from '@/lib/auth-types';
 import { userActionClient } from '@/lib/safe-action';
 import { getSubscriptions } from '@/payment';
-
-// Input schema
-const schema = z.object({
-  userId: z.string().min(1, { error: 'User ID is required' }),
-});
 
 /**
  * Get active subscription data
@@ -17,13 +13,13 @@ const schema = z.object({
  * it returns the most recent active or trialing one
  */
 export const getActiveSubscriptionAction = userActionClient
-  .schema(schema)
+  .schema(getActiveSubscriptionInputSchema)
   .action(async ({ ctx }) => {
     const currentUser = (ctx as { user: User }).user;
 
     // Check if Stripe environment variables are configured
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const stripeSecretKey = serverEnv.stripeSecretKey;
+    const stripeWebhookSecret = serverEnv.stripeWebhookSecret;
 
     if (!stripeSecretKey || !stripeWebhookSecret) {
       console.log('Stripe environment variables not configured, return');

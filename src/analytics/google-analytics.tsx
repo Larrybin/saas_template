@@ -1,6 +1,7 @@
 'use client';
 
 import { GoogleAnalytics as NextGoogleAnalytics } from '@next/third-parties/google';
+import { clientEnv } from '@/env/client';
 
 /**
  * Google Analytics
@@ -14,7 +15,7 @@ export default function GoogleAnalytics() {
     return null;
   }
 
-  const analyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
+  const analyticsId = clientEnv.analytics.googleAnalyticsId;
   if (!analyticsId) {
     return null;
   }

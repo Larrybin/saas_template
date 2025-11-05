@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import { clientEnv } from '@/env';
 
 /**
  * Ahrefs Analytics
@@ -13,7 +14,7 @@ export function AhrefsAnalytics() {
     return null;
   }
 
-  const websiteId = process.env.NEXT_PUBLIC_AHREFS_WEBSITE_ID as string;
+  const websiteId = clientEnv.analytics.ahrefsWebsiteId;
   if (!websiteId) {
     return null;
   }

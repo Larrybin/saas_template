@@ -2,6 +2,7 @@
 
 import Script from 'next/script';
 import { websiteConfig } from '@/config/website';
+import { clientEnv } from '@/env';
 
 /**
  * PromoteKit
@@ -17,7 +18,7 @@ export default function PromotekitScript() {
     return null;
   }
 
-  const promotekitKey = process.env.NEXT_PUBLIC_AFFILIATE_PROMOTEKIT_ID;
+  const promotekitKey = clientEnv.affiliates.promotekitId;
   if (!promotekitKey) {
     return null;
   }

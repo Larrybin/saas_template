@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { serverEnv } from '@/env/server';
 import type {
   CheckSubscribeStatusParams,
   NewsletterProvider,
@@ -17,15 +18,15 @@ export class ResendNewsletterProvider implements NewsletterProvider {
   private audienceId: string;
 
   constructor() {
-    if (!process.env.RESEND_API_KEY) {
+    if (!serverEnv.resendApiKey) {
       throw new Error('RESEND_API_KEY environment variable is not set.');
     }
-    if (!process.env.RESEND_AUDIENCE_ID) {
+    if (!serverEnv.resendAudienceId) {
       throw new Error('RESEND_AUDIENCE_ID environment variable is not set.');
     }
 
-    this.resend = new Resend(process.env.RESEND_API_KEY);
-    this.audienceId = process.env.RESEND_AUDIENCE_ID;
+    this.resend = new Resend(serverEnv.resendApiKey);
+    this.audienceId = serverEnv.resendAudienceId;
   }
 
   /**

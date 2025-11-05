@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import { clientEnv } from '@/env';
 
 /**
  * Umami Analytics
@@ -13,12 +14,12 @@ export function UmamiAnalytics() {
     return null;
   }
 
-  const websiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID as string;
+  const websiteId = clientEnv.analytics.umami.websiteId;
   if (!websiteId) {
     return null;
   }
 
-  const script = process.env.NEXT_PUBLIC_UMAMI_SCRIPT as string;
+  const script = clientEnv.analytics.umami.scriptUrl;
   if (!script) {
     return null;
   }

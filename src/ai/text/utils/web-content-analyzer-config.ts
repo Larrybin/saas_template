@@ -5,6 +5,8 @@
  * including credit costs and other operational parameters.
  */
 
+import { serverEnv } from '@/env/server';
+
 export const webContentAnalyzerConfig = {
   /**
    * Maximum content length for AI analysis (in characters)
@@ -68,7 +70,7 @@ export const webContentAnalyzerConfig = {
    */
   firecrawl: {
     // API Configuration
-    apiKey: process.env.FIRECRAWL_API_KEY,
+    apiKey: serverEnv.ai.firecrawlApiKey,
     baseUrl: 'https://api.firecrawl.dev',
 
     // Default scraping options

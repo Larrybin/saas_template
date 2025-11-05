@@ -11,6 +11,7 @@ import { getCreditPackageById } from '@/credits/server';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { getDb } from '@/db';
 import { payment, user } from '@/db/schema';
+import { serverEnv } from '@/env/server';
 import {
   findPlanByPlanId,
   findPlanByPriceId,
@@ -46,12 +47,12 @@ export class StripeProvider implements PaymentProvider {
    * Initialize Stripe provider with API key
    */
   constructor() {
-    const apiKey = process.env.STRIPE_SECRET_KEY;
+    const apiKey = serverEnv.stripeSecretKey;
     if (!apiKey) {
       throw new Error('STRIPE_SECRET_KEY environment variable is not set');
     }
 
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret = serverEnv.stripeWebhookSecret;
     if (!webhookSecret) {
       throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set.');
     }
@@ -613,10 +614,8 @@ export class StripeProvider implements PaymentProvider {
       .limit(1);
 
     // get new period start and end
-    const {
-      periodStart: derivedPeriodStart,
-      periodEnd: derivedPeriodEnd,
-    } = this.getSubscriptionPeriodBounds(stripeSubscription);
+    const { periodStart: derivedPeriodStart, periodEnd: derivedPeriodEnd } =
+      this.getSubscriptionPeriodBounds(stripeSubscription);
     const newPeriodStart = derivedPeriodStart ?? undefined;
     const newPeriodEnd = derivedPeriodEnd ?? undefined;
 
@@ -917,9 +916,7 @@ export class StripeProvider implements PaymentProvider {
    * @param subscription Stripe subscription payload
    * @returns Period start/end converted to Date, or null when unavailable
    */
-  private getSubscriptionPeriodBounds(
-    subscription: Stripe.Subscription
-  ): {
+  private getSubscriptionPeriodBounds(subscription: Stripe.Subscription): {
     periodStart: Date | null;
     periodEnd: Date | null;
   } {
@@ -947,7 +944,9 @@ export class StripeProvider implements PaymentProvider {
 
     return {
       periodStart:
-        typeof earliestStart === 'number' ? new Date(earliestStart * 1000) : null,
+        typeof earliestStart === 'number'
+          ? new Date(earliestStart * 1000)
+          : null,
       periodEnd:
         typeof latestEnd === 'number' ? new Date(latestEnd * 1000) : null,
     };

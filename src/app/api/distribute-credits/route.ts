@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { distributeCreditsToAllUsers } from '@/credits/distribute';
+import { serverEnv } from '@/env/server';
 
 // Basic authentication middleware
 function validateBasicAuth(request: Request): boolean {
@@ -17,8 +18,8 @@ function validateBasicAuth(request: Request): boolean {
   const [username, password] = credentials.split(':');
 
   // Validate against environment variables
-  const expectedUsername = process.env.CRON_JOBS_USERNAME;
-  const expectedPassword = process.env.CRON_JOBS_PASSWORD;
+  const expectedUsername = serverEnv.cronJobs.username;
+  const expectedPassword = serverEnv.cronJobs.password;
 
   if (!expectedUsername || !expectedPassword) {
     console.error(

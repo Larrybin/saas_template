@@ -46,7 +46,29 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  const isLoggedIn = hasBetterAuthSessionCookie(req.cookies.getAll());
+  let isLoggedIn = false;
+
+  if (hasBetterAuthSessionCookie(req.cookies.getAll())) {
+    try {
+      const sessionResponse = await fetch(
+        new URL('/api/auth/get-session', nextUrl),
+        {
+          headers: {
+            cookie: req.headers.get('cookie') ?? '',
+          },
+          cache: 'no-store',
+        }
+      );
+
+      if (sessionResponse.ok) {
+        const sessionData = await sessionResponse.json();
+        isLoggedIn = Boolean(sessionData?.data?.session);
+      }
+    } catch {
+      isLoggedIn = false;
+    }
+  }
+
   const pathnameWithoutLocale = getPathnameWithoutLocale(nextUrl.pathname);
   const routeDecision = evaluateRouteAccess(isLoggedIn, pathnameWithoutLocale);
 

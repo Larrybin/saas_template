@@ -16,8 +16,8 @@ importers:
         specifier: ^1.0.27
         version: 1.0.27(zod@4.1.12)
       '@ai-sdk/fal':
-        specifier: ^1.0.0
-        version: 1.0.0(zod@4.1.12)
+        specifier: ^1.0.21
+        version: 1.0.21(zod@4.1.12)
       '@ai-sdk/fireworks':
         specifier: ^1.0.0
         version: 1.0.0(zod@4.1.12)
@@ -418,11 +418,11 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/fal@1.0.0':
-    resolution: {integrity: sha512-iU6U8LXjnrycoGtFKT09o4uDomMyu9W8vCDfJKlrcOvgzOSoG/1D/b/x6wKPbVcVQcsxFEoI9m8YtVtgg1cGsA==}
+  '@ai-sdk/fal@1.0.21':
+    resolution: {integrity: sha512-DPXAODFjxWXTr5/LJDPR9CwJxj2GQ5Hvc+z+EID7b1AjUSeqmqu8TcwurFqqoMRy0qxTnTHXrAblMvs4/vzTvQ==}
     engines: {node: '>=18'}
     peerDependencies:
-      zod: ^3.25.76 || ^4
+      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/fireworks@1.0.0':
     resolution: {integrity: sha512-zc4iGsZ4G4zyTfIvL2bKyFjkz4/j2+wKyYeeNtdz5st1KD4vpAXDjsf0uTeyqXSisrVMrgEBPPkwSRxWQpmPIA==}
@@ -5470,10 +5470,10 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.16(zod@4.1.12)
       zod: 4.1.12
 
-  '@ai-sdk/fal@1.0.0(zod@4.1.12)':
+  '@ai-sdk/fal@1.0.21(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.0(zod@4.1.12)
+      '@ai-sdk/provider-utils': 3.0.16(zod@4.1.12)
       zod: 4.1.12
 
   '@ai-sdk/fireworks@1.0.0(zod@4.1.12)':

@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^1.0.27",
-    "@ai-sdk/fal": "^1.0.0",
+    "@ai-sdk/fal": "^1.0.21",
     "@ai-sdk/fireworks": "^1.0.0",
     "@ai-sdk/google": "^2.0.16",
     "@ai-sdk/openai": "^2.0.0",

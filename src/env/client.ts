@@ -10,14 +10,30 @@ const booleanString = z
   .optional()
   .transform((value) => value === 'true');
 
+const emailString = z
+  .string({ required_error: 'Mail sender is required' })
+  .min(1, 'Mail sender is required')
+  .refine((value) => {
+    const trimmed = value.trim();
+    if (trimmed.includes('<') && trimmed.endsWith('>')) {
+      const match = /<([^>]+)>$/.exec(trimmed);
+      if (!match) {
+        return false;
+      }
+      return z.string().email().safeParse(match[1].trim()).success;
+    }
+
+    return z.string().email().safeParse(trimmed).success;
+  }, 'Must be a valid email address, optionally formatted as "Name <mail@domain>"');
+
 const clientSchema = z
   .object({
     NEXT_PUBLIC_BASE_URL: z
       .string()
       .url('NEXT_PUBLIC_BASE_URL must be a valid URL'),
     NEXT_PUBLIC_DEMO_WEBSITE: booleanString,
-    NEXT_PUBLIC_MAIL_FROM_EMAIL: optionalString,
-    NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: optionalString,
+    NEXT_PUBLIC_MAIL_FROM_EMAIL: emailString,
+    NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: emailString,
     NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY: optionalString,
     NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY: optionalString,
     NEXT_PUBLIC_STRIPE_PRICE_LIFETIME: optionalString,

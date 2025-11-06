@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@ai-sdk/deepseek':
-        specifier: ^1.0.19
-        version: 1.0.19(zod@4.1.12)
+        specifier: ^1.0.27
+        version: 1.0.27(zod@4.1.12)
       '@ai-sdk/fal':
         specifier: ^1.0.0
         version: 1.0.0(zod@4.1.12)
@@ -412,11 +412,11 @@ importers:
 
 packages:
 
-  '@ai-sdk/deepseek@1.0.19':
-    resolution: {integrity: sha512-TzJixgxtB69N8l6PNWfQvHEo9kHmDpUWdtCrWs+Z19yTw1fjKFqG60j9jua+/QqJ6yd4sFo76U1enrxmTJ/KiA==}
+  '@ai-sdk/deepseek@1.0.27':
+    resolution: {integrity: sha512-ZDT950qNOmhXRSGHfyvmIJ56Dd2cuJ3dN5zp7aw3gV98d5mSjQpIo0B2Fb/EBxOOc1e7xVtKLGZRnomCm35JOw==}
     engines: {node: '>=18'}
     peerDependencies:
-      zod: ^3.25.76 || ^4
+      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/fal@1.0.0':
     resolution: {integrity: sha512-iU6U8LXjnrycoGtFKT09o4uDomMyu9W8vCDfJKlrcOvgzOSoG/1D/b/x6wKPbVcVQcsxFEoI9m8YtVtgg1cGsA==}
@@ -448,11 +448,11 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4
 
-  '@ai-sdk/openai-compatible@1.0.18':
-    resolution: {integrity: sha512-WSxF83ZVvTpj2vKhgSNe95qr46TaTBRitF7LlX817r1vKAHw3MDFjjrxZTHbR58jcQWX6N9B3D2aX2Ro9fPBNA==}
+  '@ai-sdk/openai-compatible@1.0.26':
+    resolution: {integrity: sha512-HwhnTN29fxdrvHaS4fnTUKGayhcInVjB5wcC8HDJjA8X8hFEiXsWydvO6MxFjPsnEMKz/ISg87L12RhdzVpP8Q==}
     engines: {node: '>=18'}
     peerDependencies:
-      zod: ^3.25.76 || ^4
+      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/openai@2.0.0':
     resolution: {integrity: sha512-G0WY5K81JwGpuX9HEmP2VTdt3N9m43qPnGT4fWkXcpu6Y2B05nnjs8k1r/csCJd8+TkYC6esjBABQYHxdMOejQ==}
@@ -468,6 +468,12 @@ packages:
 
   '@ai-sdk/provider-utils@3.0.15':
     resolution: {integrity: sha512-kOc6Pxb7CsRlNt+sLZKL7/VGQUd7ccl3/tIK+Bqf5/QhHR0Qm3qRBMz1IwU1RmjJEZA73x+KB5cUckbDl2WF7Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@3.0.16':
+    resolution: {integrity: sha512-lsWQY9aDXHitw7C1QRYIbVGmgwyT98TF3MfM8alNIXKpdJdi+W782Rzd9f1RyOfgRmZ08gJ2EYNDhWNK7RqpEA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5457,11 +5463,11 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/deepseek@1.0.19(zod@4.1.12)':
+  '@ai-sdk/deepseek@1.0.27(zod@4.1.12)':
     dependencies:
-      '@ai-sdk/openai-compatible': 1.0.18(zod@4.1.12)
+      '@ai-sdk/openai-compatible': 1.0.26(zod@4.1.12)
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.9(zod@4.1.12)
+      '@ai-sdk/provider-utils': 3.0.16(zod@4.1.12)
       zod: 4.1.12
 
   '@ai-sdk/fal@1.0.0(zod@4.1.12)':
@@ -5496,10 +5502,10 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.0(zod@4.1.12)
       zod: 4.1.12
 
-  '@ai-sdk/openai-compatible@1.0.18(zod@4.1.12)':
+  '@ai-sdk/openai-compatible@1.0.26(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.9(zod@4.1.12)
+      '@ai-sdk/provider-utils': 3.0.16(zod@4.1.12)
       zod: 4.1.12
 
   '@ai-sdk/openai@2.0.0(zod@4.1.12)':
@@ -5517,6 +5523,13 @@ snapshots:
       zod-to-json-schema: 3.24.6(zod@4.1.12)
 
   '@ai-sdk/provider-utils@3.0.15(zod@4.1.12)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.6
+      zod: 4.1.12
+
+  '@ai-sdk/provider-utils@3.0.16(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@standard-schema/spec': 1.0.0

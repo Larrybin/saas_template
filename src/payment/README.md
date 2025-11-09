@@ -7,9 +7,10 @@ This module provides a flexible payment integration with Stripe, supporting both
 - `/payment/types.ts` - Type definitions for the payment module
 - `/payment/index.ts` - Main payment interface and global provider instance
 - `/payment/provider/stripe.ts` - Stripe payment provider implementation
-- `/actions/create-checkout-session.ts` - Server action for creating checkout sessions
+- `/actions/create-checkout-session.ts` - Server action for creating subscription checkout sessions
+- `/actions/create-credit-checkout-session.ts` - Server action for creating credit checkout sessions
 - `/actions/create-customer-portal-session.ts` - Server action for creating customer portal sessions
-- `/actions/get-lifetime-statue.ts` - Server action for checking user lifetime membership status 
+- `/actions/get-lifetime-status.ts` - Server action for checking user lifetime membership status
 - `/actions/get-active-subscription.ts` - Server action for getting active subscription data
 - `/app/api/webhooks/stripe/route.ts` - API route for Stripe webhook events
 - `/app/[locale]/(marketing)/payment/success/page.tsx` - Success page for completed checkout
@@ -36,6 +37,10 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY=price_...
 NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY=price_...
 NEXT_PUBLIC_STRIPE_PRICE_LIFETIME=price_...
+NEXT_PUBLIC_STRIPE_PRICE_CREDITS_BASIC=price_...
+NEXT_PUBLIC_STRIPE_PRICE_CREDITS_STANDARD=price_...
+NEXT_PUBLIC_STRIPE_PRICE_CREDITS_PREMIUM=price_...
+NEXT_PUBLIC_STRIPE_PRICE_CREDITS_ENTERPRISE=price_...
 ```
 
 ## Payment Plans
@@ -44,80 +49,82 @@ Payment plans are defined in `src/config/website.tsx`. Each plan can have multip
 
 ```typescript
 // In src/config/website.tsx
+import { clientEnv } from '@/env/client';
+import { PaymentTypes, PlanIntervals } from '@/payment/types';
+
 export const websiteConfig = {
   // ...other config
   payment: {
     provider: 'stripe',
+  },
+  price: {
     plans: {
       free: {
-        id: "free",
+        id: 'free',
         prices: [],
         isFree: true,
         isLifetime: false,
       },
       pro: {
-        id: "pro",
+        id: 'pro',
         prices: [
           {
             type: PaymentTypes.SUBSCRIPTION,
-            priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY!,
+            priceId: clientEnv.stripePriceIds.proMonthly ?? '',
             amount: 990,
-            currency: "USD",
+            currency: 'USD',
             interval: PlanIntervals.MONTH,
           },
           {
             type: PaymentTypes.SUBSCRIPTION,
-            priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY!,
+            priceId: clientEnv.stripePriceIds.proYearly ?? '',
             amount: 9900,
-            currency: "USD",
+            currency: 'USD',
             interval: PlanIntervals.YEAR,
           },
         ],
         isFree: false,
         isLifetime: false,
-        recommended: true,
+        popular: true,
       },
       lifetime: {
-        id: "lifetime",
+        id: 'lifetime',
         prices: [
           {
             type: PaymentTypes.ONE_TIME,
-            priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_LIFETIME!,
+            priceId: clientEnv.stripePriceIds.lifetime ?? '',
             amount: 19900,
-            currency: "USD",
+            currency: 'USD',
+            allowPromotionCode: true,
           },
         ],
         isFree: false,
         isLifetime: true,
-      }
-    }
-  }
-}
+      },
+    },
+  },
+};
 ```
 
 ## Server Actions
 
 The payment module uses server actions for payment operations:
 
-### In `/actions/payment.ts`:
+### `/src/actions/create-checkout-session.ts`
 
-```typescript
-// Create a checkout session
-export const createCheckoutAction = actionClient
-  .schema(checkoutSchema)
-  .action(async ({ parsedInput }) => {
-    // Implementation details
-    // Returns { success: true, data: { url, id } } or { success: false, error }
-  });
+Exports `createCheckoutAction`, which validates the payload with Zod, ensures the plan exists via `findPlanByPlanId`, and calls `createCheckout` from `/payment`.
 
-// Create a customer portal session
-export const createPortalAction = actionClient
-  .schema(portalSchema)
-  .action(async ({ parsedInput }) => {
-    // Implementation details
-    // Returns { success: true, data: { url } } or { success: false, error }
-  });
-```
+### `/src/actions/create-credit-checkout-session.ts`
+
+Exports `createCreditCheckoutSession`, performing the same flow for credit packages via `createCreditCheckout`.
+
+### `/src/actions/create-customer-portal-session.ts`
+
+Exports `createCustomerPortalSession`, which creates a Stripe billing-portal session through `createCustomerPortal`.
+
+### `/src/actions/get-lifetime-status.ts` and `/src/actions/get-active-subscription.ts`
+
+Expose `getLifetimeStatusAction` and `getActiveSubscriptionAction` for querying customer entitlements without touching Stripe directly from the client.
 
 ## Core Components
 

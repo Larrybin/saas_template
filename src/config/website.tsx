@@ -1,3 +1,4 @@
+import { clientEnv } from '@/env/client';
 import { PaymentTypes, PlanIntervals } from '@/payment/types';
 import type { WebsiteConfig } from '@/types';
 
@@ -40,8 +41,8 @@ export const websiteConfig: WebsiteConfig = {
     enableAffonsoAffiliate: false,
     enablePromotekitAffiliate: false,
     enableDatafastRevenueTrack: false,
-    enableCrispChat: process.env.NEXT_PUBLIC_DEMO_WEBSITE === 'true',
-    enableTurnstileCaptcha: process.env.NEXT_PUBLIC_DEMO_WEBSITE === 'true',
+    enableCrispChat: clientEnv.isDemoWebsite,
+    enableTurnstileCaptcha: clientEnv.isDemoWebsite,
   },
   routes: {
     defaultLoginRedirect: '/dashboard',
@@ -78,12 +79,8 @@ export const websiteConfig: WebsiteConfig = {
   },
   mail: {
     provider: 'resend',
-    fromEmail:
-      process.env.NEXT_PUBLIC_MAIL_FROM_EMAIL ||
-      'Bin <support@labubuwholesale.com>',
-    supportEmail:
-      process.env.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL ||
-      'Bin <support@labubuwholesale.com>',
+    fromEmail: clientEnv.mail.from,
+    supportEmail: clientEnv.mail.support,
   },
   newsletter: {
     enable: true,
@@ -115,14 +112,14 @@ export const websiteConfig: WebsiteConfig = {
         prices: [
           {
             type: PaymentTypes.SUBSCRIPTION,
-            priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY!,
+            priceId: clientEnv.stripePriceIds.proMonthly ?? '',
             amount: 990,
             currency: 'USD',
             interval: PlanIntervals.MONTH,
           },
           {
             type: PaymentTypes.SUBSCRIPTION,
-            priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY!,
+            priceId: clientEnv.stripePriceIds.proYearly ?? '',
             amount: 9900,
             currency: 'USD',
             interval: PlanIntervals.YEAR,
@@ -142,7 +139,7 @@ export const websiteConfig: WebsiteConfig = {
         prices: [
           {
             type: PaymentTypes.ONE_TIME,
-            priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_LIFETIME!,
+            priceId: clientEnv.stripePriceIds.lifetime ?? '',
             amount: 19900,
             currency: 'USD',
             allowPromotionCode: true,
@@ -159,7 +156,7 @@ export const websiteConfig: WebsiteConfig = {
     },
   },
   credits: {
-    enableCredits: process.env.NEXT_PUBLIC_DEMO_WEBSITE === 'true',
+    enableCredits: clientEnv.isDemoWebsite,
     enablePackagesForFreePlan: false,
     registerGiftCredits: {
       enable: true,
@@ -173,7 +170,7 @@ export const websiteConfig: WebsiteConfig = {
         amount: 100,
         expireDays: 30,
         price: {
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_BASIC!,
+          priceId: clientEnv.stripePriceIds.creditsBasic ?? '',
           amount: 990,
           currency: 'USD',
           allowPromotionCode: true,
@@ -185,7 +182,7 @@ export const websiteConfig: WebsiteConfig = {
         amount: 200,
         expireDays: 30,
         price: {
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_STANDARD!,
+          priceId: clientEnv.stripePriceIds.creditsStandard ?? '',
           amount: 1490,
           currency: 'USD',
           allowPromotionCode: true,
@@ -197,7 +194,7 @@ export const websiteConfig: WebsiteConfig = {
         amount: 500,
         expireDays: 30,
         price: {
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_PREMIUM!,
+          priceId: clientEnv.stripePriceIds.creditsPremium ?? '',
           amount: 3990,
           currency: 'USD',
           allowPromotionCode: true,
@@ -209,7 +206,7 @@ export const websiteConfig: WebsiteConfig = {
         amount: 1000,
         expireDays: 30,
         price: {
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_ENTERPRISE!,
+          priceId: clientEnv.stripePriceIds.creditsEnterprise ?? '',
           amount: 6990,
           currency: 'USD',
           allowPromotionCode: true,

@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import { clientEnv } from '@/env';
 
 /**
  * DataFast Analytics
@@ -13,12 +14,12 @@ export default function DataFastAnalytics() {
     return null;
   }
 
-  const domain = process.env.NEXT_PUBLIC_DATAFAST_DOMAIN;
+  const domain = clientEnv.analytics.dataFast.domain;
   if (!domain) {
     return null;
   }
 
-  const websiteId = process.env.NEXT_PUBLIC_DATAFAST_WEBSITE_ID;
+  const websiteId = clientEnv.analytics.dataFast.websiteId;
   if (!websiteId) {
     return null;
   }

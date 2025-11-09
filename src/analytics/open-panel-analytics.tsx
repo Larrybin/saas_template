@@ -1,4 +1,5 @@
 import { OpenPanelComponent } from '@openpanel/nextjs';
+import { clientEnv } from '@/env/client';
 
 /**
  * OpenPanel Analytics (https://openpanel.dev)
@@ -12,7 +13,7 @@ export default function OpenPanelAnalytics() {
     return null;
   }
 
-  const clientId = process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID;
+  const clientId = clientEnv.analytics.openPanelClientId;
   if (!clientId) {
     return null;
   }

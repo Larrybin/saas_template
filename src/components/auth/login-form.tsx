@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { websiteConfig } from '@/config/website';
+import { clientEnv } from '@/env/client';
 import { LocaleLink } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
@@ -63,7 +64,7 @@ export const LoginForm = ({
 
   // turnstile captcha schema
   const turnstileEnabled = websiteConfig.features.enableTurnstileCaptcha;
-  const captchaSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const captchaSiteKey = clientEnv.turnstileSiteKey;
   const captchaConfigured = turnstileEnabled && !!captchaSiteKey;
   const captchaSchema = captchaConfigured
     ? z.string().min(1, 'Please complete the captcha')

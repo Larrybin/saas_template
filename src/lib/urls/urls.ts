@@ -1,9 +1,8 @@
 import type { Locale } from 'next-intl';
+import { clientEnv } from '@/env/client';
 import { routing } from '@/i18n/routing';
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_BASE_URL ??
-  `http://localhost:${process.env.PORT ?? 3000}`;
+const baseUrl = clientEnv.baseUrl;
 
 /**
  * Get the base URL of the application

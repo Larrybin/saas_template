@@ -9,6 +9,7 @@ import {
   addRegisterGiftCredits,
 } from '@/credits/credits';
 import { getDb } from '@/db/index';
+import { serverEnv } from '@/env/server';
 import { defaultMessages } from '@/i18n/messages';
 import { LOCALE_COOKIE_NAME, routing } from '@/i18n/routing';
 import { sendEmail } from '@/mail';
@@ -23,6 +24,22 @@ import { getBaseUrl, getUrlWithLocaleInCallbackUrl } from './urls/urls';
  * https://mksaas.com/docs/auth
  * https://www.better-auth.com/docs/reference/options
  */
+const githubProvider =
+  serverEnv.oauth.github.clientId && serverEnv.oauth.github.clientSecret
+    ? {
+        clientId: serverEnv.oauth.github.clientId,
+        clientSecret: serverEnv.oauth.github.clientSecret,
+      }
+    : undefined;
+
+const googleProvider =
+  serverEnv.oauth.google.clientId && serverEnv.oauth.google.clientSecret
+    ? {
+        clientId: serverEnv.oauth.google.clientId,
+        clientSecret: serverEnv.oauth.google.clientSecret,
+      }
+    : undefined;
+
 export const auth = betterAuth({
   baseURL: getBaseUrl(),
   appName: defaultMessages.Metadata.name,
@@ -83,16 +100,8 @@ export const auth = betterAuth({
     },
   },
   socialProviders: {
-    // https://www.better-auth.com/docs/authentication/github
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    },
-    // https://www.better-auth.com/docs/authentication/google
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
+    ...(githubProvider && { github: githubProvider }),
+    ...(googleProvider && { google: googleProvider }),
   },
   account: {
     // https://www.better-auth.com/docs/concepts/users-accounts#account-linking

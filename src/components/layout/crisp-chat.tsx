@@ -3,6 +3,7 @@
 import { Crisp } from 'crisp-sdk-web';
 import { useEffect } from 'react';
 import { websiteConfig } from '@/config/website';
+import { clientEnv } from '@/env/client';
 
 /**
  * Crisp chat component
@@ -16,7 +17,7 @@ const CrispChat = () => {
       return;
     }
 
-    const websiteId = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID;
+    const websiteId = clientEnv.crispWebsiteId;
     if (!websiteId) {
       console.warn('Crisp website ID is not configured.');
       return;

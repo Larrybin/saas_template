@@ -12,6 +12,9 @@ on:
 
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
+  issues: write
 
 defaults:
   run:
@@ -54,12 +57,20 @@ jobs:
     name: Lint & Types
     needs: setup
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+      NEXT_PUBLIC_MAIL_FROM_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_FROM_EMAIL }}
+      NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 24
           pnpm-version: 9
+      - name: Verify required env vars
+        run: pnpm run check:env
       - name: Install dependencies (re-use cache)
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Biome lint
@@ -71,12 +82,20 @@ jobs:
     name: Tests
     needs: setup
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+      NEXT_PUBLIC_MAIL_FROM_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_FROM_EMAIL }}
+      NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 24
           pnpm-version: 9
+      - name: Verify required env vars
+        run: pnpm run check:env
       - name: Install dependencies (re-use cache)
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Run tests
@@ -85,13 +104,12 @@ jobs:
           set -uo pipefail
           if node -e "const pkg=require('./package.json'); process.exit(pkg.scripts && pkg.scripts.test ? 0 : 1)"; then
             echo "has_tests=true" >> "$GITHUB_OUTPUT"
-            pnpm test -- --runInBand
-            status=$?
-            if [ "$status" -ne 0 ]; then
+            if pnpm test -- --runInBand; then
+              exit 0
+            else
               pnpm test
-              status=$?
+              exit $?
             fi
-            exit "$status"
           else
             echo "No test script configured, skipping."
             echo "has_tests=false" >> "$GITHUB_OUTPUT"
@@ -108,6 +126,12 @@ jobs:
     name: Build
     needs: [lint, test]
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+      NEXT_PUBLIC_MAIL_FROM_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_FROM_EMAIL }}
+      NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -116,6 +140,8 @@ jobs:
         with:
           node-version: 24
           pnpm-version: 9
+      - name: Verify required env vars
+        run: pnpm run check:env
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Generate docs/content

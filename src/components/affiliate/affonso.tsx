@@ -2,6 +2,7 @@
 
 import Script from 'next/script';
 import { websiteConfig } from '@/config/website';
+import { clientEnv } from '@/env/client';
 
 /**
  * Affonso Affiliate
@@ -17,7 +18,7 @@ export default function AffonsoScript() {
     return null;
   }
 
-  const affiliateId = process.env.NEXT_PUBLIC_AFFILIATE_AFFONSO_ID as string;
+  const affiliateId = clientEnv.affiliates.affonsoId;
   if (!affiliateId) {
     return null;
   }

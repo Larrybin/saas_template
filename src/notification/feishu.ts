@@ -5,6 +5,7 @@
  * @param userName The username of the customer
  * @param amount The purchase amount in the currency's main unit (e.g., dollars, not cents)
  */
+import { serverEnv } from '@/env/server';
 import { getBaseUrl } from '@/lib/urls/urls';
 
 export async function sendMessageToFeishu(
@@ -14,7 +15,7 @@ export async function sendMessageToFeishu(
   amount: number
 ): Promise<void> {
   try {
-    const webhookUrl = process.env.FEISHU_WEBHOOK_URL;
+    const webhookUrl = serverEnv.feishuWebhookUrl;
 
     if (!webhookUrl) {
       console.warn(

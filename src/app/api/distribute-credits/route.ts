@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { distributeCreditsToAllUsers } from '@/credits/distribute';
+import { serverEnv } from '@/env/server';
+import { createLoggerFromHeaders, type Logger } from '@/lib/server/logger';
 
 // Basic authentication middleware
-function validateBasicAuth(request: Request): boolean {
+function validateBasicAuth(request: Request, logger: Logger): boolean {
   const authHeader = request.headers.get('authorization');
 
   if (!authHeader || !authHeader.startsWith('Basic ')) {
@@ -17,11 +19,11 @@ function validateBasicAuth(request: Request): boolean {
   const [username, password] = credentials.split(':');
 
   // Validate against environment variables
-  const expectedUsername = process.env.CRON_JOBS_USERNAME;
-  const expectedPassword = process.env.CRON_JOBS_PASSWORD;
+  const expectedUsername = serverEnv.cronJobs.username;
+  const expectedPassword = serverEnv.cronJobs.password;
 
   if (!expectedUsername || !expectedPassword) {
-    console.error(
+    logger.error(
       'Basic auth credentials not configured in environment variables'
     );
     return false;
@@ -34,9 +36,13 @@ function validateBasicAuth(request: Request): boolean {
  * distribute credits to all users daily
  */
 export async function GET(request: Request) {
+  const log = createLoggerFromHeaders(request.headers, {
+    route: '/api/distribute-credits',
+    span: 'distributeCredits',
+  });
   // Validate basic authentication
-  if (!validateBasicAuth(request)) {
-    console.error('distribute credits unauthorized');
+  if (!validateBasicAuth(request, log)) {
+    log.warn('Unauthorized attempt to distribute credits');
     return new NextResponse('Unauthorized', {
       status: 401,
       headers: {
@@ -45,11 +51,12 @@ export async function GET(request: Request) {
     });
   }
 
-  console.log('route: distribute credits start');
+  log.info('Distribute credits job triggered');
   const { usersCount, processedCount, errorCount } =
     await distributeCreditsToAllUsers();
-  console.log(
-    `route: distribute credits end, users: ${usersCount}, processed: ${processedCount}, errors: ${errorCount}`
+  log.info(
+    { usersCount, processedCount, errorCount },
+    'Distribute credits completed'
   );
   return NextResponse.json({
     message: `distribute credits success, users: ${usersCount}, processed: ${processedCount}, errors: ${errorCount}`,

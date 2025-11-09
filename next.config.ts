@@ -1,6 +1,8 @@
 import { createMDX } from 'fumadocs-mdx/next';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { imageOptimizationConfig } from './src/config/images';
+import { serverEnv } from './src/env/server';
 
 /**
  * https://nextjs.org/docs/app/api-reference/config/next-config-js
@@ -15,44 +17,16 @@ const nextConfig: NextConfig = {
   // https://nextjs.org/docs/architecture/nextjs-compiler#remove-console
   // Remove all console.* calls in production only
   compiler: {
-    // removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? { exclude: ['error', 'warn'] }
+        : false,
   },
 
-  images: {
-    // https://vercel.com/docs/image-optimization/managing-image-optimization-costs#minimizing-image-optimization-costs
-    // https://nextjs.org/docs/app/api-reference/components/image#unoptimized
-    // vercel has limits on image optimization, 1000 images per month
-    unoptimized: process.env.DISABLE_IMAGE_OPTIMIZATION === 'true',
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'avatars.githubusercontent.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'randomuser.me',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ik.imagekit.io',
-      },
-      {
-        protocol: 'https',
-        hostname: 'html.tailus.io',
-      },
-      {
-        protocol: 'https',
-        hostname: 'service.firecrawl.dev',
-      },
-    ],
+  images: imageOptimizationConfig,
+
+  env: {
+    NEXT_TELEMETRY_DISABLED: serverEnv.telemetry.disabled ? '1' : '0',
   },
 };
 

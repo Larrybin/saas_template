@@ -14,6 +14,28 @@ The documentation is available on the [website](https://mksaas.com/docs). It inc
 
 If you found anything that could be improved, please let me know.
 
+## Development
+
+### Quality gates
+
+- `pnpm lint` – static analysis (Biome) and auto-fixable formatting.
+- `pnpm test` – unit tests powered by Vitest (runs fast with sensible defaults).
+- `pnpm test:e2e` – Playwright authentication smoke tests (set `PLAYWRIGHT_ENABLE=true` and point `PLAYWRIGHT_BASE_URL` at a running app to execute; otherwise they stay skipped by default).
+
+All three commands are expected to pass locally and in CI before merging.
+
+### Environment configuration
+
+- Runtime configuration is now validated via `src/env/server.ts` and `src/env/client.ts`. Missing or malformed variables will throw at startup/build time, preventing half-configured deployments.
+- Access env values with the typed helpers instead of `process.env`:
+  - Server code: `import { serverEnv } from '@/env/server'`
+  - Client code / shared config: `import { clientEnv } from '@/env/client'`
+- `.env.example` documents every supported variable. Copy it per-environment and fill the required secrets before running `pnpm build`.
+
+### Middleware observability checklist
+
+The Edge middleware now performs only cookie-based checks; to monitor its performance before and after changes, capture latency from your CDN logs or APM dashboard and compare P50/P95 numbers. Keep the baseline handy whenever adjusting matchers or redirects.
+
 ## Links
 
 - 🔥 website: [mksaas.com](https://mksaas.com)

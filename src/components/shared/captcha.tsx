@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { type ComponentProps, forwardRef } from 'react';
 import { FormMessage } from '@/components/ui/form';
 import { websiteConfig } from '@/config/website';
+import { clientEnv } from '@/env/client';
 
 const Turnstile = dynamic(
   () => import('@marsidev/react-turnstile').then((mod) => mod.Turnstile),
@@ -24,7 +25,7 @@ type Props = Omit<ComponentProps<typeof Turnstile>, 'siteKey'> & {
 export const Captcha = forwardRef<any, Props>(
   ({ validationError, ...props }, ref) => {
     const turnstileEnabled = websiteConfig.features.enableTurnstileCaptcha;
-    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    const siteKey = clientEnv.turnstileSiteKey;
 
     // If turnstile is disabled in config, don't render anything
     if (!turnstileEnabled) {

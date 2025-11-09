@@ -23,10 +23,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Architecture
 
-This is a Next.js 15 full-stack SaaS application with the following key architectural components:
+This is a Next.js 16 full-stack SaaS application with the following key architectural components:
 
 ### Core Stack
-- **Framework**: Next.js 15 with App Router
+- **Framework**: Next.js 16 with App Router
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: Better Auth with social providers (Google, GitHub)
 - **Payments**: Stripe integration with subscription and one-time payments
@@ -82,7 +82,7 @@ This is a Next.js 15 full-stack SaaS application with the following key architec
 6. Use Radix UI components for consistent UI
 7. Follow the established directory structure
 8. Use proper error handling with error.tsx and not-found.tsx
-9. Leverage Next.js 15 features like Server Actions
+9. Leverage Next.js 16 features like Server Actions and partial prerendering
 10. Use `next-safe-action` for secure form submissions
 
 ### Configuration

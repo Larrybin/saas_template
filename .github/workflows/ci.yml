@@ -69,6 +69,8 @@ jobs:
         with:
           node-version: 24
           pnpm-version: 9
+      - name: Verify required env vars
+        run: pnpm run check:env
       - name: Install dependencies (re-use cache)
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Biome lint
@@ -92,6 +94,8 @@ jobs:
         with:
           node-version: 24
           pnpm-version: 9
+      - name: Verify required env vars
+        run: pnpm run check:env
       - name: Install dependencies (re-use cache)
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Run tests
@@ -136,6 +140,8 @@ jobs:
         with:
           node-version: 24
           pnpm-version: 9
+      - name: Verify required env vars
+        run: pnpm run check:env
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Generate docs/content

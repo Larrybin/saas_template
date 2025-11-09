@@ -10,6 +10,7 @@
     "lint": "biome check --write .",
     "lint:fix": "biome check --fix --unsafe .",
     "format": "biome format --write .",
+    "check:env": "tsx scripts/check-env.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

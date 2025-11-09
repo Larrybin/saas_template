@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import { websiteConfig } from '@/config/website';
 import { serverEnv } from '@/env/server';
-import { getLogger } from '@/lib/logger';
+import { getLogger } from '@/lib/server/logger';
 import { getTemplate } from '@/mail';
 import type {
   MailProvider,

@@ -12,12 +12,12 @@ import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { getDb } from '@/db';
 import { payment, user } from '@/db/schema';
 import { serverEnv } from '@/env/server';
-import { getLogger } from '@/lib/logger';
 import {
   findPlanByPlanId,
   findPlanByPriceId,
   findPriceInPlan,
 } from '@/lib/price-plan';
+import { getLogger } from '@/lib/server/logger';
 import { sendNotification } from '@/notification/notification';
 import {
   type CheckoutResult,

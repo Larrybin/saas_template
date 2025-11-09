@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { distributeCreditsToAllUsers } from '@/credits/distribute';
 import { serverEnv } from '@/env/server';
-import { createLoggerFromHeaders, type Logger } from '@/lib/logger';
+import { createLoggerFromHeaders, type Logger } from '@/lib/server/logger';
 
 // Basic authentication middleware
 function validateBasicAuth(request: Request, logger: Logger): boolean {

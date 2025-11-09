@@ -14,6 +14,8 @@ export default defineConfig({
       NEXT_PUBLIC_BASE_URL: 'http://localhost:3000',
       DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
       BETTER_AUTH_SECRET: 'test-secret',
+      NEXT_PUBLIC_MAIL_FROM_EMAIL: 'Larry Bin <support@labubuwholesale.com>',
+      NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: 'Larry Bin <support@labubuwholesale.com>',
     },
   },
   resolve: {

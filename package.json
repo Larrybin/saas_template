@@ -35,7 +35,7 @@
     "@ai-sdk/fireworks": "^1.0.27",
     "@ai-sdk/google": "^2.0.28",
     "@ai-sdk/openai": "^2.0.62",
-    "@ai-sdk/react": "^2.0.86",
+    "@ai-sdk/react": "^2.0.89",
     "@ai-sdk/replicate": "^1.0.16",
     "@base-ui-components/react": "1.0.0-beta.4",
     "@better-fetch/fetch": "^1.1.18",

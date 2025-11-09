@@ -661,8 +661,10 @@ export async function batchProcessExpiredCredits() {
     );
 
   baseLogger.info(
-    'batch process expired credits, users count:',
-    usersWithExpirableCredits.length
+    {
+      usersCount: usersWithExpirableCredits.length,
+    },
+    'batch process expired credits'
   );
 
   const usersCount = usersWithExpirableCredits.length;
@@ -682,9 +684,10 @@ export async function batchProcessExpiredCredits() {
       processedCount += batchResult.processedCount;
       totalExpiredCredits += batchResult.expiredCredits;
     } catch (error) {
+      const batchNumber = i / batchSize + 1;
       baseLogger.error(
-        `batchProcessExpiredCredits error for batch ${i / batchSize + 1}:`,
-        error
+        { batchNumber, error },
+        `batchProcessExpiredCredits error for batch ${batchNumber}`
       );
       errorCount += batch.length;
     }

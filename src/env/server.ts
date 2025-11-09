@@ -1,7 +1,4 @@
 import { z } from 'zod';
-import { getLogger } from '../lib/logger';
-
-const log = getLogger({ span: 'env.server' });
 
 const optionalString = z
   .string()
@@ -14,9 +11,7 @@ const booleanString = z
   .transform((value) => value === 'true');
 
 const telemetryString = z
-  .enum(['0', '1', 'true', 'false'], {
-    required_error: 'NEXT_TELEMETRY_DISABLED is required',
-  })
+  .enum(['0', '1', 'true', 'false'] as const)
   .default('1');
 
 const serverSchema = z
@@ -108,7 +103,7 @@ const serverSchema = z
 const parsedServerEnv = serverSchema.safeParse(process.env);
 
 if (!parsedServerEnv.success) {
-  log.error('❌ Invalid server environment variables', {
+  console.error('❌ Invalid server environment variables', {
     issues: parsedServerEnv.error.format(),
   });
   throw new Error('Invalid server environment variables');

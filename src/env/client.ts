@@ -11,7 +11,7 @@ const booleanString = z
   .transform((value) => value === 'true');
 
 const emailString = z
-  .string({ required_error: 'Mail sender is required' })
+  .string()
   .min(1, 'Mail sender is required')
   .refine((value) => {
     const trimmed = value.trim();

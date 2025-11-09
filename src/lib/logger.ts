@@ -1,5 +1,3 @@
-import 'server-only';
-
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'crypto';
 import pino from 'pino';
@@ -16,27 +14,40 @@ const level =
   process.env.LOG_LEVEL ??
   (process.env.NODE_ENV === 'development' ? 'debug' : 'info');
 
-const baseLogger = pino({
-  level,
-  timestamp: pino.stdTimeFunctions.isoTime,
-  redact: {
-    paths: [
-      'password',
-      '*.password',
-      '*.secret',
-      '*.token',
-      '*.apiKey',
-      '*.accessToken',
-    ],
-    censor: '[REDACTED]',
-  },
-});
+type AppLogFn = {
+  (msg: string, ...args: unknown[]): void;
+  (obj: unknown, msg?: unknown, ...args: unknown[]): void;
+};
+
+type AppLogger = Omit<pino.Logger, 'info' | 'warn' | 'error'> & {
+  info: AppLogFn;
+  warn: AppLogFn;
+  error: AppLogFn;
+};
+
+const baseLogger = castLogger(
+  pino({
+    level,
+    timestamp: pino.stdTimeFunctions.isoTime,
+    redact: {
+      paths: [
+        'password',
+        '*.password',
+        '*.secret',
+        '*.token',
+        '*.apiKey',
+        '*.accessToken',
+      ],
+      censor: '[REDACTED]',
+    },
+  })
+);
 
 const context = new AsyncLocalStorage<LogContext>();
 
 export function getLogger(bindings: LogContext = {}) {
   const current = context.getStore() ?? {};
-  return baseLogger.child({ ...current, ...bindings });
+  return castLogger(baseLogger.child({ ...current, ...bindings }));
 }
 
 export async function withLogContext<T>(
@@ -54,7 +65,11 @@ export function createRequestLogger(
   return getLogger({ ...metadata, requestId });
 }
 
-export type Logger = pino.Logger;
+function castLogger(logger: pino.Logger): AppLogger {
+  return logger as unknown as AppLogger;
+}
+
+export type Logger = AppLogger;
 
 export type HeaderGetter = {
   get(name: string): string | null | undefined;

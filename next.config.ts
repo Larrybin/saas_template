@@ -23,8 +23,6 @@ const nextConfig: NextConfig = {
         : false,
   },
 
-  telemetry: !serverEnv.telemetry.disabled,
-
   images: imageOptimizationConfig,
 
   env: {

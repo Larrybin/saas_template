@@ -42,11 +42,13 @@ export const websiteConfig = {
   // ...other config
   newsletter: {
     provider: 'resend', // Newsletter provider to use
-    autoSubscribeAfterSignUp: false, // Whether to automatically subscribe users after sign up
+    autoSubscribeAfterSignUp: true, // Automatically subscribe users after sign up by default
   },
   // ...other config
 }
 ```
+
+Set `autoSubscribeAfterSignUp` to `false` if you prefer explicit opt-in; the template ships with it enabled to mirror the live demo experience.
 
 2. Using environment variables:
 

@@ -128,11 +128,14 @@ export const websiteConfig = {
   // ...other config
   mail: {
     provider: 'resend', // Email provider to use
-    contact: 'contact@example.com', // Default recipient for contact forms
+    fromEmail: clientEnv.mail.from || 'Bin <support@labubuwholesale.com>',
+    supportEmail: clientEnv.mail.support || 'Bin <support@labubuwholesale.com>',
   },
   // ...other config
 }
 ```
+
+Set `RESEND_FROM_EMAIL`/`RESEND_SUPPORT_EMAIL` (or the equivalent keys you inject into `clientEnv.mail`) to override the defaults so both transactional and support flows send from the proper address.
 
 ## Providers
 

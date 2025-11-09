@@ -13,7 +13,7 @@ export default defineConfig({
             [
               'junit',
               {
-                outputFile: 'test-results/junit.xml',
+                outputFile: 'test-results/junit-results.xml',
               },
             ],
           ]

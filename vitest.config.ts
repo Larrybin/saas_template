@@ -6,6 +6,18 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['tests/**/*.test.ts'],
+    reporters:
+      process.env.CI === 'true'
+        ? [
+            'default',
+            [
+              'junit',
+              {
+                outputFile: 'test-results/junit.xml',
+              },
+            ],
+          ]
+        : 'default',
     coverage: {
       provider: 'v8',
       reportsDirectory: 'coverage',

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getLogger } from '@/lib/logger';
+import { getLogger } from '../lib/logger';
 
 const log = getLogger({ span: 'env.server' });
 

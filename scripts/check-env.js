@@ -1,17 +1,37 @@
 (() => {
-  // Load env files when running locally
+  const isVerbose = process.argv.includes('--verbose');
+  const report = (message) => console.info(`[env-check] ${message}`);
+  const warn = (message, error) =>
+    console.warn(`[env-check] ${message}${error ? `: ${error}` : ''}`);
+
   try {
-    const dotenv = require('dotenv');
-    const envPath = process.env.ENV_FILE ?? '.env.local';
-    const result = dotenv.config({ path: envPath });
-    if (result.error) {
-      console.warn(`[env-check] Unable to load ${envPath}:`, result.error.message);
-    } else {
-      console.info(`[env-check] Loaded environment file: ${envPath}`);
-    }
+    const { loadEnvConfig } = require('@next/env');
+    loadEnvConfig(process.cwd());
+    report('Loaded environment configuration via @next/env');
   } catch (error) {
-    // dotenv is optional
+    warn('Unable to load environment with @next/env', error?.message);
   }
+
+  if (process.env.ENV_FILE) {
+    try {
+      const dotenv = require('dotenv');
+      dotenv.config({ path: process.env.ENV_FILE });
+      report(`Loaded override file: ${process.env.ENV_FILE}`);
+    } catch (error) {
+      warn(
+        `Unable to load override file ${process.env.ENV_FILE}`,
+        error?.message
+      );
+    }
+  }
+
+  const maskValue = (value) => {
+    if (!value) {
+      return value;
+    }
+    const prefix = value.slice(0, 2);
+    return `${prefix}${prefix ? '***' : '***'} (len ${value.length})`;
+  };
 
   const REQUIRED_ENV = [
     'DATABASE_URL',
@@ -27,13 +47,21 @@
   });
 
   if (missing.length > 0) {
-    console.error('Missing required environment variables:', missing.join(', '));
-    console.error('Current values snapshot:', REQUIRED_ENV.reduce((acc, key) => {
-      acc[key] = process.env[key];
-      return acc;
-    }, {}));
+    console.error(
+      'Missing required environment variables:',
+      missing.join(', ')
+    );
+    if (isVerbose) {
+      console.error(
+        'Current values snapshot (masked):',
+        REQUIRED_ENV.reduce((acc, key) => {
+          acc[key] = maskValue(process.env[key]);
+          return acc;
+        }, {})
+      );
+    }
     process.exit(1);
   }
 
-  console.info('All required env vars are present.');
+  report('All required env vars are present.');
 })();

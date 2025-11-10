@@ -101,9 +101,15 @@ const clientSchema = z
 const parsedClientEnv = clientSchema.safeParse(process.env);
 
 if (!parsedClientEnv.success) {
+  const issues = parsedClientEnv.error.format();
   console.error('❌ Invalid client environment variables:', {
-    issues: parsedClientEnv.error.format(),
+    issues,
   });
+  try {
+    console.error('Client env issue details:', JSON.stringify(issues, null, 2));
+  } catch (error) {
+    console.error('Failed to serialize issues', error);
+  }
   throw new Error('Invalid client environment variables');
 }
 

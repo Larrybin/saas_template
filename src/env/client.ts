@@ -27,8 +27,7 @@ const emailString = z
     return z.string().email().safeParse(trimmed).success;
   }, 'Must be a valid email address, optionally formatted as "Name <mail@domain>"');
 
-const clientSchema = z
-  .object({
+const clientSchemaInput = z.object({
     NEXT_PUBLIC_BASE_URL: z
       .string()
       .url('NEXT_PUBLIC_BASE_URL must be a valid URL'),
@@ -56,8 +55,9 @@ const clientSchema = z
     NEXT_PUBLIC_AFFILIATE_AFFONSO_ID: optionalString,
     NEXT_PUBLIC_AFFILIATE_PROMOTEKIT_ID: optionalString,
     NEXT_PUBLIC_CRISP_WEBSITE_ID: optionalString,
-  })
-  .transform((value) => ({
+  });
+
+const clientSchema = clientSchemaInput.transform((value) => ({
     baseUrl: value.NEXT_PUBLIC_BASE_URL,
     isDemoWebsite: value.NEXT_PUBLIC_DEMO_WEBSITE ?? false,
     mail: {
@@ -99,7 +99,7 @@ const clientSchema = z
     crispWebsiteId: value.NEXT_PUBLIC_CRISP_WEBSITE_ID,
   }));
 
-const rawClientEnv = pickEnv(clientSchema);
+const rawClientEnv = pickEnv(clientSchemaInput);
 
 const parsedClientEnv = clientSchema.safeParse(rawClientEnv);
 

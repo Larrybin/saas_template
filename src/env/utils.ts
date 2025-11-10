@@ -20,14 +20,18 @@ type MaskOptions = {
  */
 export function pickEnv<T extends z.ZodRawShape>(
   schema: z.ZodObject<T>,
-  source: EnvSource = process.env
+  source: EnvSource = process.env,
 ): Record<keyof T, string | undefined> {
+  if (!schema || typeof (schema as { shape?: unknown }).shape !== 'object') {
+    throw new Error('pickEnv expects a ZodObject schema');
+  }
+
   return Object.keys(schema.shape).reduce(
     (acc, key) => {
       acc[key as keyof T] = source[key];
       return acc;
     },
-    {} as Record<keyof T, string | undefined>
+    {} as Record<keyof T, string | undefined>,
   );
 }
 
@@ -54,13 +58,13 @@ export function maskValue(
  */
 export function maskEnvSnapshot<T extends EnvSource>(
   env: T,
-  options?: MaskOptions
+  options?: MaskOptions,
 ): Record<keyof T, string | undefined> {
   return Object.keys(env).reduce(
     (acc, key) => {
       acc[key as keyof T] = maskValue(env[key], options);
       return acc;
     },
-    {} as Record<keyof T, string | undefined>
+    {} as Record<keyof T, string | undefined>,
   );
 }

@@ -15,8 +15,7 @@ const telemetryString = z
   .enum(['0', '1', 'true', 'false'] as const)
   .default('1');
 
-const serverSchema = z
-  .object({
+const serverSchemaInput = z.object({
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     BETTER_AUTH_SECRET: z.string().min(1, 'BETTER_AUTH_SECRET is required'),
     NEXT_TELEMETRY_DISABLED: telemetryString,
@@ -49,8 +48,9 @@ const serverSchema = z
     GITHUB_CLIENT_SECRET: optionalString,
     GOOGLE_CLIENT_ID: optionalString,
     GOOGLE_CLIENT_SECRET: optionalString,
-  })
-  .transform((value) => ({
+  });
+
+const serverSchema = serverSchemaInput.transform((value) => ({
     databaseUrl: value.DATABASE_URL,
     betterAuthSecret: value.BETTER_AUTH_SECRET,
     telemetry: {
@@ -101,7 +101,7 @@ const serverSchema = z
     },
   }));
 
-const rawServerEnv = pickEnv(serverSchema);
+const rawServerEnv = pickEnv(serverSchemaInput);
 
 const parsedServerEnv = serverSchema.safeParse(rawServerEnv);
 

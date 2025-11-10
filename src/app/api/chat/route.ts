@@ -1,9 +1,28 @@
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import { ensureApiUser } from '@/lib/server/api-auth';
+import { enforceRateLimit } from '@/lib/server/rate-limit';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  const authResult = await ensureApiUser(req);
+  if (!authResult.ok) {
+    return authResult.response;
+  }
+
+  const rateLimitResult = await enforceRateLimit({
+    request: req,
+    scope: 'chat',
+    limit: 30,
+    window: '1 m',
+    userId: authResult.user.id,
+  });
+
+  if (!rateLimitResult.ok) {
+    return rateLimitResult.response;
+  }
+
   const {
     messages,
     model,

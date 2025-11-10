@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { UrlInputFormProps } from '@/ai/text/utils/web-content-analyzer';
-import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-analyzer-config';
+import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
 import { Button } from '@/components/ui/button';
 import {
   Form,

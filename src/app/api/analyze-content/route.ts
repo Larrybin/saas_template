@@ -20,10 +20,12 @@ import {
   analyzeContentRequestSchema,
   validateUrl,
 } from '@/ai/text/utils/web-content-analyzer';
+import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
 import {
+  getFirecrawlApiKey,
+  webContentAnalyzerServerConfig,
   validateFirecrawlConfig,
-  webContentAnalyzerConfig,
-} from '@/ai/text/utils/web-content-analyzer-config';
+} from '@/ai/text/utils/web-content-config.server';
 import { serverEnv } from '@/env/server';
 
 // Constants from configuration
@@ -35,9 +37,10 @@ const getFirecrawlClient = () => {
   if (!validateFirecrawlConfig()) {
     throw new Error('Firecrawl API key is not configured');
   }
+  const apiKey = getFirecrawlApiKey();
   return new Firecrawl({
-    apiKey: webContentAnalyzerConfig.firecrawl.apiKey,
-    apiUrl: webContentAnalyzerConfig.firecrawl.baseUrl,
+    apiKey,
+    apiUrl: webContentAnalyzerServerConfig.firecrawl.baseUrl,
   });
 };
 
@@ -172,14 +175,15 @@ async function scrapeWebpage(
 ): Promise<{ content: string; screenshot?: string }> {
   return withRetry(async () => {
     const firecrawl = getFirecrawlClient();
+    const firecrawlOptions = webContentAnalyzerServerConfig.firecrawl;
 
     try {
       const scrapeResponse = await firecrawl.scrape(url, {
-        formats: Array.from(webContentAnalyzerConfig.firecrawl.formats),
-        includeTags: Array.from(webContentAnalyzerConfig.firecrawl.includeTags),
-        excludeTags: Array.from(webContentAnalyzerConfig.firecrawl.excludeTags),
-        onlyMainContent: webContentAnalyzerConfig.firecrawl.onlyMainContent,
-        waitFor: webContentAnalyzerConfig.firecrawl.waitFor,
+        formats: Array.from(firecrawlOptions.formats),
+        includeTags: Array.from(firecrawlOptions.includeTags),
+        excludeTags: Array.from(firecrawlOptions.excludeTags),
+        onlyMainContent: firecrawlOptions.onlyMainContent,
+        waitFor: firecrawlOptions.waitFor,
       });
 
       const content = scrapeResponse.markdown ?? '';

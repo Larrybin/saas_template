@@ -1,7 +1,7 @@
 'use client';
 
 import Script from 'next/script';
-import { clientEnv } from '@/env';
+import { clientEnv } from '@/env/client';
 
 /**
  * Ahrefs Analytics

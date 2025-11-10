@@ -1,4 +1,4 @@
-import { clientEnv } from '@/env';
+import { clientEnv } from '@/env/client';
 
 /**
  * check if the website is a demo website

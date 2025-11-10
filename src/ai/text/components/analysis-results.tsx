@@ -15,7 +15,7 @@ import {
 import Image from 'next/image';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { AnalysisResultsProps } from '@/ai/text/utils/web-content-analyzer';
-import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-analyzer-config';
+import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

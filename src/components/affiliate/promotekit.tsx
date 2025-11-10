@@ -2,7 +2,7 @@
 
 import Script from 'next/script';
 import { websiteConfig } from '@/config/website';
-import { clientEnv } from '@/env';
+import { clientEnv } from '@/env/client';
 
 /**
  * PromoteKit

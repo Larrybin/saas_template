@@ -3,7 +3,7 @@
  */
 
 // Import configuration for performance settings
-import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-analyzer-config';
+import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
 
 // Error types for different failure scenarios
 export enum ErrorType {

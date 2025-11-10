@@ -8,7 +8,7 @@ const optionalString = z
 const booleanString = z
   .enum(['true', 'false'])
   .optional()
-  .transform((value) => value === 'true');
+  .transform((value) => (value === undefined ? true : value === 'true'));
 
 const telemetryString = z
   .enum(['0', '1', 'true', 'false'] as const)
@@ -68,7 +68,7 @@ const serverSchema = z
       secretAccessKey: value.STORAGE_SECRET_ACCESS_KEY,
       bucketName: value.STORAGE_BUCKET_NAME,
       publicUrl: value.STORAGE_PUBLIC_URL,
-      forcePathStyle: value.STORAGE_FORCE_PATH_STYLE ?? false,
+      forcePathStyle: value.STORAGE_FORCE_PATH_STYLE,
     },
     turnstileSecretKey: value.TURNSTILE_SECRET_KEY,
     discordWebhookUrl: value.DISCORD_WEBHOOK_URL,

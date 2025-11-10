@@ -5,8 +5,6 @@
  * including credit costs and other operational parameters.
  */
 
-import { serverEnv } from '@/env/server';
-
 export const webContentAnalyzerConfig = {
   /**
    * Maximum content length for AI analysis (in characters)
@@ -66,37 +64,6 @@ export const webContentAnalyzerConfig = {
   },
 
   /**
-   * Firecrawl API configuration and scraping options
-   */
-  firecrawl: {
-    // API Configuration
-    apiKey: serverEnv.ai.firecrawlApiKey,
-    baseUrl: 'https://api.firecrawl.dev',
-
-    // Default scraping options
-    formats: ['markdown', 'screenshot'],
-    includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'p', 'article'],
-    excludeTags: ['script', 'style', 'nav', 'footer', 'aside'],
-    onlyMainContent: true,
-    waitFor: 2000,
-
-    // Screenshot optimization settings
-    screenshot: {
-      quality: 80, // Reduce quality for faster loading
-      fullPage: false, // Only capture viewport for performance
-    },
-
-    // Rate limiting and timeout settings
-    rateLimit: {
-      maxConcurrentRequests: 3,
-      requestDelay: 1000, // 1 second between requests
-    },
-
-    // Maximum content size (in characters)
-    maxContentSize: 100000, // 100KB of text content
-  },
-
-  /**
    * AI model providers
    */
   openai: {
@@ -123,19 +90,6 @@ export const webContentAnalyzerConfig = {
     maxTokens: 2000,
   },
 } as const;
-
-/**
- * Validates if the Firecrawl API key is configured
- */
-export function validateFirecrawlConfig(): boolean {
-  if (!webContentAnalyzerConfig.firecrawl.apiKey) {
-    console.warn(
-      'FIRECRAWL_API_KEY is not configured. Web content analysis features will not work.'
-    );
-    return false;
-  }
-  return true;
-}
 
 /**
  * Validate if the web content analyzer is properly configured

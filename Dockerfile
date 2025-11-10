@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:24-alpine3.22 AS base
+FROM node:24.11.0-alpine3.22 AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PNPM_STORE_PATH="/pnpm/store"

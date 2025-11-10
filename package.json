@@ -154,7 +154,7 @@
     "@tailwindcss/postcss": "^4.1.16",
     "@tanstack/eslint-plugin-query": "^5.91.2",
     "@types/mdx": "^2.0.13",
-    "@types/node": "^20.19.24",
+    "@types/node": "^24.10.0",
     "@types/pg": "^8.15.6",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",

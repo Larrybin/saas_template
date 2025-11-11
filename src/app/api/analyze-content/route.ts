@@ -23,10 +23,12 @@ import {
 import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
 import {
   getFirecrawlApiKey,
-  webContentAnalyzerServerConfig,
   validateFirecrawlConfig,
+  webContentAnalyzerServerConfig,
 } from '@/ai/text/utils/web-content-config.server';
 import { serverEnv } from '@/env/server';
+import { ensureApiUser } from '@/lib/server/api-auth';
+import { enforceRateLimit } from '@/lib/server/rate-limit';
 
 // Constants from configuration
 const TIMEOUT_MILLIS = webContentAnalyzerConfig.timeoutMillis;
@@ -351,6 +353,23 @@ async function analyzeContent(
 }
 
 export async function POST(req: NextRequest) {
+  const authResult = await ensureApiUser(req);
+  if (!authResult.ok) {
+    return authResult.response;
+  }
+
+  const rateLimitResult = await enforceRateLimit({
+    request: req,
+    scope: 'analyze-content',
+    limit: 5,
+    window: '5 m',
+    userId: authResult.user.id,
+  });
+
+  if (!rateLimitResult.ok) {
+    return rateLimitResult.response;
+  }
+
   const requestId = Math.random().toString(36).substring(7);
   const startTime = performance.now();
 

@@ -21,6 +21,7 @@ If you found anything that could be improved, please let me know.
 - `pnpm lint` – static analysis (Biome) and auto-fixable formatting.
 - `pnpm test` – unit tests powered by Vitest (runs fast with sensible defaults).
 - `pnpm test:e2e` – Playwright authentication smoke tests (set `PLAYWRIGHT_ENABLE=true` and point `PLAYWRIGHT_BASE_URL` at a running app to execute; otherwise they stay skipped by default).
+- Windows PowerShell 对 `pnpm exec tsc --noEmit` 存在 `/d` 解析 bug，遇到报错时可直接改用 `npx tsc --noEmit`，行为一致但可绕过此限制。
 
 All three commands are expected to pass locally and in CI before merging.
 

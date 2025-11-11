@@ -10,6 +10,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
 import type { ProviderKey } from '@/ai/image/lib/provider-config';
 import { serverEnv } from '@/env/server';
+import { ensureApiUser } from '@/lib/server/api-auth';
+import { enforceRateLimit } from '@/lib/server/rate-limit';
 
 /**
  * Intended to be slightly less than the maximum execution time allowed by the
@@ -68,6 +70,23 @@ const withTimeout = <T>(
 };
 
 export async function POST(req: NextRequest) {
+  const authResult = await ensureApiUser(req);
+  if (!authResult.ok) {
+    return authResult.response;
+  }
+
+  const rateLimitResult = await enforceRateLimit({
+    request: req,
+    scope: 'generate-images',
+    limit: 10,
+    window: '2 m',
+    userId: authResult.user.id,
+  });
+
+  if (!rateLimitResult.ok) {
+    return rateLimitResult.response;
+  }
+
   const requestId = Math.random().toString(36).substring(7);
   const { prompt, provider, modelId } =
     (await req.json()) as GenerateImageRequest;

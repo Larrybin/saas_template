@@ -1,21 +1,19 @@
-import { getLogger } from '@/lib/logger';
-import type { Logger } from '@/lib/logger';
+import type { LifecycleLogger } from './logger';
+import { createConsoleLifecycleLogger } from './logger';
 import type { UserLifecycleEvent, UserLifecycleHooks } from './types';
-
-const defaultLogger = getLogger({ span: 'user-lifecycle' });
 
 export type UserLifecycleManagerOptions = {
   hooks?: UserLifecycleHooks;
-  logger?: Logger;
+  logger?: LifecycleLogger;
 };
 
 export class UserLifecycleManager {
   private readonly hooks: UserLifecycleHooks;
-  private readonly logger: Logger;
+  private readonly logger: LifecycleLogger;
 
   constructor(options: UserLifecycleManagerOptions = {}) {
     this.hooks = options.hooks ?? {};
-    this.logger = options.logger ?? defaultLogger;
+    this.logger = options.logger ?? createConsoleLifecycleLogger();
   }
 
   async emit(event: UserLifecycleEvent): Promise<void> {

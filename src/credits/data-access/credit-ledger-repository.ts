@@ -4,18 +4,22 @@ import { getDb } from '@/db';
 import { creditTransaction, userCredit } from '@/db/schema';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 
-type DbClient = Awaited<ReturnType<typeof getDb>>;
+type DrizzleDb = Awaited<ReturnType<typeof getDb>>;
+type TransactionCallback = Parameters<DrizzleDb['transaction']>[0];
+type Transaction = Parameters<TransactionCallback>[0];
+
+type DbExecutor = DrizzleDb | Transaction;
 
 export type UserCreditRecord = typeof userCredit.$inferSelect;
 
 export class CreditLedgerRepository {
-  private async executor(db?: DbClient) {
+  private async executor(db?: DbExecutor) {
     return db ?? (await getDb());
   }
 
   async findUserCredit(
     userId: string,
-    db?: DbClient
+    db?: DbExecutor
   ): Promise<UserCreditRecord | undefined> {
     const client = await this.executor(db);
     const result = await client
@@ -29,7 +33,7 @@ export class CreditLedgerRepository {
   async upsertUserCredit(
     userId: string,
     credits: number,
-    db?: DbClient
+    db?: DbExecutor
   ): Promise<void> {
     const client = await this.executor(db);
     const existing = await this.findUserCredit(userId, client);
@@ -53,7 +57,7 @@ export class CreditLedgerRepository {
   async updateUserCredits(
     userId: string,
     credits: number,
-    db?: DbClient
+    db?: DbExecutor
   ): Promise<void> {
     const client = await this.executor(db);
     await client
@@ -64,13 +68,13 @@ export class CreditLedgerRepository {
 
   async insertTransaction(
     values: typeof creditTransaction.$inferInsert,
-    db?: DbClient
+    db?: DbExecutor
   ): Promise<void> {
     const client = await this.executor(db);
     await client.insert(creditTransaction).values(values);
   }
 
-  async findFifoEligibleTransactions(userId: string, db?: DbClient) {
+  async findFifoEligibleTransactions(userId: string, db?: DbExecutor) {
     const client = await this.executor(db);
     return client
       .select()
@@ -96,7 +100,7 @@ export class CreditLedgerRepository {
   async updateTransactionRemainingAmount(
     id: string,
     remainingAmount: number,
-    db?: DbClient
+    db?: DbExecutor
   ) {
     const client = await this.executor(db);
     await client
@@ -107,7 +111,7 @@ export class CreditLedgerRepository {
 
   async insertUsageRecord(
     payload: { userId: string; amount: number; description: string },
-    db?: DbClient
+    db?: DbExecutor
   ) {
     await this.insertTransaction(
       {

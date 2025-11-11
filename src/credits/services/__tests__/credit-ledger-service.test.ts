@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { getDb } from '@/db';
 import {
   addCredits,
@@ -10,10 +10,19 @@ vi.mock('@/db', () => ({
   getDb: vi.fn(),
 }));
 
+type GetDbMock = Mock<
+  [],
+  Promise<{
+    transaction: (cb: (tx: undefined) => Promise<void>) => Promise<void>;
+  }>
+>;
+
 describe('CreditLedgerService', () => {
+  const mockedGetDb = getDb as unknown as GetDbMock;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    (getDb as unknown as vi.Mock).mockResolvedValue({
+    mockedGetDb.mockResolvedValue({
       transaction: async (cb: (tx: undefined) => Promise<void>) => {
         await cb(undefined);
       },

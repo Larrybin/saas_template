@@ -188,7 +188,6 @@ describe('StripePaymentService', () => {
 
     await service.createCreditCheckout({
       packageId: 'pkg_basic',
-      priceId: undefined,
       customerEmail: 'user@example.com',
       successUrl: 'https://app.test/success',
       cancelUrl: 'https://app.test/cancel',

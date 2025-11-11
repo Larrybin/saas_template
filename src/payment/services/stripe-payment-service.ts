@@ -37,6 +37,8 @@ import {
   sanitizeMetadata,
 } from './utils/stripe-metadata';
 import { handleStripeWebhookEvent } from './webhook-handler';
+import { PaymentSecurityError } from './errors';
+import { recordPriceMismatchEvent } from './utils/payment-security-monitor';
 
 type StripePaymentServiceDeps = {
   stripeClient?: Stripe;
@@ -179,25 +181,19 @@ export class StripePaymentService implements PaymentProvider {
       metadata,
       locale,
     } = params;
-    const log = this.logger.child({
-      span: 'createCreditCheckout',
-      packageId,
-    });
     const creditPackage = getCreditPackageById(packageId);
     if (!creditPackage) {
       throw new Error(`Credit package with ID ${packageId} not found`);
     }
     const canonicalPriceId = creditPackage.price.priceId;
     if (priceId && priceId !== canonicalPriceId) {
-      log.warn(
-        {
-          providedPriceId: priceId,
-          expectedPriceId: canonicalPriceId,
-          customerEmail,
-        },
-        'Rejected credit checkout due to price mismatch'
-      );
-      throw new Error('Price mismatch detected for credit package');
+      recordPriceMismatchEvent({
+        packageId,
+        providedPriceId: priceId,
+        expectedPriceId: canonicalPriceId,
+        customerEmail,
+      });
+      throw new PaymentSecurityError('Price mismatch detected for credit package');
     }
     const stripePriceId = canonicalPriceId;
     const customerId = await this.createOrGetCustomer(

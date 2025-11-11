@@ -5,6 +5,7 @@ import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { NotificationGateway } from '../gateways/notification-gateway';
 import { PaymentTypes } from '../../types';
 import { StripePaymentService } from '../stripe-payment-service';
+import { PaymentSecurityError } from '../errors';
 
 vi.mock('@/lib/server/logger', () => ({
   getLogger: () => ({
@@ -225,7 +226,7 @@ describe('StripePaymentService', () => {
         metadata: { userName: 'Jane' },
         locale: 'en',
       })
-    ).rejects.toThrow('Price mismatch detected for credit package');
+    ).rejects.toThrowError(PaymentSecurityError);
 
     expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
   });

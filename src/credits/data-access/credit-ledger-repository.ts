@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { and, asc, eq, gt, isNull, not, or } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull, not, or, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { creditTransaction, userCredit } from '@/db/schema';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
@@ -92,6 +92,9 @@ export class CreditLedgerRepository {
         )
       )
       .orderBy(
+        asc(
+          sql`CASE WHEN ${creditTransaction.expirationDate} IS NULL THEN 1 ELSE 0 END`
+        ),
         asc(creditTransaction.expirationDate),
         asc(creditTransaction.createdAt)
       );

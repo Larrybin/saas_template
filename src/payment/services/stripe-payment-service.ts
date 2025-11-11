@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
 import { Stripe } from 'stripe';
 import { websiteConfig } from '@/config/website';
-import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import { getCreditPackageById } from '@/credits/server';
+import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
+import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { serverEnv } from '@/env/server';
 import {
@@ -12,11 +12,9 @@ import {
   findPriceInPlan,
 } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
-import type { NotificationGateway } from './gateways/notification-gateway';
-import { DefaultNotificationGateway } from './gateways/default-notification-gateway';
-import { UserRepository } from '../data-access/user-repository';
 import { PaymentRepository } from '../data-access/payment-repository';
 import { StripeEventRepository } from '../data-access/stripe-event-repository';
+import { UserRepository } from '../data-access/user-repository';
 import {
   type CheckoutResult,
   type CreateCheckoutParams,
@@ -24,21 +22,23 @@ import {
   type CreatePortalParams,
   type getSubscriptionsParams,
   type PaymentProvider,
+  type PaymentStatus,
   PaymentTypes,
   type PlanInterval,
   PlanIntervals,
   type PortalResult,
   type Subscription,
-  type PaymentStatus,
 } from '../types';
+import { PaymentSecurityError } from './errors';
+import { DefaultNotificationGateway } from './gateways/default-notification-gateway';
+import type { NotificationGateway } from './gateways/notification-gateway';
+import { recordPriceMismatchEvent } from './utils/payment-security-monitor';
 import {
   createIdempotencyKey,
   mapLocaleToStripeLocale,
   sanitizeMetadata,
 } from './utils/stripe-metadata';
 import { handleStripeWebhookEvent } from './webhook-handler';
-import { PaymentSecurityError } from './errors';
-import { recordPriceMismatchEvent } from './utils/payment-security-monitor';
 
 type StripePaymentServiceDeps = {
   stripeClient?: Stripe;
@@ -87,9 +87,8 @@ export class StripePaymentService implements PaymentProvider {
     const customers = await this.stripe.customers.list({ email, limit: 1 });
     if (customers.data.length > 0) {
       const customerId = customers.data[0].id;
-      const userId = await this.userRepository.findUserIdByCustomerId(
-        customerId
-      );
+      const userId =
+        await this.userRepository.findUserIdByCustomerId(customerId);
       if (!userId) {
         await this.userRepository.linkCustomerIdToUser(customerId, email);
       }
@@ -157,15 +156,14 @@ export class StripePaymentService implements PaymentProvider {
           price.trialPeriodDays;
       }
     }
-    const session = await this.stripe.checkout.sessions.create(
-      checkoutParams,
-      {
-        idempotencyKey: createIdempotencyKey(
-          'stripe.checkout.sessions.create',
-          { customerId, planId, priceId, mode: checkoutParams.mode }
-        ),
-      }
-    );
+    const session = await this.stripe.checkout.sessions.create(checkoutParams, {
+      idempotencyKey: createIdempotencyKey('stripe.checkout.sessions.create', {
+        customerId,
+        planId,
+        priceId,
+        mode: checkoutParams.mode,
+      }),
+    });
     return { url: session.url ?? '', id: session.id };
   }
 
@@ -193,7 +191,9 @@ export class StripePaymentService implements PaymentProvider {
         expectedPriceId: canonicalPriceId,
         customerEmail,
       });
-      throw new PaymentSecurityError('Price mismatch detected for credit package');
+      throw new PaymentSecurityError(
+        'Price mismatch detected for credit package'
+      );
     }
     const stripePriceId = canonicalPriceId;
     const customerId = await this.createOrGetCustomer(
@@ -217,10 +217,11 @@ export class StripePaymentService implements PaymentProvider {
         locale: mapLocaleToStripeLocale(locale),
       },
       {
-        idempotencyKey: createIdempotencyKey(
-          'stripe.checkout.credit',
-          { customerId, packageId, priceId: stripePriceId }
-        ),
+        idempotencyKey: createIdempotencyKey('stripe.checkout.credit', {
+          customerId,
+          packageId,
+          priceId: stripePriceId,
+        }),
       }
     );
     return { url: session.url ?? '', id: session.id };
@@ -275,24 +276,23 @@ export class StripePaymentService implements PaymentProvider {
       signature,
       this.webhookSecret
     );
-    const existing = await this.stripeEventRepository.find(event.id);
-    if (existing?.processedAt) {
-      log.info({ eventId: event.id }, 'Skipping already processed event');
-      return;
-    }
-    if (!existing) {
-      await this.stripeEventRepository.record({
+    const processing = await this.stripeEventRepository.withEventProcessingLock(
+      {
         eventId: event.id,
         type: event.type,
         createdAt: new Date(event.created * 1000),
-      });
+      },
+      async () => {
+        await handleStripeWebhookEvent(event, {
+          paymentRepository: this.paymentRepository,
+          creditsGateway: this.creditsGateway,
+          notificationGateway: this.notificationGateway,
+          logger: log,
+        });
+      }
+    );
+    if (processing.skipped) {
+      log.info({ eventId: event.id }, 'Skipping already processed event');
     }
-    await handleStripeWebhookEvent(event, {
-      paymentRepository: this.paymentRepository,
-      creditsGateway: this.creditsGateway,
-      notificationGateway: this.notificationGateway,
-      logger: log,
-    });
-    await this.stripeEventRepository.markProcessed(event.id);
   }
 }

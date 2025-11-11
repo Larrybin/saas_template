@@ -2,10 +2,10 @@ import type Stripe from 'stripe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { websiteConfig } from '@/config/website';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import type { NotificationGateway } from '../gateways/notification-gateway';
 import { PaymentTypes } from '../../types';
-import { StripePaymentService } from '../stripe-payment-service';
 import { PaymentSecurityError } from '../errors';
+import type { NotificationGateway } from '../gateways/notification-gateway';
+import { StripePaymentService } from '../stripe-payment-service';
 
 vi.mock('@/lib/server/logger', () => ({
   getLogger: () => ({
@@ -84,14 +84,16 @@ const createStripeStub = () => {
   } as unknown as Stripe;
 };
 
-const createService = (overrides: {
-  stripe?: Stripe;
-  creditsGateway?: Partial<CreditsGateway>;
-  notificationGateway?: Partial<NotificationGateway>;
-  userRepository?: any;
-  paymentRepository?: any;
-  stripeEventRepository?: any;
-} = {}) => {
+const createService = (
+  overrides: {
+    stripe?: Stripe;
+    creditsGateway?: Partial<CreditsGateway>;
+    notificationGateway?: Partial<NotificationGateway>;
+    userRepository?: any;
+    paymentRepository?: any;
+    stripeEventRepository?: any;
+  } = {}
+) => {
   const stripe = overrides.stripe ?? createStripeStub();
   const creditsGateway =
     overrides.creditsGateway ??
@@ -124,9 +126,12 @@ const createService = (overrides: {
   const stripeEventRepository =
     overrides.stripeEventRepository ??
     ({
-      find: vi.fn().mockResolvedValue(undefined),
-      record: vi.fn().mockResolvedValue(undefined),
-      markProcessed: vi.fn().mockResolvedValue(undefined),
+      withEventProcessingLock: vi
+        .fn()
+        .mockImplementation(async (_meta, handler) => {
+          await handler();
+          return { skipped: false };
+        }),
     } as const);
 
   const service = new StripePaymentService({
@@ -153,7 +158,10 @@ const createService = (overrides: {
 describe('StripePaymentService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (websiteConfig as any).credits = { ...(websiteConfig.credits ?? {}), enableCredits: true };
+    (websiteConfig as any).credits = {
+      ...(websiteConfig.credits ?? {}),
+      enableCredits: true,
+    };
   });
 
   it('attaches plan metadata and idempotency key on checkout', async () => {
@@ -277,9 +285,12 @@ describe('StripePaymentService', () => {
       upsertSubscription: vi.fn(),
     };
     const stripeEventRepository = {
-      find: vi.fn().mockResolvedValue(undefined),
-      record: vi.fn().mockResolvedValue(undefined),
-      markProcessed: vi.fn().mockResolvedValue(undefined),
+      withEventProcessingLock: vi
+        .fn()
+        .mockImplementation(async (_meta, handler) => {
+          await handler();
+          return { skipped: false };
+        }),
     };
     const { service } = createService({
       stripe,
@@ -294,6 +305,6 @@ describe('StripePaymentService', () => {
       'user-1',
       'price_123'
     );
-    expect(stripeEventRepository.markProcessed).toHaveBeenCalledWith('evt_123');
+    expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
   });
 });

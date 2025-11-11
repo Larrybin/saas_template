@@ -1,5 +1,10 @@
 import type Stripe from 'stripe';
-import { PaymentTypes, type PlanInterval, PlanIntervals, type PaymentStatus } from '../../types';
+import {
+  type PaymentStatus,
+  PaymentTypes,
+  type PlanInterval,
+  PlanIntervals,
+} from '../../types';
 
 export function mapStripeIntervalToPlanInterval(
   subscription: Stripe.Subscription

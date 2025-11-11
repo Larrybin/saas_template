@@ -1,23 +1,23 @@
 import { randomUUID } from 'crypto';
+import type { Logger } from 'pino';
 import type Stripe from 'stripe';
 import { websiteConfig } from '@/config/website';
 import { getCreditPackageById } from '@/credits/server';
-import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
-import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import {
   addLifetimeMonthlyCredits,
   addSubscriptionCredits,
 } from '@/credits/services/credit-ledger-service';
+import type { CreditsGateway } from '@/credits/services/credits-gateway';
+import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
-import type { NotificationGateway } from './gateways/notification-gateway';
 import type { PaymentRepository } from '../data-access/payment-repository';
-import type { Logger } from 'pino';
+import { type PaymentStatus, PaymentTypes } from '../types';
+import type { NotificationGateway } from './gateways/notification-gateway';
 import {
   getSubscriptionPeriodBounds,
   mapStripeIntervalToPlanInterval,
   mapSubscriptionStatusToPaymentStatus,
 } from './utils/stripe-subscription';
-import { PaymentTypes, type PaymentStatus } from '../types';
 
 type WebhookDeps = {
   paymentRepository: PaymentRepository;
@@ -39,10 +39,7 @@ export async function handleStripeWebhookEvent(
   }
 }
 
-async function handleSubscriptionEvent(
-  event: Stripe.Event,
-  deps: WebhookDeps
-) {
+async function handleSubscriptionEvent(event: Stripe.Event, deps: WebhookDeps) {
   const subscription = event.data.object as Stripe.Subscription;
   switch (event.type) {
     case 'customer.subscription.created':
@@ -55,7 +52,10 @@ async function handleSubscriptionEvent(
       await onDeleteSubscription(subscription, deps);
       break;
     default:
-      deps.logger.debug({ eventType: event.type }, 'Ignored subscription event');
+      deps.logger.debug(
+        { eventType: event.type },
+        'Ignored subscription event'
+      );
   }
 }
 
@@ -77,8 +77,7 @@ async function onCreateSubscription(
   if (!priceId) return;
   const userId = subscription.metadata.userId;
   if (!userId) return;
-  const { periodStart, periodEnd } =
-    getSubscriptionPeriodBounds(subscription);
+  const { periodStart, periodEnd } = getSubscriptionPeriodBounds(subscription);
   await deps.paymentRepository.upsertSubscription({
     id: randomUUID(),
     priceId,
@@ -114,8 +113,7 @@ async function onUpdateSubscription(
   const existing = await deps.paymentRepository.findOneBySubscriptionId(
     subscription.id
   );
-  const { periodStart, periodEnd } =
-    getSubscriptionPeriodBounds(subscription);
+  const { periodStart, periodEnd } = getSubscriptionPeriodBounds(subscription);
   const updatedId = await deps.paymentRepository.updateBySubscriptionId(
     subscription.id,
     {
@@ -144,11 +142,7 @@ async function onUpdateSubscription(
     periodStart &&
     existing.periodStart.getTime() !== periodStart.getTime() &&
     subscription.status === 'active';
-  if (
-    isRenewal &&
-    existing?.userId &&
-    websiteConfig.credits?.enableCredits
-  ) {
+  if (isRenewal && existing?.userId && websiteConfig.credits?.enableCredits) {
     await deps.creditsGateway.addSubscriptionCredits(existing.userId, priceId);
   }
 }

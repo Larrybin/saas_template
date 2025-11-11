@@ -5,11 +5,34 @@ import { websiteConfig } from '@/config/website';
 import { getDb } from '@/db';
 import { creditTransaction, userCredit } from '@/db/schema';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
-import type { CreditsGateway, AddCreditsPayload } from './credits-gateway';
 import { CreditLedgerRepository } from '../data-access/credit-ledger-repository';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
+import type { AddCreditsPayload, CreditsGateway } from './credits-gateway';
 
 export const creditLedgerRepository = new CreditLedgerRepository();
+
+function compareTransactionsByExpiry(
+  a: typeof creditTransaction.$inferSelect,
+  b: typeof creditTransaction.$inferSelect
+) {
+  const aExpire = a.expirationDate ?? null;
+  const bExpire = b.expirationDate ?? null;
+  if (aExpire && bExpire) {
+    const diff = aExpire.getTime() - bExpire.getTime();
+    if (diff !== 0) {
+      return diff;
+    }
+  }
+  if (aExpire && !bExpire) {
+    return -1;
+  }
+  if (!aExpire && bExpire) {
+    return 1;
+  }
+  const aCreated = a.createdAt?.getTime() ?? 0;
+  const bCreated = b.createdAt?.getTime() ?? 0;
+  return aCreated - bCreated;
+}
 
 export async function getUserCredits(userId: string): Promise<number> {
   try {
@@ -74,15 +97,20 @@ export async function addCredits(payload: {
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error('Invalid amount');
   }
-  if (
-    expireDays !== undefined &&
-    (!Number.isFinite(expireDays) || expireDays <= 0)
-  ) {
-    throw new Error('Invalid expire days');
+  const hasExpireConfig = expireDays !== undefined && expireDays !== null;
+  if (hasExpireConfig) {
+    if (!Number.isFinite(expireDays) || expireDays < 0) {
+      throw new Error('Invalid expire days');
+    }
   }
   const current = await creditLedgerRepository.findUserCredit(userId);
   const newBalance = (current?.currentCredits ?? 0) + amount;
   await creditLedgerRepository.upsertUserCredit(userId, newBalance);
+
+  const expirationDate =
+    hasExpireConfig && expireDays && expireDays > 0
+      ? addDays(new Date(), expireDays)
+      : undefined;
 
   await saveCreditTransaction({
     userId,
@@ -90,7 +118,7 @@ export async function addCredits(payload: {
     amount,
     description,
     paymentId,
-    expirationDate: expireDays ? addDays(new Date(), expireDays) : undefined,
+    expirationDate,
   });
 }
 
@@ -124,10 +152,9 @@ export async function consumeCredits(payload: {
     if (currentBalance < amount) {
       throw new Error('Insufficient credits');
     }
-    const transactions = await creditLedgerRepository.findFifoEligibleTransactions(
-      userId,
-      tx
-    );
+    const transactions = (
+      await creditLedgerRepository.findFifoEligibleTransactions(userId, tx)
+    ).sort(compareTransactionsByExpiry);
     let remainingToDeduct = amount;
     for (const trx of transactions) {
       if (remainingToDeduct <= 0) break;
@@ -200,7 +227,10 @@ export async function processExpiredCredits(userId: string) {
       .from(userCredit)
       .where(eq(userCredit.userId, userId))
       .limit(1);
-    const newBalance = Math.max(0, (current[0]?.currentCredits ?? 0) - expiredTotal);
+    const newBalance = Math.max(
+      0,
+      (current[0]?.currentCredits ?? 0) - expiredTotal
+    );
     await db
       .update(userCredit)
       .set({ currentCredits: newBalance, updatedAt: now })
@@ -272,7 +302,7 @@ export async function addMonthlyFreeCredits(userId: string, planId: string) {
   );
   if (!canAdd) return;
   const credits = pricePlan.credits.amount ?? 0;
-  const expireDays = pricePlan.credits.expireDays ?? 0;
+  const expireDays = pricePlan.credits.expireDays;
   await addCredits({
     userId,
     amount: credits,
@@ -328,10 +358,7 @@ export class CreditLedgerService implements CreditsGateway {
     await addCredits(payload);
   }
 
-  async addSubscriptionCredits(
-    userId: string,
-    priceId: string
-  ): Promise<void> {
+  async addSubscriptionCredits(userId: string, priceId: string): Promise<void> {
     await addSubscriptionCredits(userId, priceId);
   }
 

@@ -179,11 +179,27 @@ export class StripePaymentService implements PaymentProvider {
       metadata,
       locale,
     } = params;
+    const log = this.logger.child({
+      span: 'createCreditCheckout',
+      packageId,
+    });
     const creditPackage = getCreditPackageById(packageId);
     if (!creditPackage) {
       throw new Error(`Credit package with ID ${packageId} not found`);
     }
-    const stripePriceId = priceId ?? creditPackage.price.priceId;
+    const canonicalPriceId = creditPackage.price.priceId;
+    if (priceId && priceId !== canonicalPriceId) {
+      log.warn(
+        {
+          providedPriceId: priceId,
+          expectedPriceId: canonicalPriceId,
+          customerEmail,
+        },
+        'Rejected credit checkout due to price mismatch'
+      );
+      throw new Error('Price mismatch detected for credit package');
+    }
+    const stripePriceId = canonicalPriceId;
     const customerId = await this.createOrGetCustomer(
       customerEmail,
       metadata?.userName

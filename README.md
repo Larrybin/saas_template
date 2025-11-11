@@ -33,6 +33,12 @@ All three commands are expected to pass locally and in CI before merging.
   - Client code / shared config: `import { clientEnv } from '@/env/client'`
 - `.env.example` documents every supported variable. Copy it per-environment and fill the required secrets before running `pnpm build`.
 
+### Payment safety guidelines
+
+- Stripe Checkout price IDs永远由服务端指定。前端只提交 `packageId` 或 `planId`，`createCreditCheckout`/`createCheckout` 会根据服务器配置选择合法的 Stripe `priceId`。
+- 如果客户端尝试提交与套餐配置不符的 `priceId`，请求会被立即拒绝并记录安全日志；Webhook 发放积分也仅依赖服务端定义的套餐信息。
+- 调整信用套餐价格时，请同步更新服务器配置，避免遗留旧 `priceId`。
+
 ### Middleware observability checklist
 
 The Edge middleware now performs only cookie-based checks; to monitor its performance before and after changes, capture latency from your CDN logs or APM dashboard and compare P50/P95 numbers. Keep the baseline handy whenever adjusting matchers or redirects.

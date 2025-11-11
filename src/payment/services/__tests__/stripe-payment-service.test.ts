@@ -197,6 +197,7 @@ describe('StripePaymentService', () => {
 
     expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        line_items: [{ price: 'price_credit', quantity: 1 }],
         metadata: expect.objectContaining({
           packageId: 'pkg_basic',
           priceId: 'price_credit',
@@ -208,6 +209,25 @@ describe('StripePaymentService', () => {
         idempotencyKey: expect.any(String),
       })
     );
+  });
+
+  it('rejects credit checkout when client price mismatches package', async () => {
+    const stripe = createStripeStub();
+    const { service } = createService({ stripe });
+
+    await expect(
+      service.createCreditCheckout({
+        packageId: 'pkg_basic',
+        priceId: 'price_other',
+        customerEmail: 'user@example.com',
+        successUrl: 'https://app.test/success',
+        cancelUrl: 'https://app.test/cancel',
+        metadata: { userName: 'Jane' },
+        locale: 'en',
+      })
+    ).rejects.toThrow('Price mismatch detected for credit package');
+
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
   });
 
   it('handles subscription renewal and awards credits', async () => {

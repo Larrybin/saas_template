@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { Logger } from '@/lib/logger';
 import type { UserLifecycleHooks } from '../types';
 import { UserLifecycleManager } from '../user-lifecycle-manager';
 
@@ -36,7 +37,7 @@ describe('UserLifecycleManager', () => {
       error: vi.fn(),
       info: vi.fn(),
       warn: vi.fn(),
-    } as const;
+    } as unknown as Logger;
 
     const hooks: UserLifecycleHooks = {
       'user.created': [

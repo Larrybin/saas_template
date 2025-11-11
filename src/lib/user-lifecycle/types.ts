@@ -1,9 +1,11 @@
 import type { Locale } from 'next-intl';
 import type { User } from '@/lib/auth-types';
 
+export type UserLifecycleUserPayload = Pick<User, 'id' | 'email' | 'name'>;
+
 export type UserLifecycleEventMap = {
   'user.created': {
-    user: User;
+    user: UserLifecycleUserPayload;
     locale?: Locale;
   };
 };

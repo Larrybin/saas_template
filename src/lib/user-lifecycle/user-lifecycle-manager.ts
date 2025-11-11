@@ -1,7 +1,8 @@
+import { getLogger } from '@/lib/logger';
 import type { Logger } from '@/lib/logger';
 import type { UserLifecycleEvent, UserLifecycleHooks } from './types';
 
-const defaultLogger: Logger = console;
+const defaultLogger = getLogger({ span: 'user-lifecycle' });
 
 export type UserLifecycleManagerOptions = {
   hooks?: UserLifecycleHooks;

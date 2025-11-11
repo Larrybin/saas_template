@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'src/**/*.{test,spec}.{ts,tsx}'],
     reporters:
       process.env.CI === 'true'
         ? [

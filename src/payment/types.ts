@@ -143,7 +143,7 @@ export interface CreateCheckoutParams {
  */
 export interface CreateCreditCheckoutParams {
   packageId: string;
-  priceId: string;
+  priceId?: string;
   customerEmail: string;
   successUrl?: string;
   cancelUrl?: string;

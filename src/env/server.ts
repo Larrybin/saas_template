@@ -106,7 +106,6 @@ const serverSchema = serverSchemaInput.transform((value) => ({
     redisRestToken: value.UPSTASH_REDIS_REST_TOKEN,
   },
 }));
-
 const rawServerEnv = pickEnv(serverSchemaInput);
 
 const parsedServerEnv = serverSchema.safeParse(rawServerEnv);

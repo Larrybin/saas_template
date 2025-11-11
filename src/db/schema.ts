@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -88,6 +88,8 @@ export const payment = pgTable("payment", {
 	paymentStatusIdx: index("payment_status_idx").on(table.status),
 	paymentSubscriptionIdIdx: index("payment_subscription_id_idx").on(table.subscriptionId),
 	paymentSessionIdIdx: index("payment_session_id_idx").on(table.sessionId),
+	paymentSubscriptionIdUnique: uniqueIndex("payment_subscription_id_unique").on(table.subscriptionId),
+	paymentSessionIdUnique: uniqueIndex("payment_session_id_unique").on(table.sessionId),
 }));
 
 export const userCredit = pgTable("user_credit", {
@@ -117,3 +119,10 @@ export const creditTransaction = pgTable("credit_transaction", {
 	creditTransactionUserIdIdx: index("credit_transaction_user_id_idx").on(table.userId),
 	creditTransactionTypeIdx: index("credit_transaction_type_idx").on(table.type),
 }));
+
+export const stripeEvent = pgTable("stripe_event", {
+	eventId: text("event_id").primaryKey(),
+	type: text("type").notNull(),
+	createdAt: timestamp("created_at").notNull(),
+	processedAt: timestamp("processed_at"),
+});

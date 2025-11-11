@@ -99,6 +99,10 @@ const clientSchema = clientSchemaInput.transform((value) => ({
   crispWebsiteId: value.NEXT_PUBLIC_CRISP_WEBSITE_ID,
 }));
 
+type ClientEnvShape = {
+  [K in keyof z.input<typeof clientSchemaInput>]: string | undefined;
+};
+
 // Use explicit property access so Next.js can inline values at build time.
 const rawClientEnv = {
   NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
@@ -135,7 +139,7 @@ const rawClientEnv = {
   NEXT_PUBLIC_AFFILIATE_PROMOTEKIT_ID:
     process.env.NEXT_PUBLIC_AFFILIATE_PROMOTEKIT_ID,
   NEXT_PUBLIC_CRISP_WEBSITE_ID: process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID,
-} satisfies z.input<typeof clientSchemaInput>;
+} satisfies ClientEnvShape;
 
 const parsedClientEnv = clientSchema.safeParse(rawClientEnv);
 

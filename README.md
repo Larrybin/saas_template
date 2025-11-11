@@ -39,6 +39,12 @@ All three commands are expected to pass locally and in CI before merging.
 - 如果客户端尝试提交与套餐配置不符的 `priceId`，请求会被立即拒绝并记录安全日志；Webhook 发放积分也仅依赖服务端定义的套餐信息。
 - 调整信用套餐价格时，请同步更新服务器配置，避免遗留旧 `priceId`。
 
+### User lifecycle hooks
+
+- Better Auth 的 `databaseHooks.user.create.after` 现在通过 `src/lib/user-lifecycle` 触发，默认挂载 Newsletter 自动订阅与注册积分发放。
+- 想要扩展或在测试中替换行为，可实现自定义 hook（签名见 `UserLifecycleHook`）并在创建 `UserLifecycleManager` 时注入。
+- 相关 Vitest 示例位于 `src/lib/user-lifecycle/__tests__/user-lifecycle-manager.test.ts`，可作为编写额外生命周期事件的参考。
+
 ### Middleware observability checklist
 
 The Edge middleware now performs only cookie-based checks; to monitor its performance before and after changes, capture latency from your CDN logs or APM dashboard and compare P50/P95 numbers. Keep the baseline handy whenever adjusting matchers or redirects.

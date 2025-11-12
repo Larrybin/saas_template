@@ -19,14 +19,16 @@ type GetDbMock = Mock<
 
 describe('CreditLedgerService', () => {
   const mockedGetDb = getDb as unknown as GetDbMock;
+  let fakeDb: Awaited<ReturnType<GetDbMock>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetDb.mockResolvedValue({
+    fakeDb = {
       transaction: async (cb: (tx: undefined) => Promise<void>) => {
         await cb(undefined);
       },
-    });
+    };
+    mockedGetDb.mockResolvedValue(fakeDb);
   });
 
   it('consumes credits FIFO and records usage', async () => {
@@ -97,8 +99,8 @@ describe('CreditLedgerService', () => {
       description: 'bonus',
     });
 
-    expect(upsertSpy).toHaveBeenCalledWith('user-1', 30, undefined);
-    expect(transactionSpy).toHaveBeenCalledWith(expect.any(Object), undefined);
+    expect(upsertSpy).toHaveBeenCalledWith('user-1', 30, fakeDb);
+    expect(transactionSpy).toHaveBeenCalledWith(expect.any(Object), fakeDb);
   });
 
   it('prioritizes expiring transactions before non-expiring ones', async () => {
@@ -169,7 +171,7 @@ describe('CreditLedgerService', () => {
 
     expect(transactionSpy).toHaveBeenCalledWith(
       expect.objectContaining({ expirationDate: undefined }),
-      undefined
+      fakeDb
     );
   });
 });

@@ -60,8 +60,17 @@ export async function processExpiredCredits(userId: string) {
   await creditLedgerDomainService.processExpiredCredits(userId);
 }
 
-export async function canAddCreditsByType(userId: string, creditType: string) {
-  return creditLedgerDomainService.canAddCreditsByType(userId, creditType);
+export async function canAddCreditsByType(
+  userId: string,
+  creditType: string,
+  periodKey?: number
+) {
+  return creditLedgerDomainService.canAddCreditsByType(
+    userId,
+    creditType,
+    undefined,
+    periodKey
+  );
 }
 
 export async function addRegisterGiftCredits(userId: string) {

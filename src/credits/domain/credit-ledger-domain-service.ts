@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { addDays } from 'date-fns';
 import { and, eq, sql } from 'drizzle-orm';
+import { featureFlags } from '@/config/feature-flags';
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
 import type {
@@ -83,6 +84,12 @@ export class CreditLedgerDomainService {
     this.validateAddCreditsPayload(payload);
     const executor = await this.resolveExecutor(db);
     const now = new Date();
+    const periodKey =
+      featureFlags.enableCreditPeriodKey &&
+      typeof payload.periodKey === 'number' &&
+      payload.periodKey > 0
+        ? payload.periodKey
+        : 0;
     const current = await this.repository.findUserCredit(
       payload.userId,
       executor
@@ -108,6 +115,7 @@ export class CreditLedgerDomainService {
         description: payload.description,
         paymentId: payload.paymentId,
         expirationDate,
+        periodKey,
       },
       executor,
       now
@@ -238,10 +246,30 @@ export class CreditLedgerDomainService {
   async canAddCreditsByType(
     userId: string,
     creditType: string,
-    db?: DbExecutor
+    db?: DbExecutor,
+    periodKey?: number
   ): Promise<boolean> {
     const executor = await this.resolveExecutor(db);
     const now = new Date();
+    if (
+      featureFlags.enableCreditPeriodKey &&
+      periodKey &&
+      Number.isFinite(periodKey) &&
+      periodKey > 0
+    ) {
+      const existing = await executor
+        .select()
+        .from(creditTransaction)
+        .where(
+          and(
+            eq(creditTransaction.userId, userId),
+            eq(creditTransaction.type, creditType),
+            eq(creditTransaction.periodKey, periodKey)
+          )
+        )
+        .limit(1);
+      return existing.length === 0;
+    }
     const existing = await executor
       .select()
       .from(creditTransaction)

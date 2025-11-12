@@ -50,13 +50,14 @@ export class CreditLedgerDomainService {
 
   private async saveCreditTransaction(
     values: Omit<CreditTransactionInsert, 'id' | 'createdAt' | 'updatedAt'>,
-    db: DbExecutor
+    db: DbExecutor,
+    timestamp: Date
   ) {
     await this.repository.insertTransaction(
       {
         id: randomUUID(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
         ...values,
       },
       db
@@ -81,6 +82,7 @@ export class CreditLedgerDomainService {
   async addCredits(payload: AddCreditsPayload, db?: DbExecutor) {
     this.validateAddCreditsPayload(payload);
     const executor = await this.resolveExecutor(db);
+    const now = new Date();
     const current = await this.repository.findUserCredit(
       payload.userId,
       executor
@@ -94,7 +96,7 @@ export class CreditLedgerDomainService {
 
     const expirationDate =
       payload.expireDays && payload.expireDays > 0
-        ? addDays(new Date(), payload.expireDays)
+        ? addDays(now, payload.expireDays)
         : undefined;
 
     await this.saveCreditTransaction(
@@ -107,7 +109,8 @@ export class CreditLedgerDomainService {
         paymentId: payload.paymentId,
         expirationDate,
       },
-      executor
+      executor,
+      now
     );
   }
 
@@ -133,24 +136,10 @@ export class CreditLedgerDomainService {
       throw new Error('Insufficient credits');
     }
 
-    const transactions = (
-      await this.repository.findFifoEligibleTransactions(
-        payload.userId,
-        executor
-      )
-    ).sort((a, b) => {
-      const aExpire = a.expirationDate ?? null;
-      const bExpire = b.expirationDate ?? null;
-      if (aExpire && bExpire) {
-        const diff = aExpire.getTime() - bExpire.getTime();
-        if (diff !== 0) return diff;
-      }
-      if (aExpire && !bExpire) return -1;
-      if (!aExpire && bExpire) return 1;
-      const aCreated = a.createdAt?.getTime() ?? 0;
-      const bCreated = b.createdAt?.getTime() ?? 0;
-      return aCreated - bCreated;
-    });
+    const transactions = await this.repository.findFifoEligibleTransactions(
+      payload.userId,
+      executor
+    );
 
     let remainingToDeduct = payload.amount;
     for (const trx of transactions) {
@@ -241,7 +230,8 @@ export class CreditLedgerDomainService {
         remainingAmount: null,
         description: `Expire credits: ${expiredTotal}`,
       },
-      executor
+      executor,
+      now
     );
   }
 

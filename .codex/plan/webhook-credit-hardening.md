@@ -23,3 +23,9 @@
 4. **文档同步与验证**
    - README 新增关于 Webhook 幂等与 `expireDays` 配置说明。
    - 跑 `node ./node_modules/typescript/bin/tsc --noEmit` 与 `node ./node_modules/vitest/vitest.mjs run src/payment/services/__tests__/stripe-payment-service.test.ts src/credits/services/__tests__/credit-ledger-service.test.ts`。
+
+## Transactional credit purchase
+- [x] Expand credit ledger and payment repositories to accept shared transactions.
+- [x] Wrap webhook credit purchase/lifetime flows in a single transaction.
+- [x] Add regression tests for failed credit grants.
+

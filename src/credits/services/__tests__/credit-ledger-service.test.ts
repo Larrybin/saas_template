@@ -97,8 +97,8 @@ describe('CreditLedgerService', () => {
       description: 'bonus',
     });
 
-    expect(upsertSpy).toHaveBeenCalledWith('user-1', 30);
-    expect(transactionSpy).toHaveBeenCalled();
+    expect(upsertSpy).toHaveBeenCalledWith('user-1', 30, undefined);
+    expect(transactionSpy).toHaveBeenCalledWith(expect.any(Object), undefined);
   });
 
   it('prioritizes expiring transactions before non-expiring ones', async () => {
@@ -168,7 +168,8 @@ describe('CreditLedgerService', () => {
     });
 
     expect(transactionSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ expirationDate: undefined })
+      expect.objectContaining({ expirationDate: undefined }),
+      undefined
     );
   });
 });

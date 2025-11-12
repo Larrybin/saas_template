@@ -7,8 +7,18 @@ export type AddCreditsPayload = {
   expireDays?: number;
 };
 
+import type { DbExecutor } from '../data-access/credit-ledger-repository';
+
 export interface CreditsGateway {
-  addCredits(payload: AddCreditsPayload): Promise<void>;
-  addSubscriptionCredits(userId: string, priceId: string): Promise<void>;
-  addLifetimeMonthlyCredits(userId: string, priceId: string): Promise<void>;
+  addCredits(payload: AddCreditsPayload, db?: DbExecutor): Promise<void>;
+  addSubscriptionCredits(
+    userId: string,
+    priceId: string,
+    db?: DbExecutor
+  ): Promise<void>;
+  addLifetimeMonthlyCredits(
+    userId: string,
+    priceId: string,
+    db?: DbExecutor
+  ): Promise<void>;
 }

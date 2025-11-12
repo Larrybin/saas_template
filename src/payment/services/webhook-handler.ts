@@ -3,10 +3,7 @@ import type { Logger } from 'pino';
 import type Stripe from 'stripe';
 import { websiteConfig } from '@/config/website';
 import { getCreditPackageById } from '@/credits/server';
-import {
-  addLifetimeMonthlyCredits,
-  addSubscriptionCredits,
-} from '@/credits/services/credit-ledger-service';
+import { addLifetimeMonthlyCredits } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
@@ -78,30 +75,35 @@ async function onCreateSubscription(
   const userId = subscription.metadata.userId;
   if (!userId) return;
   const { periodStart, periodEnd } = getSubscriptionPeriodBounds(subscription);
-  await deps.paymentRepository.upsertSubscription({
-    id: randomUUID(),
-    priceId,
-    type: PaymentTypes.SUBSCRIPTION,
-    userId,
-    customerId: subscription.customer as string,
-    subscriptionId: subscription.id,
-    interval: mapStripeIntervalToPlanInterval(subscription),
-    status: mapSubscriptionStatusToPaymentStatus(subscription.status),
-    periodStart,
-    periodEnd,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    trialStart: subscription.trial_start
-      ? new Date(subscription.trial_start * 1000)
-      : null,
-    trialEnd: subscription.trial_end
-      ? new Date(subscription.trial_end * 1000)
-      : null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+  await deps.paymentRepository.withTransaction(async (tx) => {
+    await deps.paymentRepository.upsertSubscription(
+      {
+        id: randomUUID(),
+        priceId,
+        type: PaymentTypes.SUBSCRIPTION,
+        userId,
+        customerId: subscription.customer as string,
+        subscriptionId: subscription.id,
+        interval: mapStripeIntervalToPlanInterval(subscription),
+        status: mapSubscriptionStatusToPaymentStatus(subscription.status),
+        periodStart,
+        periodEnd,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        trialStart: subscription.trial_start
+          ? new Date(subscription.trial_start * 1000)
+          : null,
+        trialEnd: subscription.trial_end
+          ? new Date(subscription.trial_end * 1000)
+          : null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      tx
+    );
+    if (websiteConfig.credits?.enableCredits) {
+      await deps.creditsGateway.addSubscriptionCredits(userId, priceId, tx);
+    }
   });
-  if (websiteConfig.credits?.enableCredits) {
-    await deps.creditsGateway.addSubscriptionCredits(userId, priceId);
-  }
 }
 
 async function onUpdateSubscription(
@@ -110,40 +112,55 @@ async function onUpdateSubscription(
 ) {
   const priceId = subscription.items.data[0]?.price.id;
   if (!priceId) return;
-  const existing = await deps.paymentRepository.findOneBySubscriptionId(
-    subscription.id
-  );
   const { periodStart, periodEnd } = getSubscriptionPeriodBounds(subscription);
-  const updatedId = await deps.paymentRepository.updateBySubscriptionId(
-    subscription.id,
-    {
-      priceId,
-      interval: mapStripeIntervalToPlanInterval(subscription),
-      status: mapSubscriptionStatusToPaymentStatus(subscription.status),
-      periodStart,
-      periodEnd,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      trialStart: subscription.trial_start
-        ? new Date(subscription.trial_start * 1000)
-        : null,
-      trialEnd: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000)
-        : null,
-      updatedAt: new Date(),
+  const handled = await deps.paymentRepository.withTransaction(async (tx) => {
+    const existing = await deps.paymentRepository.findOneBySubscriptionId(
+      subscription.id,
+      tx
+    );
+    const updatedId = await deps.paymentRepository.updateBySubscriptionId(
+      subscription.id,
+      {
+        priceId,
+        interval: mapStripeIntervalToPlanInterval(subscription),
+        status: mapSubscriptionStatusToPaymentStatus(subscription.status),
+        periodStart,
+        periodEnd,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        trialStart: subscription.trial_start
+          ? new Date(subscription.trial_start * 1000)
+          : null,
+        trialEnd: subscription.trial_end
+          ? new Date(subscription.trial_end * 1000)
+          : null,
+        updatedAt: new Date(),
+      },
+      tx
+    );
+    if (!updatedId) {
+      return false;
     }
-  );
-  if (!updatedId) {
+    const isRenewal =
+      existing &&
+      existing.periodStart &&
+      periodStart &&
+      existing.periodStart.getTime() !== periodStart.getTime() &&
+      subscription.status === 'active';
+    if (
+      isRenewal &&
+      existing?.userId &&
+      websiteConfig.credits?.enableCredits
+    ) {
+      await deps.creditsGateway.addSubscriptionCredits(
+        existing.userId,
+        priceId,
+        tx
+      );
+    }
+    return true;
+  });
+  if (!handled) {
     await onCreateSubscription(subscription, deps);
-    return;
-  }
-  const isRenewal =
-    existing &&
-    existing.periodStart &&
-    periodStart &&
-    existing.periodStart.getTime() !== periodStart.getTime() &&
-    subscription.status === 'active';
-  if (isRenewal && existing?.userId && websiteConfig.credits?.enableCredits) {
-    await deps.creditsGateway.addSubscriptionCredits(existing.userId, priceId);
   }
 }
 
@@ -151,9 +168,15 @@ async function onDeleteSubscription(
   subscription: Stripe.Subscription,
   deps: WebhookDeps
 ) {
-  await deps.paymentRepository.updateBySubscriptionId(subscription.id, {
-    status: mapSubscriptionStatusToPaymentStatus(subscription.status),
-    updatedAt: new Date(),
+  await deps.paymentRepository.withTransaction(async (tx) => {
+    await deps.paymentRepository.updateBySubscriptionId(
+      subscription.id,
+      {
+        status: mapSubscriptionStatusToPaymentStatus(subscription.status),
+        updatedAt: new Date(),
+      },
+      tx
+    );
   });
 }
 
@@ -165,23 +188,39 @@ async function onOnetimePayment(
   const userId = session.metadata?.userId;
   const priceId = session.metadata?.priceId;
   if (!userId || !priceId) return;
-  const existing = await deps.paymentRepository.findBySessionId(session.id);
-  if (existing) return;
-  const now = new Date();
-  await deps.paymentRepository.insert({
-    id: randomUUID(),
-    priceId,
-    type: PaymentTypes.ONE_TIME,
-    userId,
-    customerId,
-    sessionId: session.id,
-    status: 'completed',
-    periodStart: now,
-    createdAt: now,
-    updatedAt: now,
-  });
-  if (websiteConfig.credits?.enableCredits) {
-    await addLifetimeMonthlyCredits(userId, priceId);
+  const processed = await deps.paymentRepository.withTransaction(
+    async (tx) => {
+      const existing = await deps.paymentRepository.findBySessionId(
+        session.id,
+        tx
+      );
+      if (existing) {
+        return false;
+      }
+      const now = new Date();
+      await deps.paymentRepository.insert(
+        {
+          id: randomUUID(),
+          priceId,
+          type: PaymentTypes.ONE_TIME,
+          userId,
+          customerId,
+          sessionId: session.id,
+          status: 'completed',
+          periodStart: now,
+          createdAt: now,
+          updatedAt: now,
+        },
+        tx
+      );
+      if (websiteConfig.credits?.enableCredits) {
+        await addLifetimeMonthlyCredits(userId, priceId, tx);
+      }
+      return true;
+    }
+  );
+  if (!processed) {
+    return;
   }
   const amount = session.amount_total ? session.amount_total / 100 : 0;
   await deps.notificationGateway.notifyPurchase({
@@ -202,29 +241,40 @@ async function onCreditPurchase(
   if (!userId || !packageId || !credits) {
     return;
   }
-  const existing = await deps.paymentRepository.findBySessionId(session.id);
-  if (existing) {
-    return;
-  }
-  const now = new Date();
-  await deps.paymentRepository.insert({
-    id: randomUUID(),
-    priceId: session.metadata?.priceId || '',
-    type: PaymentTypes.ONE_TIME,
-    userId,
-    customerId: session.customer as string,
-    sessionId: session.id,
-    status: 'completed',
-    periodStart: now,
-    createdAt: now,
-    updatedAt: now,
-  });
-  await deps.creditsGateway.addCredits({
-    userId,
-    amount: Number.parseInt(credits, 10),
-    type: CREDIT_TRANSACTION_TYPE.PURCHASE_PACKAGE,
-    description: `+${credits} credits for package ${packageId}`,
-    paymentId: session.id,
-    expireDays: getCreditPackageById(packageId)?.expireDays,
+  await deps.paymentRepository.withTransaction(async (tx) => {
+    const existing = await deps.paymentRepository.findBySessionId(
+      session.id,
+      tx
+    );
+    if (existing) {
+      return;
+    }
+    const now = new Date();
+    await deps.paymentRepository.insert(
+      {
+        id: randomUUID(),
+        priceId: session.metadata?.priceId || '',
+        type: PaymentTypes.ONE_TIME,
+        userId,
+        customerId: session.customer as string,
+        sessionId: session.id,
+        status: 'completed',
+        periodStart: now,
+        createdAt: now,
+        updatedAt: now,
+      },
+      tx
+    );
+    await deps.creditsGateway.addCredits(
+      {
+        userId,
+        amount: Number.parseInt(credits, 10),
+        type: CREDIT_TRANSACTION_TYPE.PURCHASE_PACKAGE,
+        description: `+${credits} credits for package ${packageId}`,
+        paymentId: session.id,
+        expireDays: getCreditPackageById(packageId)?.expireDays,
+      },
+      tx
+    );
   });
 }

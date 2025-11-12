@@ -23,19 +23,17 @@ export class UserLifecycleManager {
       return;
     }
 
-    const results = await Promise.allSettled(
-      handlers.map(async (handler) => handler(event as never))
-    );
-
-    results.forEach((result, index) => {
-      if (result.status === 'rejected') {
+    for (const [index, handler] of handlers.entries()) {
+      try {
+        await handler(event as never);
+      } catch (error) {
         this.logger.error('[user-lifecycle] hook failed', {
           eventType: event.type,
           handlerIndex: index,
-          error: result.reason,
+          error,
         });
       }
-    });
+    }
   }
 }
 

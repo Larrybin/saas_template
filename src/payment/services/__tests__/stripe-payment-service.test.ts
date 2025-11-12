@@ -122,6 +122,11 @@ const createService = (
       findBySessionId: vi.fn(),
       insert: vi.fn(),
       upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler({})
+        ),
     } as const);
   const stripeEventRepository =
     overrides.stripeEventRepository ??
@@ -239,6 +244,138 @@ describe('StripePaymentService', () => {
     expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
   });
 
+  it('processes credit purchase inside a transaction and grants credits', async () => {
+    const stripe = createStripeStub();
+    const checkoutSession = {
+      id: 'cs_test',
+      mode: 'payment',
+      metadata: {
+        userId: 'user-1',
+        packageId: 'pkg_basic',
+        credits: '25',
+        type: 'credit_purchase',
+        priceId: 'price_credit',
+      },
+      customer: 'cus_123',
+      amount_total: 2500,
+    } as unknown as Stripe.Checkout.Session;
+    const event = {
+      id: 'evt_checkout',
+      type: 'checkout.session.completed',
+      created: 1,
+      data: { object: checkoutSession },
+    } as Stripe.Event;
+    (stripe.webhooks.constructEvent as any).mockReturnValue(event);
+    const tx = { id: 'tx' };
+    const creditsGateway = {
+      addCredits: vi.fn().mockResolvedValue(undefined),
+      addSubscriptionCredits: vi.fn(),
+      addLifetimeMonthlyCredits: vi.fn(),
+    };
+    const paymentRepository = {
+      listByUser: vi.fn(),
+      findOneBySubscriptionId: vi.fn(),
+      updateBySubscriptionId: vi.fn(),
+      findBySessionId: vi.fn().mockResolvedValue(undefined),
+      insert: vi.fn().mockResolvedValue('payment-id'),
+      upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler(tx)
+        ),
+    };
+    const stripeEventRepository = {
+      withEventProcessingLock: vi
+        .fn()
+        .mockImplementation(async (_meta, handler) => {
+          await handler();
+          return { skipped: false };
+        }),
+    };
+    const { service } = createService({
+      stripe,
+      creditsGateway,
+      paymentRepository,
+      stripeEventRepository,
+    });
+
+    await service.handleWebhookEvent('payload', 'signature');
+
+    expect(paymentRepository.withTransaction).toHaveBeenCalledTimes(1);
+    expect(paymentRepository.findBySessionId).toHaveBeenCalledWith(
+      'cs_test',
+      tx
+    );
+    expect(creditsGateway.addCredits).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1' }),
+      tx
+    );
+  });
+
+  it('propagates failures when credit grant throws so webhook can retry', async () => {
+    const stripe = createStripeStub();
+    const checkoutSession = {
+      id: 'cs_test',
+      mode: 'payment',
+      metadata: {
+        userId: 'user-1',
+        packageId: 'pkg_basic',
+        credits: '25',
+        type: 'credit_purchase',
+        priceId: 'price_credit',
+      },
+      customer: 'cus_123',
+      amount_total: 2500,
+    } as unknown as Stripe.Checkout.Session;
+    const event = {
+      id: 'evt_checkout',
+      type: 'checkout.session.completed',
+      created: 1,
+      data: { object: checkoutSession },
+    } as Stripe.Event;
+    (stripe.webhooks.constructEvent as any).mockReturnValue(event);
+    const tx = { id: 'tx' };
+    const creditsGateway = {
+      addCredits: vi.fn().mockRejectedValue(new Error('grant failed')),
+      addSubscriptionCredits: vi.fn(),
+      addLifetimeMonthlyCredits: vi.fn(),
+    };
+    const paymentRepository = {
+      listByUser: vi.fn(),
+      findOneBySubscriptionId: vi.fn(),
+      updateBySubscriptionId: vi.fn(),
+      findBySessionId: vi.fn().mockResolvedValue(undefined),
+      insert: vi.fn().mockResolvedValue('payment-id'),
+      upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler(tx)
+        ),
+    };
+    const stripeEventRepository = {
+      withEventProcessingLock: vi
+        .fn()
+        .mockImplementation(async (_meta, handler) => {
+          await handler();
+          return { skipped: false };
+        }),
+    };
+    const { service } = createService({
+      stripe,
+      creditsGateway,
+      paymentRepository,
+      stripeEventRepository,
+    });
+
+    await expect(
+      service.handleWebhookEvent('payload', 'signature')
+    ).rejects.toThrow('grant failed');
+    expect(paymentRepository.insert).toHaveBeenCalled();
+    expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
+  });
+
   it('handles subscription renewal and awards credits', async () => {
     const stripe = createStripeStub();
     const event = {
@@ -273,6 +410,7 @@ describe('StripePaymentService', () => {
       addSubscriptionCredits: vi.fn(),
       addLifetimeMonthlyCredits: vi.fn(),
     };
+    const tx = { id: 'tx-sub' };
     const paymentRepository = {
       listByUser: vi.fn(),
       findOneBySubscriptionId: vi.fn().mockResolvedValue({
@@ -283,6 +421,11 @@ describe('StripePaymentService', () => {
       findBySessionId: vi.fn(),
       insert: vi.fn(),
       upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler(tx)
+        ),
     };
     const stripeEventRepository = {
       withEventProcessingLock: vi
@@ -303,8 +446,83 @@ describe('StripePaymentService', () => {
 
     expect(creditsGateway.addSubscriptionCredits).toHaveBeenCalledWith(
       'user-1',
-      'price_123'
+      'price_123',
+      tx
     );
+    expect(paymentRepository.withTransaction).toHaveBeenCalled();
     expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
+  });
+
+  it('bubbles failures when subscription credit grant fails', async () => {
+    const stripe = createStripeStub();
+    const event = {
+      id: 'evt_124',
+      type: 'customer.subscription.updated',
+      created: 1,
+      data: {
+        object: {
+          id: 'sub_456',
+          customer: 'cus_789',
+          status: 'active',
+          cancel_at_period_end: false,
+          metadata: { userId: 'user-1' },
+          items: {
+            data: [
+              {
+                price: {
+                  id: 'price_123',
+                  recurring: { interval: 'month' },
+                },
+                current_period_start: 1,
+                current_period_end: 2,
+              },
+            ],
+          },
+        },
+      },
+    } as unknown as Stripe.Event;
+    (stripe.webhooks.constructEvent as any).mockReturnValue(event);
+    const tx = { id: 'tx-sub-fail' };
+    const creditsGateway = {
+      addCredits: vi.fn(),
+      addSubscriptionCredits: vi.fn().mockRejectedValue(new Error('sub grant fail')),
+      addLifetimeMonthlyCredits: vi.fn(),
+    };
+    const paymentRepository = {
+      listByUser: vi.fn(),
+      findOneBySubscriptionId: vi.fn().mockResolvedValue({
+        userId: 'user-1',
+        periodStart: new Date(0),
+      }),
+      updateBySubscriptionId: vi.fn().mockResolvedValue('payment-id'),
+      findBySessionId: vi.fn(),
+      insert: vi.fn(),
+      upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler(tx)
+        ),
+    };
+    const stripeEventRepository = {
+      withEventProcessingLock: vi
+        .fn()
+        .mockImplementation(async (_meta, handler) => {
+          await handler();
+          return { skipped: false };
+        }),
+    };
+    const { service } = createService({
+      stripe,
+      creditsGateway,
+      paymentRepository,
+      stripeEventRepository,
+    });
+
+    await expect(
+      service.handleWebhookEvent('payload', 'signature')
+    ).rejects.toThrow('sub grant fail');
+    expect(paymentRepository.updateBySubscriptionId).toHaveBeenCalled();
+    expect(paymentRepository.withTransaction).toHaveBeenCalled();
   });
 });

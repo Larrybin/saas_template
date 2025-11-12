@@ -1,28 +1,20 @@
 import { randomUUID } from 'crypto';
-import { and, asc, eq, gt, isNull, not, or, sql } from 'drizzle-orm';
-import { getDb } from '@/db';
+import { and, asc, eq, gt, isNull, lt, not, or, sql } from 'drizzle-orm';
 import { creditTransaction, userCredit } from '@/db/schema';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
+import type {
+  CreditTransactionRecord,
+  ICreditLedgerRepository,
+  UserCreditRecord,
+} from './credit-ledger-repository.interface';
+import type { DbExecutor } from './types';
 
-type DrizzleDb = Awaited<ReturnType<typeof getDb>>;
-type TransactionCallback = Parameters<DrizzleDb['transaction']>[0];
-type Transaction = Parameters<TransactionCallback>[0];
-
-export type DbExecutor = DrizzleDb | Transaction;
-
-export type UserCreditRecord = typeof userCredit.$inferSelect;
-
-export class CreditLedgerRepository {
-  private async executor(db?: DbExecutor) {
-    return db ?? (await getDb());
-  }
-
+export class CreditLedgerRepository implements ICreditLedgerRepository {
   async findUserCredit(
     userId: string,
-    db?: DbExecutor
+    db: DbExecutor
   ): Promise<UserCreditRecord | undefined> {
-    const client = await this.executor(db);
-    const result = await client
+    const result = await db
       .select()
       .from(userCredit)
       .where(eq(userCredit.userId, userId))
@@ -33,19 +25,18 @@ export class CreditLedgerRepository {
   async upsertUserCredit(
     userId: string,
     credits: number,
-    db?: DbExecutor
+    db: DbExecutor
   ): Promise<void> {
-    const client = await this.executor(db);
-    const existing = await this.findUserCredit(userId, client);
+    const existing = await this.findUserCredit(userId, db);
     if (existing) {
-      await client
+      await db
         .update(userCredit)
         .set({ currentCredits: credits, updatedAt: new Date() })
         .where(eq(userCredit.userId, userId));
       return;
     }
 
-    await client.insert(userCredit).values({
+    await db.insert(userCredit).values({
       id: randomUUID(),
       userId,
       currentCredits: credits,
@@ -57,10 +48,9 @@ export class CreditLedgerRepository {
   async updateUserCredits(
     userId: string,
     credits: number,
-    db?: DbExecutor
+    db: DbExecutor
   ): Promise<void> {
-    const client = await this.executor(db);
-    await client
+    await db
       .update(userCredit)
       .set({ currentCredits: credits, updatedAt: new Date() })
       .where(eq(userCredit.userId, userId));
@@ -68,15 +58,16 @@ export class CreditLedgerRepository {
 
   async insertTransaction(
     values: typeof creditTransaction.$inferInsert,
-    db?: DbExecutor
+    db: DbExecutor
   ): Promise<void> {
-    const client = await this.executor(db);
-    await client.insert(creditTransaction).values(values);
+    await db.insert(creditTransaction).values(values);
   }
 
-  async findFifoEligibleTransactions(userId: string, db?: DbExecutor) {
-    const client = await this.executor(db);
-    return client
+  async findFifoEligibleTransactions(
+    userId: string,
+    db: DbExecutor
+  ): Promise<CreditTransactionRecord[]> {
+    return db
       .select()
       .from(creditTransaction)
       .where(
@@ -103,10 +94,9 @@ export class CreditLedgerRepository {
   async updateTransactionRemainingAmount(
     id: string,
     remainingAmount: number,
-    db?: DbExecutor
+    db: DbExecutor
   ) {
-    const client = await this.executor(db);
-    await client
+    await db
       .update(creditTransaction)
       .set({ remainingAmount, updatedAt: new Date() })
       .where(eq(creditTransaction.id, id));
@@ -114,7 +104,7 @@ export class CreditLedgerRepository {
 
   async insertUsageRecord(
     payload: { userId: string; amount: number; description: string },
-    db?: DbExecutor
+    db: DbExecutor
   ) {
     await this.insertTransaction(
       {
@@ -129,5 +119,41 @@ export class CreditLedgerRepository {
       },
       db
     );
+  }
+
+  async findExpirableTransactions(
+    userId: string,
+    now: Date,
+    db: DbExecutor
+  ): Promise<CreditTransactionRecord[]> {
+    return db
+      .select()
+      .from(creditTransaction)
+      .where(
+        and(
+          eq(creditTransaction.userId, userId),
+          not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.USAGE)),
+          not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.EXPIRE)),
+          not(isNull(creditTransaction.expirationDate)),
+          isNull(creditTransaction.expirationDateProcessedAt),
+          gt(creditTransaction.remainingAmount, 0),
+          lt(creditTransaction.expirationDate, now)
+        )
+      );
+  }
+
+  async markTransactionExpired(
+    id: string,
+    now: Date,
+    db: DbExecutor
+  ): Promise<void> {
+    await db
+      .update(creditTransaction)
+      .set({
+        remainingAmount: 0,
+        expirationDateProcessedAt: now,
+        updatedAt: now,
+      })
+      .where(eq(creditTransaction.id, id));
   }
 }

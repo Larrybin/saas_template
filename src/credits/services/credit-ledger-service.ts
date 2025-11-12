@@ -1,48 +1,21 @@
-import { randomUUID } from 'crypto';
-import { addDays, isAfter } from 'date-fns';
-import { and, asc, eq, gt, isNull, not, or, sql } from 'drizzle-orm';
 import { websiteConfig } from '@/config/website';
-import { getDb } from '@/db';
-import { creditTransaction, userCredit } from '@/db/schema';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
-import {
-  CreditLedgerRepository,
-  type DbExecutor,
-} from '../data-access/credit-ledger-repository';
+import { CreditLedgerRepository } from '../data-access/credit-ledger-repository';
+import type { DbExecutor } from '../data-access/types';
+import { CreditLedgerDomainService } from '../domain/credit-ledger-domain-service';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 import type { AddCreditsPayload, CreditsGateway } from './credits-gateway';
 import type { CreditsTransaction } from './transaction-context';
 import { resolveExecutor } from './transaction-context';
 
 export const creditLedgerRepository = new CreditLedgerRepository();
-
-function compareTransactionsByExpiry(
-  a: typeof creditTransaction.$inferSelect,
-  b: typeof creditTransaction.$inferSelect
-) {
-  const aExpire = a.expirationDate ?? null;
-  const bExpire = b.expirationDate ?? null;
-  if (aExpire && bExpire) {
-    const diff = aExpire.getTime() - bExpire.getTime();
-    if (diff !== 0) {
-      return diff;
-    }
-  }
-  if (aExpire && !bExpire) {
-    return -1;
-  }
-  if (!aExpire && bExpire) {
-    return 1;
-  }
-  const aCreated = a.createdAt?.getTime() ?? 0;
-  const bCreated = b.createdAt?.getTime() ?? 0;
-  return aCreated - bCreated;
-}
+const creditLedgerDomainService = new CreditLedgerDomainService(
+  creditLedgerRepository
+);
 
 export async function getUserCredits(userId: string): Promise<number> {
   try {
-    const record = await creditLedgerRepository.findUserCredit(userId);
-    return record?.currentCredits ?? 0;
+    return await creditLedgerDomainService.getUserCredits(userId);
   } catch (error) {
     console.error('getUserCredits, error:', error);
     return 0;
@@ -51,99 +24,28 @@ export async function getUserCredits(userId: string): Promise<number> {
 
 export async function updateUserCredits(userId: string, credits: number) {
   try {
-    await creditLedgerRepository.updateUserCredits(userId, credits);
+    await creditLedgerDomainService.updateUserCredits(userId, credits);
   } catch (error) {
     console.error('updateUserCredits, error:', error);
   }
 }
 
-export async function saveCreditTransaction(
-  options: {
-  userId: string;
-  type: string;
-  amount: number;
-  description: string;
-  paymentId?: string;
-  expirationDate?: Date;
-  },
-  transaction?: CreditsTransaction
-) {
-  const { userId, type, amount, description, paymentId, expirationDate } =
-    options;
-  if (!userId || !type || !description) {
-    throw new Error('saveCreditTransaction, invalid params');
-  }
-  if (!Number.isFinite(amount) || amount === 0) {
-    throw new Error('saveCreditTransaction, invalid amount');
-  }
-  const db = resolveExecutor<DbExecutor>(transaction);
-  await creditLedgerRepository.insertTransaction({
-    id: randomUUID(),
-    userId,
-    type,
-    amount,
-    remainingAmount: amount > 0 ? amount : null,
-    description,
-    paymentId,
-    expirationDate,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }, db);
-}
-
 export async function addCredits(
-  payload: {
-    userId: string;
-    amount: number;
-    type: string;
-    description: string;
-    paymentId?: string;
-    expireDays?: number;
-  },
+  payload: AddCreditsPayload,
   transaction?: CreditsTransaction
 ) {
-  const { userId, amount, type, description, paymentId, expireDays } = payload;
-  if (!userId || !type || !description) {
-    throw new Error('Invalid params');
-  }
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error('Invalid amount');
-  }
-  const hasExpireConfig = expireDays !== undefined && expireDays !== null;
-  if (hasExpireConfig) {
-    if (!Number.isFinite(expireDays) || expireDays < 0) {
-      throw new Error('Invalid expire days');
-    }
-  }
-  const db = resolveExecutor<DbExecutor>(transaction);
-  const current = await creditLedgerRepository.findUserCredit(userId, db);
-  const newBalance = (current?.currentCredits ?? 0) + amount;
-  await creditLedgerRepository.upsertUserCredit(userId, newBalance, db);
-
-  const expirationDate =
-    hasExpireConfig && expireDays && expireDays > 0
-      ? addDays(new Date(), expireDays)
-      : undefined;
-
-  await saveCreditTransaction(
-    {
-      userId,
-      type,
-      amount,
-      description,
-      paymentId,
-      expirationDate,
-    },
-    transaction
-  );
+  const executor = resolveExecutor<DbExecutor>(transaction);
+  await creditLedgerDomainService.addCredits(payload, executor);
 }
 
 export async function hasEnoughCredits(options: {
   userId: string;
   requiredCredits: number;
 }) {
-  const balance = await getUserCredits(options.userId);
-  return balance >= options.requiredCredits;
+  return creditLedgerDomainService.hasEnoughCredits(
+    options.userId,
+    options.requiredCredits
+  );
 }
 
 export async function consumeCredits(payload: {
@@ -151,146 +53,25 @@ export async function consumeCredits(payload: {
   amount: number;
   description: string;
 }) {
-  const { userId, amount, description } = payload;
-  if (!userId || !description) {
-    throw new Error('Invalid params');
-  }
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error('Invalid amount');
-  }
-  const db = await getDb();
-  await db.transaction(async (tx) => {
-    const balanceRecord = await creditLedgerRepository.findUserCredit(
-      userId,
-      tx
-    );
-    const currentBalance = balanceRecord?.currentCredits ?? 0;
-    if (currentBalance < amount) {
-      throw new Error('Insufficient credits');
-    }
-    const transactions = (
-      await creditLedgerRepository.findFifoEligibleTransactions(userId, tx)
-    ).sort(compareTransactionsByExpiry);
-    let remainingToDeduct = amount;
-    for (const trx of transactions) {
-      if (remainingToDeduct <= 0) break;
-      const remainingAmount = trx.remainingAmount ?? 0;
-      if (remainingAmount <= 0) continue;
-      const deductFromThis = Math.min(remainingAmount, remainingToDeduct);
-      await creditLedgerRepository.updateTransactionRemainingAmount(
-        trx.id,
-        remainingAmount - deductFromThis,
-        tx
-      );
-      remainingToDeduct -= deductFromThis;
-    }
-    if (remainingToDeduct > 0) {
-      throw new Error('Insufficient credits');
-    }
-    const newBalance = currentBalance - amount;
-    await creditLedgerRepository.updateUserCredits(userId, newBalance, tx);
-    await creditLedgerRepository.insertUsageRecord(
-      {
-        userId,
-        amount: -amount,
-        description,
-      },
-      tx
-    );
-  });
+  await creditLedgerDomainService.consumeCredits(payload);
 }
 
 export async function processExpiredCredits(userId: string) {
-  const now = new Date();
-  const db = await getDb();
-  const transactions = await db
-    .select()
-    .from(creditTransaction)
-    .where(
-      and(
-        eq(creditTransaction.userId, userId),
-        not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.USAGE)),
-        not(eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.EXPIRE)),
-        not(isNull(creditTransaction.expirationDate)),
-        isNull(creditTransaction.expirationDateProcessedAt),
-        gt(creditTransaction.remainingAmount, 0)
-      )
-    );
-  let expiredTotal = 0;
-  for (const trx of transactions) {
-    if (
-      trx.expirationDate &&
-      isAfter(now, trx.expirationDate) &&
-      !trx.expirationDateProcessedAt
-    ) {
-      const remain = trx.remainingAmount ?? 0;
-      if (remain > 0) {
-        expiredTotal += remain;
-        await db
-          .update(creditTransaction)
-          .set({
-            remainingAmount: 0,
-            expirationDateProcessedAt: now,
-            updatedAt: now,
-          })
-          .where(eq(creditTransaction.id, trx.id));
-      }
-    }
-  }
-  if (expiredTotal > 0) {
-    const current = await db
-      .select()
-      .from(userCredit)
-      .where(eq(userCredit.userId, userId))
-      .limit(1);
-    const newBalance = Math.max(
-      0,
-      (current[0]?.currentCredits ?? 0) - expiredTotal
-    );
-    await db
-      .update(userCredit)
-      .set({ currentCredits: newBalance, updatedAt: now })
-      .where(eq(userCredit.userId, userId));
-    await saveCreditTransaction({
-      userId,
-      type: CREDIT_TRANSACTION_TYPE.EXPIRE,
-      amount: -expiredTotal,
-      description: `Expire credits: ${expiredTotal}`,
-    });
-  }
+  await creditLedgerDomainService.processExpiredCredits(userId);
 }
 
 export async function canAddCreditsByType(userId: string, creditType: string) {
-  const db = await getDb();
-  const now = new Date();
-  const existing = await db
-    .select()
-    .from(creditTransaction)
-    .where(
-      and(
-        eq(creditTransaction.userId, userId),
-        eq(creditTransaction.type, creditType),
-        sql`EXTRACT(MONTH FROM ${creditTransaction.createdAt}) = ${now.getMonth() + 1}`,
-        sql`EXTRACT(YEAR FROM ${creditTransaction.createdAt}) = ${now.getFullYear()}`
-      )
-    )
-    .limit(1);
-  return existing.length === 0;
+  return creditLedgerDomainService.canAddCreditsByType(userId, creditType);
 }
 
 export async function addRegisterGiftCredits(userId: string) {
-  const db = await getDb();
-  const existing = await db
-    .select()
-    .from(creditTransaction)
-    .where(
-      and(
-        eq(creditTransaction.userId, userId),
-        eq(creditTransaction.type, CREDIT_TRANSACTION_TYPE.REGISTER_GIFT)
-      )
-    )
-    .limit(1);
-  if (existing.length > 0) return;
+  const alreadyGranted = await creditLedgerDomainService.hasTransactionOfType(
+    userId,
+    CREDIT_TRANSACTION_TYPE.REGISTER_GIFT
+  );
+  if (alreadyGranted) {
+    return;
+  }
   const credits = websiteConfig.credits.registerGiftCredits.amount;
   const expireDays = websiteConfig.credits.registerGiftCredits.expireDays;
   await addCredits({

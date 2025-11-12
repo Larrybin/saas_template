@@ -14,14 +14,15 @@ describe('UserLifecycleManager', () => {
   };
 
   it('executes hooks for emitted event', async () => {
-    const calls: string[] = [];
+    const calls: Array<{ label: string; order: number }> = [];
     const hooks: UserLifecycleHooks = {
       'user.created': [
         async () => {
-          calls.push('first');
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          calls.push({ label: 'first', order: Date.now() });
         },
         () => {
-          calls.push('second');
+          calls.push({ label: 'second', order: Date.now() });
         },
       ],
     };
@@ -29,7 +30,8 @@ describe('UserLifecycleManager', () => {
     const manager = new UserLifecycleManager({ hooks });
     await manager.emit(baseEvent as never);
 
-    expect(calls).toEqual(['first', 'second']);
+    expect(calls.map((item) => item.label)).toEqual(['first', 'second']);
+    expect(calls[0].order).toBeLessThanOrEqual(calls[1].order);
   });
 
   it('logs errors from failing hooks without throwing', async () => {

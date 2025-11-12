@@ -111,16 +111,16 @@ describe('CreditLedgerService', () => {
       .spyOn(creditLedgerRepository, 'findFifoEligibleTransactions')
       .mockResolvedValue([
         {
-          id: 'txn-non-exp',
-          remainingAmount: 40,
-          expirationDate: null,
-          createdAt: new Date('2024-01-01'),
-        },
-        {
           id: 'txn-exp',
           remainingAmount: 20,
           expirationDate: new Date('2024-01-05'),
           createdAt: new Date('2024-01-02'),
+        },
+        {
+          id: 'txn-non-exp',
+          remainingAmount: 40,
+          expirationDate: null,
+          createdAt: new Date('2024-01-01'),
         },
       ] as any);
     const updateRemainingSpy = vi

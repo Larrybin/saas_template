@@ -41,6 +41,12 @@ All three commands are expected to pass locally and in CI before merging.
 - Stripe Webhook 处理必须在数据库事务内为单个 `event_id` 加锁，参考 Stripe 官方的 idempotency 建议，确保同一事件只执行一次并记录跳过日志。
 - `expireDays` 省略或设置为 `undefined/0` 表示“不过期”，仅在需要自动过期时填写正整数；积分 FIFO 会优先扣除即将到期的额度，请据此规划套餐。
 
+### User lifecycle hooks
+
+- Better Auth 的 `databaseHooks.user.create.after` 现在通过 `src/lib/user-lifecycle` 触发，默认挂载 Newsletter 自动订阅与注册积分发放。
+- 想要扩展或在测试中替换行为，可实现自定义 hook（签名见 `UserLifecycleHook`）并在创建 `UserLifecycleManager` 时注入。
+- 相关 Vitest 示例位于 `src/lib/user-lifecycle/__tests__/user-lifecycle-manager.test.ts`，可作为编写额外生命周期事件的参考。
+
 ### Middleware observability checklist
 
 The Edge middleware now performs only cookie-based checks; to monitor its performance before and after changes, capture latency from your CDN logs or APM dashboard and compare P50/P95 numbers. Keep the baseline handy whenever adjusting matchers or redirects.

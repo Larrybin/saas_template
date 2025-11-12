@@ -122,6 +122,11 @@ const createService = (
       findBySessionId: vi.fn(),
       insert: vi.fn(),
       upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler({})
+        ),
     } as const);
   const stripeEventRepository =
     overrides.stripeEventRepository ??
@@ -237,6 +242,138 @@ describe('StripePaymentService', () => {
     ).rejects.toThrowError(PaymentSecurityError);
 
     expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+
+  it('processes credit purchase inside a transaction and grants credits', async () => {
+    const stripe = createStripeStub();
+    const checkoutSession = {
+      id: 'cs_test',
+      mode: 'payment',
+      metadata: {
+        userId: 'user-1',
+        packageId: 'pkg_basic',
+        credits: '25',
+        type: 'credit_purchase',
+        priceId: 'price_credit',
+      },
+      customer: 'cus_123',
+      amount_total: 2500,
+    } as unknown as Stripe.Checkout.Session;
+    const event = {
+      id: 'evt_checkout',
+      type: 'checkout.session.completed',
+      created: 1,
+      data: { object: checkoutSession },
+    } as Stripe.Event;
+    (stripe.webhooks.constructEvent as any).mockReturnValue(event);
+    const tx = { id: 'tx' };
+    const creditsGateway = {
+      addCredits: vi.fn().mockResolvedValue(undefined),
+      addSubscriptionCredits: vi.fn(),
+      addLifetimeMonthlyCredits: vi.fn(),
+    };
+    const paymentRepository = {
+      listByUser: vi.fn(),
+      findOneBySubscriptionId: vi.fn(),
+      updateBySubscriptionId: vi.fn(),
+      findBySessionId: vi.fn().mockResolvedValue(undefined),
+      insert: vi.fn().mockResolvedValue('payment-id'),
+      upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler(tx)
+        ),
+    };
+    const stripeEventRepository = {
+      withEventProcessingLock: vi
+        .fn()
+        .mockImplementation(async (_meta, handler) => {
+          await handler();
+          return { skipped: false };
+        }),
+    };
+    const { service } = createService({
+      stripe,
+      creditsGateway,
+      paymentRepository,
+      stripeEventRepository,
+    });
+
+    await service.handleWebhookEvent('payload', 'signature');
+
+    expect(paymentRepository.withTransaction).toHaveBeenCalledTimes(1);
+    expect(paymentRepository.findBySessionId).toHaveBeenCalledWith(
+      'cs_test',
+      tx
+    );
+    expect(creditsGateway.addCredits).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1' }),
+      tx
+    );
+  });
+
+  it('propagates failures when credit grant throws so webhook can retry', async () => {
+    const stripe = createStripeStub();
+    const checkoutSession = {
+      id: 'cs_test',
+      mode: 'payment',
+      metadata: {
+        userId: 'user-1',
+        packageId: 'pkg_basic',
+        credits: '25',
+        type: 'credit_purchase',
+        priceId: 'price_credit',
+      },
+      customer: 'cus_123',
+      amount_total: 2500,
+    } as unknown as Stripe.Checkout.Session;
+    const event = {
+      id: 'evt_checkout',
+      type: 'checkout.session.completed',
+      created: 1,
+      data: { object: checkoutSession },
+    } as Stripe.Event;
+    (stripe.webhooks.constructEvent as any).mockReturnValue(event);
+    const tx = { id: 'tx' };
+    const creditsGateway = {
+      addCredits: vi.fn().mockRejectedValue(new Error('grant failed')),
+      addSubscriptionCredits: vi.fn(),
+      addLifetimeMonthlyCredits: vi.fn(),
+    };
+    const paymentRepository = {
+      listByUser: vi.fn(),
+      findOneBySubscriptionId: vi.fn(),
+      updateBySubscriptionId: vi.fn(),
+      findBySessionId: vi.fn().mockResolvedValue(undefined),
+      insert: vi.fn().mockResolvedValue('payment-id'),
+      upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler(tx)
+        ),
+    };
+    const stripeEventRepository = {
+      withEventProcessingLock: vi
+        .fn()
+        .mockImplementation(async (_meta, handler) => {
+          await handler();
+          return { skipped: false };
+        }),
+    };
+    const { service } = createService({
+      stripe,
+      creditsGateway,
+      paymentRepository,
+      stripeEventRepository,
+    });
+
+    await expect(
+      service.handleWebhookEvent('payload', 'signature')
+    ).rejects.toThrow('grant failed');
+    expect(paymentRepository.insert).toHaveBeenCalled();
+    expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
   });
 
   it('handles subscription renewal and awards credits', async () => {

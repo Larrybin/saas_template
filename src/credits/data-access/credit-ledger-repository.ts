@@ -8,7 +8,7 @@ type DrizzleDb = Awaited<ReturnType<typeof getDb>>;
 type TransactionCallback = Parameters<DrizzleDb['transaction']>[0];
 type Transaction = Parameters<TransactionCallback>[0];
 
-type DbExecutor = DrizzleDb | Transaction;
+export type DbExecutor = DrizzleDb | Transaction;
 
 export type UserCreditRecord = typeof userCredit.$inferSelect;
 

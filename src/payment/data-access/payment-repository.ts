@@ -5,10 +5,27 @@ import { payment } from '@/db/schema';
 export type PaymentRecord = typeof payment.$inferSelect;
 export type PaymentInsert = typeof payment.$inferInsert;
 
+type DrizzleDb = Awaited<ReturnType<typeof getDb>>;
+type TransactionCallback = Parameters<DrizzleDb['transaction']>[0];
+type Transaction = Parameters<TransactionCallback>[0];
+export type DbExecutor = DrizzleDb | Transaction;
+
 export class PaymentRepository {
-  async listByUser(userId: string): Promise<PaymentRecord[]> {
+  private async resolveDb(db?: DbExecutor) {
+    return db ?? (await getDb());
+  }
+
+  async withTransaction<T>(handler: (tx: DbExecutor) => Promise<T>) {
     const db = await getDb();
-    return db
+    return await db.transaction(async (tx) => await handler(tx));
+  }
+
+  async listByUser(
+    userId: string,
+    db?: DbExecutor
+  ): Promise<PaymentRecord[]> {
+    const client = await this.resolveDb(db);
+    return client
       .select()
       .from(payment)
       .where(eq(payment.userId, userId))
@@ -16,10 +33,11 @@ export class PaymentRepository {
   }
 
   async findOneBySubscriptionId(
-    subscriptionId: string
+    subscriptionId: string,
+    db?: DbExecutor
   ): Promise<PaymentRecord | undefined> {
-    const db = await getDb();
-    const result = await db
+    const client = await this.resolveDb(db);
+    const result = await client
       .select()
       .from(payment)
       .where(eq(payment.subscriptionId, subscriptionId))
@@ -27,9 +45,12 @@ export class PaymentRepository {
     return result[0];
   }
 
-  async findBySessionId(sessionId: string): Promise<PaymentRecord | undefined> {
-    const db = await getDb();
-    const result = await db
+  async findBySessionId(
+    sessionId: string,
+    db?: DbExecutor
+  ): Promise<PaymentRecord | undefined> {
+    const client = await this.resolveDb(db);
+    const result = await client
       .select()
       .from(payment)
       .where(eq(payment.sessionId, sessionId))
@@ -37,17 +58,20 @@ export class PaymentRepository {
     return result[0];
   }
 
-  async insert(record: PaymentInsert): Promise<string | undefined> {
-    const db = await getDb();
-    const result = await db.insert(payment).values(record).returning({
+  async insert(record: PaymentInsert, db?: DbExecutor): Promise<string | undefined> {
+    const client = await this.resolveDb(db);
+    const result = await client.insert(payment).values(record).returning({
       id: payment.id,
     });
     return result[0]?.id;
   }
 
-  async upsertSubscription(record: PaymentInsert): Promise<string | undefined> {
-    const db = await getDb();
-    const result = await db
+  async upsertSubscription(
+    record: PaymentInsert,
+    db?: DbExecutor
+  ): Promise<string | undefined> {
+    const client = await this.resolveDb(db);
+    const result = await client
       .insert(payment)
       .values(record)
       .onConflictDoUpdate({
@@ -70,10 +94,11 @@ export class PaymentRepository {
 
   async updateBySubscriptionId(
     subscriptionId: string,
-    updates: Partial<PaymentInsert>
+    updates: Partial<PaymentInsert>,
+    db?: DbExecutor
   ): Promise<string | undefined> {
-    const db = await getDb();
-    const result = await db
+    const client = await this.resolveDb(db);
+    const result = await client
       .update(payment)
       .set(updates)
       .where(eq(payment.subscriptionId, subscriptionId))

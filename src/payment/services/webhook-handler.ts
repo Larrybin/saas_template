@@ -3,8 +3,8 @@ import type { Logger } from 'pino';
 import type Stripe from 'stripe';
 import { websiteConfig } from '@/config/website';
 import { getCreditPackageById } from '@/credits/server';
-import { addLifetimeMonthlyCredits } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
+import { createCreditsTransaction } from '@/credits/services/transaction-context';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import type { PaymentRepository } from '../data-access/payment-repository';
@@ -101,7 +101,11 @@ async function onCreateSubscription(
       tx
     );
     if (websiteConfig.credits?.enableCredits) {
-      await deps.creditsGateway.addSubscriptionCredits(userId, priceId, tx);
+      await deps.creditsGateway.addSubscriptionCredits(
+        userId,
+        priceId,
+        createCreditsTransaction(tx)
+      );
     }
   });
 }
@@ -154,7 +158,7 @@ async function onUpdateSubscription(
       await deps.creditsGateway.addSubscriptionCredits(
         existing.userId,
         priceId,
-        tx
+        createCreditsTransaction(tx)
       );
     }
     return true;
@@ -214,7 +218,11 @@ async function onOnetimePayment(
         tx
       );
       if (websiteConfig.credits?.enableCredits) {
-        await addLifetimeMonthlyCredits(userId, priceId, tx);
+        await deps.creditsGateway.addLifetimeMonthlyCredits(
+          userId,
+          priceId,
+          createCreditsTransaction(tx)
+        );
       }
       return true;
     }
@@ -274,7 +282,7 @@ async function onCreditPurchase(
         paymentId: session.id,
         expireDays: getCreditPackageById(packageId)?.expireDays,
       },
-      tx
+      createCreditsTransaction(tx)
     );
   });
 }

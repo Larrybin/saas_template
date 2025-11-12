@@ -307,10 +307,9 @@ describe('StripePaymentService', () => {
       'cs_test',
       tx
     );
-    expect(creditsGateway.addCredits).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user-1' }),
-      tx
-    );
+    expect(creditsGateway.addCredits).toHaveBeenCalled();
+    const txWrapper = creditsGateway.addCredits.mock.calls[0][1];
+    expect(txWrapper?.unwrap()).toBe(tx);
   });
 
   it('propagates failures when credit grant throws so webhook can retry', async () => {
@@ -373,7 +372,85 @@ describe('StripePaymentService', () => {
       service.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('grant failed');
     expect(paymentRepository.insert).toHaveBeenCalled();
+    const txWrapper = creditsGateway.addCredits.mock.calls[0][1];
+    expect(txWrapper?.unwrap()).toBe(tx);
     expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
+  });
+
+  it('grants lifetime monthly credits for standard checkout sessions', async () => {
+    const stripe = createStripeStub();
+    const checkoutSession = {
+      id: 'cs_one_time',
+      mode: 'payment',
+      metadata: {
+        userId: 'user-1',
+        priceId: 'price_lifetime',
+      },
+      customer: 'cus_123',
+      amount_total: 9900,
+    } as unknown as Stripe.Checkout.Session;
+    const event = {
+      id: 'evt_checkout_onetime',
+      type: 'checkout.session.completed',
+      created: 1,
+      data: { object: checkoutSession },
+    } as Stripe.Event;
+    (stripe.webhooks.constructEvent as any).mockReturnValue(event);
+    const tx = { id: 'tx-onetime' };
+    const creditsGateway = {
+      addCredits: vi.fn(),
+      addSubscriptionCredits: vi.fn(),
+      addLifetimeMonthlyCredits: vi.fn(),
+    };
+    const notificationGateway = {
+      notifyPurchase: vi.fn(),
+    };
+    const paymentRepository = {
+      listByUser: vi.fn(),
+      findOneBySubscriptionId: vi.fn(),
+      updateBySubscriptionId: vi.fn(),
+      findBySessionId: vi.fn().mockResolvedValue(undefined),
+      insert: vi.fn().mockResolvedValue('payment-id'),
+      upsertSubscription: vi.fn(),
+      withTransaction: vi
+        .fn()
+        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
+          handler(tx)
+        ),
+    };
+    const stripeEventRepository = {
+      withEventProcessingLock: vi
+        .fn()
+        .mockImplementation(async (_meta, handler) => {
+          await handler();
+          return { skipped: false };
+        }),
+    };
+    const { service } = createService({
+      stripe,
+      creditsGateway,
+      paymentRepository,
+      stripeEventRepository,
+      notificationGateway,
+    });
+
+    await service.handleWebhookEvent('payload', 'signature');
+
+    expect(paymentRepository.findBySessionId).toHaveBeenCalledWith(
+      'cs_one_time',
+      tx
+    );
+    expect(creditsGateway.addLifetimeMonthlyCredits).toHaveBeenCalledWith(
+      'user-1',
+      'price_lifetime',
+      expect.anything()
+    );
+    const lifetimeTx =
+      creditsGateway.addLifetimeMonthlyCredits.mock.calls[0][2];
+    expect(lifetimeTx?.unwrap()).toBe(tx);
+    expect(notificationGateway.notifyPurchase).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: 'cs_one_time', amount: 99 })
+    );
   });
 
   it('handles subscription renewal and awards credits', async () => {
@@ -444,11 +521,9 @@ describe('StripePaymentService', () => {
 
     await service.handleWebhookEvent('payload', 'signature');
 
-    expect(creditsGateway.addSubscriptionCredits).toHaveBeenCalledWith(
-      'user-1',
-      'price_123',
-      tx
-    );
+    const subTxWrapper =
+      creditsGateway.addSubscriptionCredits.mock.calls[0][2];
+    expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.withTransaction).toHaveBeenCalled();
     expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
   });
@@ -522,6 +597,9 @@ describe('StripePaymentService', () => {
     await expect(
       service.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('sub grant fail');
+    const subTxWrapper =
+      creditsGateway.addSubscriptionCredits.mock.calls[0][2];
+    expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.updateBySubscriptionId).toHaveBeenCalled();
     expect(paymentRepository.withTransaction).toHaveBeenCalled();
   });

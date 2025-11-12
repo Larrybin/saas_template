@@ -1,3 +1,5 @@
+import type { CreditsTransaction } from './transaction-context';
+
 export type AddCreditsPayload = {
   userId: string;
   amount: number;
@@ -7,18 +9,19 @@ export type AddCreditsPayload = {
   expireDays?: number;
 };
 
-import type { DbExecutor } from '../data-access/credit-ledger-repository';
-
 export interface CreditsGateway {
-  addCredits(payload: AddCreditsPayload, db?: DbExecutor): Promise<void>;
+  addCredits(
+    payload: AddCreditsPayload,
+    transaction?: CreditsTransaction
+  ): Promise<void>;
   addSubscriptionCredits(
     userId: string,
     priceId: string,
-    db?: DbExecutor
+    transaction?: CreditsTransaction
   ): Promise<void>;
   addLifetimeMonthlyCredits(
     userId: string,
     priceId: string,
-    db?: DbExecutor
+    transaction?: CreditsTransaction
   ): Promise<void>;
 }

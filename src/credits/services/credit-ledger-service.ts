@@ -11,6 +11,8 @@ import {
 } from '../data-access/credit-ledger-repository';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 import type { AddCreditsPayload, CreditsGateway } from './credits-gateway';
+import type { CreditsTransaction } from './transaction-context';
+import { resolveExecutor } from './transaction-context';
 
 export const creditLedgerRepository = new CreditLedgerRepository();
 
@@ -55,14 +57,17 @@ export async function updateUserCredits(userId: string, credits: number) {
   }
 }
 
-export async function saveCreditTransaction(options: {
+export async function saveCreditTransaction(
+  options: {
   userId: string;
   type: string;
   amount: number;
   description: string;
   paymentId?: string;
   expirationDate?: Date;
-}, db?: DbExecutor) {
+  },
+  transaction?: CreditsTransaction
+) {
   const { userId, type, amount, description, paymentId, expirationDate } =
     options;
   if (!userId || !type || !description) {
@@ -71,6 +76,7 @@ export async function saveCreditTransaction(options: {
   if (!Number.isFinite(amount) || amount === 0) {
     throw new Error('saveCreditTransaction, invalid amount');
   }
+  const db = resolveExecutor<DbExecutor>(transaction);
   await creditLedgerRepository.insertTransaction({
     id: randomUUID(),
     userId,
@@ -94,7 +100,7 @@ export async function addCredits(
     paymentId?: string;
     expireDays?: number;
   },
-  db?: DbExecutor
+  transaction?: CreditsTransaction
 ) {
   const { userId, amount, type, description, paymentId, expireDays } = payload;
   if (!userId || !type || !description) {
@@ -109,6 +115,7 @@ export async function addCredits(
       throw new Error('Invalid expire days');
     }
   }
+  const db = resolveExecutor<DbExecutor>(transaction);
   const current = await creditLedgerRepository.findUserCredit(userId, db);
   const newBalance = (current?.currentCredits ?? 0) + amount;
   await creditLedgerRepository.upsertUserCredit(userId, newBalance, db);
@@ -118,14 +125,17 @@ export async function addCredits(
       ? addDays(new Date(), expireDays)
       : undefined;
 
-  await saveCreditTransaction({
-    userId,
-    type,
-    amount,
-    description,
-    paymentId,
-    expirationDate,
-  }, db);
+  await saveCreditTransaction(
+    {
+      userId,
+      type,
+      amount,
+      description,
+      paymentId,
+      expirationDate,
+    },
+    transaction
+  );
 }
 
 export async function hasEnoughCredits(options: {
@@ -321,7 +331,7 @@ export async function addMonthlyFreeCredits(userId: string, planId: string) {
 export async function addSubscriptionCredits(
   userId: string,
   priceId: string,
-  db?: DbExecutor
+  transaction?: CreditsTransaction
 ) {
   const plan = findPlanByPriceId(priceId);
   if (!plan?.credits?.enable) {
@@ -340,14 +350,14 @@ export async function addSubscriptionCredits(
       description: `Subscription renewal credits: ${plan.credits.amount}`,
       expireDays: plan.credits.expireDays,
     },
-    db
+    transaction
   );
 }
 
 export async function addLifetimeMonthlyCredits(
   userId: string,
   priceId: string,
-  db?: DbExecutor
+  transaction?: CreditsTransaction
 ) {
   const plan = findPlanByPriceId(priceId);
   if (!plan?.isLifetime || plan.disabled || !plan.credits?.enable) {
@@ -366,31 +376,31 @@ export async function addLifetimeMonthlyCredits(
       description: `Lifetime monthly credits: ${plan.credits.amount}`,
       expireDays: plan.credits.expireDays,
     },
-    db
+    transaction
   );
 }
 
 export class CreditLedgerService implements CreditsGateway {
   async addCredits(
     payload: AddCreditsPayload,
-    db?: DbExecutor
+    transaction?: CreditsTransaction
   ): Promise<void> {
-    await addCredits(payload, db);
+    await addCredits(payload, transaction);
   }
 
   async addSubscriptionCredits(
     userId: string,
     priceId: string,
-    db?: DbExecutor
+    transaction?: CreditsTransaction
   ): Promise<void> {
-    await addSubscriptionCredits(userId, priceId, db);
+    await addSubscriptionCredits(userId, priceId, transaction);
   }
 
   async addLifetimeMonthlyCredits(
     userId: string,
     priceId: string,
-    db?: DbExecutor
+    transaction?: CreditsTransaction
   ): Promise<void> {
-    await addLifetimeMonthlyCredits(userId, priceId, db);
+    await addLifetimeMonthlyCredits(userId, priceId, transaction);
   }
 }

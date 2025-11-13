@@ -19,4 +19,5 @@ export type CommandExecutionResult = {
   processed: number;
   skipped: number;
   errors: CreditCommandError[];
+  flagEnabled: boolean;
 };

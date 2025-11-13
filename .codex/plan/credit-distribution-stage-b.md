@@ -11,3 +11,8 @@
 4. 重写 distribute.ts，使其调用新 Service，原地保留 batch & logging。
 5. 支持 periodKey 写入 & 兼容旧查询；分阶段可控启用。
 6. 补充测试（Distribution service + domain periodKey）并运行 lint/test。
+
+## Stage B 优化补充
+1. 编写分批回填/回滚脚本，供阶段 2 开启前执行。
+2. 扩展 CreditDistributionService，增加 generate 系列方法，减轻 distribute.ts 逻辑。
+3. 补充 feature flag 监控日志与启用文档，支撑阶段 2/3。

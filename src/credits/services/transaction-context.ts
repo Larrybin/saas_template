@@ -13,5 +13,5 @@ export function createCreditsTransaction(executor: unknown) {
 export function resolveExecutor<TExecutor>(
   tx?: CreditsTransaction
 ): TExecutor | undefined {
-  return tx ? (tx.unwrap<TExecutor>()) : undefined;
+  return tx ? tx.unwrap<TExecutor>() : undefined;
 }

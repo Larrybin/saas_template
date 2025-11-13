@@ -124,8 +124,8 @@ const createService = (
       upsertSubscription: vi.fn(),
       withTransaction: vi
         .fn()
-        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
-          handler({})
+        .mockImplementation(
+          async (handler: (tx: unknown) => Promise<unknown>) => handler({})
         ),
     } as const);
   const stripeEventRepository =
@@ -281,8 +281,8 @@ describe('StripePaymentService', () => {
       upsertSubscription: vi.fn(),
       withTransaction: vi
         .fn()
-        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
-          handler(tx)
+        .mockImplementation(
+          async (handler: (tx: unknown) => Promise<unknown>) => handler(tx)
         ),
     };
     const stripeEventRepository = {
@@ -349,8 +349,8 @@ describe('StripePaymentService', () => {
       upsertSubscription: vi.fn(),
       withTransaction: vi
         .fn()
-        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
-          handler(tx)
+        .mockImplementation(
+          async (handler: (tx: unknown) => Promise<unknown>) => handler(tx)
         ),
     };
     const stripeEventRepository = {
@@ -414,8 +414,8 @@ describe('StripePaymentService', () => {
       upsertSubscription: vi.fn(),
       withTransaction: vi
         .fn()
-        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
-          handler(tx)
+        .mockImplementation(
+          async (handler: (tx: unknown) => Promise<unknown>) => handler(tx)
         ),
     };
     const stripeEventRepository = {
@@ -500,8 +500,8 @@ describe('StripePaymentService', () => {
       upsertSubscription: vi.fn(),
       withTransaction: vi
         .fn()
-        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
-          handler(tx)
+        .mockImplementation(
+          async (handler: (tx: unknown) => Promise<unknown>) => handler(tx)
         ),
     };
     const stripeEventRepository = {
@@ -521,8 +521,7 @@ describe('StripePaymentService', () => {
 
     await service.handleWebhookEvent('payload', 'signature');
 
-    const subTxWrapper =
-      creditsGateway.addSubscriptionCredits.mock.calls[0][2];
+    const subTxWrapper = creditsGateway.addSubscriptionCredits.mock.calls[0][2];
     expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.withTransaction).toHaveBeenCalled();
     expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
@@ -560,7 +559,9 @@ describe('StripePaymentService', () => {
     const tx = { id: 'tx-sub-fail' };
     const creditsGateway = {
       addCredits: vi.fn(),
-      addSubscriptionCredits: vi.fn().mockRejectedValue(new Error('sub grant fail')),
+      addSubscriptionCredits: vi
+        .fn()
+        .mockRejectedValue(new Error('sub grant fail')),
       addLifetimeMonthlyCredits: vi.fn(),
     };
     const paymentRepository = {
@@ -575,8 +576,8 @@ describe('StripePaymentService', () => {
       upsertSubscription: vi.fn(),
       withTransaction: vi
         .fn()
-        .mockImplementation(async (handler: (tx: unknown) => Promise<unknown>) =>
-          handler(tx)
+        .mockImplementation(
+          async (handler: (tx: unknown) => Promise<unknown>) => handler(tx)
         ),
     };
     const stripeEventRepository = {
@@ -597,8 +598,7 @@ describe('StripePaymentService', () => {
     await expect(
       service.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('sub grant fail');
-    const subTxWrapper =
-      creditsGateway.addSubscriptionCredits.mock.calls[0][2];
+    const subTxWrapper = creditsGateway.addSubscriptionCredits.mock.calls[0][2];
     expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.updateBySubscriptionId).toHaveBeenCalled();
     expect(paymentRepository.withTransaction).toHaveBeenCalled();

@@ -21,6 +21,7 @@
   ```
   info  credits.distribute  {..., flagEnabled: true}  "Finished batch"
   ```
+- 启用阶段建议执行 `pnpm db:check-period-key`（封装 `scripts/sql/check_period_key_conflicts.sql`），确保无重复组合、`period_key=0` 残留。
 - 打开 flag 前后请观察：
   - Cron 日志中 `flagEnabled` 是否与预期一致。
   - 若出现唯一索引冲突，使用回填脚本定位并修复相关记录。

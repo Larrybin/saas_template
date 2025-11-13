@@ -4,6 +4,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { featureFlags } from '@/config/feature-flags';
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
+import { getLogger } from '@/lib/server/logger';
 import type {
   CreditTransactionInsert,
   ICreditLedgerRepository,
@@ -19,6 +20,8 @@ export type ConsumeCreditsPayload = {
 };
 
 export class CreditLedgerDomainService {
+  private readonly logger = getLogger({ span: 'credits.ledger.domain' });
+
   constructor(
     private readonly repository: ICreditLedgerRepository,
     private readonly dbProvider: () => Promise<DbExecutor> = getDb
@@ -251,8 +254,18 @@ export class CreditLedgerDomainService {
   ): Promise<boolean> {
     const executor = await this.resolveExecutor(db);
     const now = new Date();
+    const flagEnabled = featureFlags.enableCreditPeriodKey;
     if (
-      featureFlags.enableCreditPeriodKey &&
+      flagEnabled &&
+      (!periodKey || !Number.isFinite(periodKey) || periodKey <= 0)
+    ) {
+      this.logger.warn(
+        { userId, creditType },
+        'Period key missing while feature flag is enabled, falling back to legacy query'
+      );
+    }
+    if (
+      flagEnabled &&
       periodKey &&
       Number.isFinite(periodKey) &&
       periodKey > 0

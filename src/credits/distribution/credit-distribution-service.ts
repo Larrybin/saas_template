@@ -78,6 +78,11 @@ export class CreditDistributionService {
     monthLabel: string;
   }): CreditCommand[] {
     const { userIds, plan, periodKey, monthLabel } = options;
+    if (featureFlags.enableCreditPeriodKey && !periodKey) {
+      this.logger.warn(
+        'Expected periodKey while feature flag is enabled for free plan batch'
+      );
+    }
     if (!plan?.credits?.enable) {
       return [];
     }
@@ -100,6 +105,11 @@ export class CreditDistributionService {
     periodKey?: number;
     monthLabel: string;
   }): CreditCommand[] {
+    if (featureFlags.enableCreditPeriodKey && !options.periodKey) {
+      this.logger.warn(
+        'Expected periodKey while feature flag is enabled for lifetime batch'
+      );
+    }
     return this.generatePlanCommands({
       ...options,
       creditType: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
@@ -113,6 +123,11 @@ export class CreditDistributionService {
     periodKey?: number;
     monthLabel: string;
   }): CreditCommand[] {
+    if (featureFlags.enableCreditPeriodKey && !options.periodKey) {
+      this.logger.warn(
+        'Expected periodKey while feature flag is enabled for yearly batch'
+      );
+    }
     return this.generatePlanCommands({
       ...options,
       creditType: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,

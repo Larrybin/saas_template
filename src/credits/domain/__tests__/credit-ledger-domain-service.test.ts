@@ -4,6 +4,19 @@ vi.mock('@/config/feature-flags', () => ({
   featureFlags: { enableCreditPeriodKey: true },
 }));
 
+vi.mock('@/lib/server/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    child: () => ({
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    }),
+  }),
+}));
+
 import type { ICreditLedgerRepository } from '../../data-access/credit-ledger-repository.interface';
 import { CreditLedgerDomainService } from '../credit-ledger-domain-service';
 
@@ -27,7 +40,7 @@ describe('CreditLedgerDomainService (period key)', () => {
     repository = createRepositoryMock();
     domainService = new CreditLedgerDomainService(
       repository,
-      async () => ({} as never)
+      async () => ({}) as never
     );
   });
 

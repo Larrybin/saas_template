@@ -2,13 +2,16 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import postgres from 'postgres';
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  console.error(
-    'DATABASE_URL is not set. Please export it before running the check.'
-  );
-  process.exit(1);
+function getRequiredEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`${name} is not set. Please export it before running the check.`);
+    process.exit(1);
+  }
+  return value;
 }
+
+const databaseUrl = getRequiredEnvVar('DATABASE_URL');
 
 const sqlFile = path.resolve('scripts/sql/check_period_key_conflicts.sql');
 const sqlText = readFileSync(sqlFile, 'utf8');

@@ -5,7 +5,9 @@ import postgres from 'postgres';
 function getRequiredEnvVar(name: string): string {
   const value = process.env[name];
   if (!value) {
-    console.error(`${name} is not set. Please export it before running the check.`);
+    console.error(
+      `${name} is not set. Please export it before running the check.`
+    );
     process.exit(1);
   }
   return value;
@@ -39,7 +41,9 @@ async function main() {
     }
 
     if (hasConflict) {
-      console.error('Detected period_key conflicts. Please resolve before moving to Stage 3.');
+      console.error(
+        'Detected period_key conflicts. Please resolve before moving to Stage 3.'
+      );
       process.exit(1);
     } else {
       console.log('No period_key conflicts detected.');

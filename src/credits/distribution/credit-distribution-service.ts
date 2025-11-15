@@ -17,12 +17,7 @@ export class CreditDistributionService {
     private readonly logger = getLogger({
       span: 'credits.distribution.service',
     })
-  ) {
-    this.logger.info(
-      { enableCreditPeriodKey: featureFlags.enableCreditPeriodKey },
-      'CreditDistributionService initialized'
-    );
-  }
+  ) {}
 
   async execute(commands: CreditCommand[]): Promise<CommandExecutionResult> {
     const result: CommandExecutionResult = {
@@ -30,7 +25,7 @@ export class CreditDistributionService {
       processed: 0,
       skipped: 0,
       errors: [],
-      flagEnabled: featureFlags.enableCreditPeriodKey,
+      flagEnabled: true,
     };
 
     for (const command of commands) {
@@ -78,9 +73,9 @@ export class CreditDistributionService {
     monthLabel: string;
   }): CreditCommand[] {
     const { userIds, plan, periodKey, monthLabel } = options;
-    if (featureFlags.enableCreditPeriodKey && !periodKey) {
-      this.logger.warn(
-        'Expected periodKey while feature flag is enabled for free plan batch'
+    if (!periodKey || !Number.isFinite(periodKey)) {
+      throw new Error(
+        'periodKey is required when generating free plan commands'
       );
     }
     if (!plan?.credits?.enable) {
@@ -105,9 +100,9 @@ export class CreditDistributionService {
     periodKey?: number;
     monthLabel: string;
   }): CreditCommand[] {
-    if (featureFlags.enableCreditPeriodKey && !options.periodKey) {
-      this.logger.warn(
-        'Expected periodKey while feature flag is enabled for lifetime batch'
+    if (!options.periodKey || !Number.isFinite(options.periodKey)) {
+      throw new Error(
+        'periodKey is required when generating lifetime commands'
       );
     }
     return this.generatePlanCommands({
@@ -123,10 +118,8 @@ export class CreditDistributionService {
     periodKey?: number;
     monthLabel: string;
   }): CreditCommand[] {
-    if (featureFlags.enableCreditPeriodKey && !options.periodKey) {
-      this.logger.warn(
-        'Expected periodKey while feature flag is enabled for yearly batch'
-      );
+    if (!options.periodKey || !Number.isFinite(options.periodKey)) {
+      throw new Error('periodKey is required when generating yearly commands');
     }
     return this.generatePlanCommands({
       ...options,

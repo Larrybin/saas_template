@@ -253,35 +253,10 @@ export class CreditLedgerDomainService {
     periodKey?: number
   ): Promise<boolean> {
     const executor = await this.resolveExecutor(db);
-    const now = new Date();
-    const flagEnabled = featureFlags.enableCreditPeriodKey;
-    if (
-      flagEnabled &&
-      (!periodKey || !Number.isFinite(periodKey) || periodKey <= 0)
-    ) {
-      this.logger.warn(
-        { userId, creditType },
-        'Period key missing while feature flag is enabled, falling back to legacy query'
+    if (!periodKey || !Number.isFinite(periodKey) || periodKey <= 0) {
+      throw new Error(
+        'periodKey is required when checking canAddCreditsByType'
       );
-    }
-    if (
-      flagEnabled &&
-      periodKey &&
-      Number.isFinite(periodKey) &&
-      periodKey > 0
-    ) {
-      const existing = await executor
-        .select()
-        .from(creditTransaction)
-        .where(
-          and(
-            eq(creditTransaction.userId, userId),
-            eq(creditTransaction.type, creditType),
-            eq(creditTransaction.periodKey, periodKey)
-          )
-        )
-        .limit(1);
-      return existing.length === 0;
     }
     const existing = await executor
       .select()
@@ -290,10 +265,7 @@ export class CreditLedgerDomainService {
         and(
           eq(creditTransaction.userId, userId),
           eq(creditTransaction.type, creditType),
-          sql`EXTRACT(MONTH FROM ${creditTransaction.createdAt}) = ${
-            now.getMonth() + 1
-          }`,
-          sql`EXTRACT(YEAR FROM ${creditTransaction.createdAt}) = ${now.getFullYear()}`
+          eq(creditTransaction.periodKey, periodKey)
         )
       )
       .limit(1);

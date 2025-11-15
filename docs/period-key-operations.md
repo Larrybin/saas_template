@@ -1,8 +1,7 @@
 # Period Key Rollout Guide
 
 ## 环境变量
-- `ENABLE_CREDIT_PERIOD_KEY=false`：Stage 1 默认值，仅写 `period_key = 0`，兼容旧逻辑。
-- Stage 2 开始前，将变量设置为 `true` 并重启服务，观察日志/指标（见下）。
+- `ENABLE_CREDIT_PERIOD_KEY=true`：Stage 3 起默认开启；只有在紧急回退时才临时改为 false。
 
 ## 回填脚本（Stage 1）
 1. 确保 migration 已运行（`period_key` 列存在）。
@@ -13,7 +12,7 @@
 
 ## 回滚脚本（需要撤销时）
 1. 运行 `psql $DATABASE_URL -f scripts/sql/rollback_period_key.sql` 删除索引与列。
-2. 恢复 `ENABLE_CREDIT_PERIOD_KEY=false`，重新部署。
+2. 临时将 `ENABLE_CREDIT_PERIOD_KEY=false`，重新部署。
 
 ## Feature Flag 监控
 - `CreditDistributionService` 初始化时会记录 `enableCreditPeriodKey` 状态。

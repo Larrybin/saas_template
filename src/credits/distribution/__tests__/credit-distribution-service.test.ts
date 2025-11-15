@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/config/feature-flags', () => ({
-  featureFlags: { enableCreditPeriodKey: true },
-}));
-
 vi.mock('../../credits', () => ({
   addCredits: vi.fn(),
   canAddCreditsByType: vi.fn(),
@@ -70,7 +66,6 @@ describe('CreditDistributionService', () => {
 
     expect(result.processed).toBe(2);
     expect(result.skipped).toBe(0);
-    expect(result.flagEnabled).toBe(true);
     expect(mockedAddCredits).toHaveBeenCalledTimes(2);
   });
 
@@ -96,7 +91,6 @@ describe('CreditDistributionService', () => {
     expect(result.processed).toBe(0);
     expect(result.skipped).toBe(1);
     expect(result.errors).toHaveLength(1);
-    expect(result.flagEnabled).toBe(true);
   });
 
   it('generates free commands with period key', () => {

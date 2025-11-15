@@ -70,16 +70,14 @@ export async function distributeCreditsToAllUsers() {
   log.info(
     {
       usersWithPayments: usersWithPayments.length,
-      enableCreditPeriodKey: featureFlags.enableCreditPeriodKey,
+      enableCreditPeriodKey: true,
     },
     'Loaded users for credit distribution'
   );
 
   const now = new Date();
   const monthLabel = `${now.getFullYear()}-${now.getMonth() + 1}`;
-  const periodKey = featureFlags.enableCreditPeriodKey
-    ? getPeriodKey(now)
-    : undefined;
+  const periodKey = getPeriodKey(now);
   const freePlan = getAllPricePlans().find(
     (plan) =>
       plan.isFree && plan.credits?.enable && (plan.credits.amount ?? 0) > 0
@@ -264,7 +262,7 @@ export async function distributeCreditsToAllUsers() {
       usersCount,
       processedCount,
       errorCount,
-      enableCreditPeriodKey: featureFlags.enableCreditPeriodKey,
+      enableCreditPeriodKey: true,
     },
     'Finished credit distribution job'
   );

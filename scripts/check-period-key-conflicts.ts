@@ -24,10 +24,25 @@ const statements = sqlText
 async function main() {
   const client = postgres(databaseUrl, { max: 1 });
   try {
+    let hasConflict = false;
     for (const statement of statements) {
       const result = await client.unsafe(statement);
+      if (Array.isArray(result) && result.length > 0) {
+        hasConflict = true;
+      }
       console.log(`\nQuery:\n${statement}\nResult:`);
-      console.table(result);
+      if (result.length === 0) {
+        console.log('No rows returned');
+      } else {
+        console.table(result);
+      }
+    }
+
+    if (hasConflict) {
+      console.error('Detected period_key conflicts. Please resolve before moving to Stage 3.');
+      process.exit(1);
+    } else {
+      console.log('No period_key conflicts detected.');
     }
   } finally {
     await client.end();

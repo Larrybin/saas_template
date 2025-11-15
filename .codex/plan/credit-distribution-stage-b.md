@@ -16,3 +16,7 @@
 1. 编写分批回填/回滚脚本，供阶段 2 开启前执行。
 2. 扩展 CreditDistributionService，增加 generate 系列方法，减轻 distribute.ts 逻辑。
 3. 补充 feature flag 监控日志与启用文档，支撑阶段 2/3。
+
+## TODO（面向 Stage 3）
+- 在 CI 中引入 `pnpm db:check-period-key`（需配置专用 DATABASE_URL），确保上线前自动检测 period_key 冲突；执行前置条件：已配置检查数据库，脚本返回非零即失败。
+- 完成冲突检查后，计划 Stage 3 的清理工作（默认开启 flag、移除 legacy `EXTRACT` 查询）。

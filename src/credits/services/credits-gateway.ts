@@ -7,6 +7,7 @@ export type AddCreditsPayload = {
   description: string;
   paymentId?: string;
   expireDays?: number;
+  periodKey?: number;
 };
 
 export interface CreditsGateway {

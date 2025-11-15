@@ -1,8 +1,10 @@
 import { randomUUID } from 'crypto';
 import { addDays } from 'date-fns';
 import { and, eq, sql } from 'drizzle-orm';
+import { featureFlags } from '@/config/feature-flags';
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
+import { getLogger } from '@/lib/server/logger';
 import type {
   CreditTransactionInsert,
   ICreditLedgerRepository,
@@ -18,6 +20,8 @@ export type ConsumeCreditsPayload = {
 };
 
 export class CreditLedgerDomainService {
+  private readonly logger = getLogger({ span: 'credits.ledger.domain' });
+
   constructor(
     private readonly repository: ICreditLedgerRepository,
     private readonly dbProvider: () => Promise<DbExecutor> = getDb
@@ -83,6 +87,12 @@ export class CreditLedgerDomainService {
     this.validateAddCreditsPayload(payload);
     const executor = await this.resolveExecutor(db);
     const now = new Date();
+    const periodKey =
+      featureFlags.enableCreditPeriodKey &&
+      typeof payload.periodKey === 'number' &&
+      payload.periodKey > 0
+        ? payload.periodKey
+        : 0;
     const current = await this.repository.findUserCredit(
       payload.userId,
       executor
@@ -108,6 +118,7 @@ export class CreditLedgerDomainService {
         description: payload.description,
         paymentId: payload.paymentId,
         expirationDate,
+        periodKey,
       },
       executor,
       now
@@ -238,10 +249,15 @@ export class CreditLedgerDomainService {
   async canAddCreditsByType(
     userId: string,
     creditType: string,
-    db?: DbExecutor
+    db?: DbExecutor,
+    periodKey?: number
   ): Promise<boolean> {
     const executor = await this.resolveExecutor(db);
-    const now = new Date();
+    if (!periodKey || !Number.isFinite(periodKey) || periodKey <= 0) {
+      throw new Error(
+        'periodKey is required when checking canAddCreditsByType'
+      );
+    }
     const existing = await executor
       .select()
       .from(creditTransaction)
@@ -249,10 +265,7 @@ export class CreditLedgerDomainService {
         and(
           eq(creditTransaction.userId, userId),
           eq(creditTransaction.type, creditType),
-          sql`EXTRACT(MONTH FROM ${creditTransaction.createdAt}) = ${
-            now.getMonth() + 1
-          }`,
-          sql`EXTRACT(YEAR FROM ${creditTransaction.createdAt}) = ${now.getFullYear()}`
+          eq(creditTransaction.periodKey, periodKey)
         )
       )
       .limit(1);

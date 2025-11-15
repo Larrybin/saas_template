@@ -10,6 +10,19 @@ vi.mock('@/db', () => ({
   getDb: vi.fn(),
 }));
 
+vi.mock('@/lib/server/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    child: () => ({
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    }),
+  }),
+}));
+
 type GetDbMock = Mock<
   [],
   Promise<{

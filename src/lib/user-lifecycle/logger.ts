@@ -10,7 +10,9 @@ export function createConsoleLifecycleLogger(): LifecycleLogger {
   };
 }
 
-export function createLifecycleLoggerFromAppLogger(appLogger: Logger): LifecycleLogger {
+export function createLifecycleLoggerFromAppLogger(
+  appLogger: Logger
+): LifecycleLogger {
   return {
     error: appLogger.error.bind(appLogger),
     info: appLogger.info.bind(appLogger),

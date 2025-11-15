@@ -19,6 +19,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:check-period-key": "tsx scripts/check-period-key-conflicts.ts",
     "list-contacts": "tsx scripts/list-contacts.ts",
     "list-users": "tsx scripts/list-users.ts",
     "content": "fumadocs-mdx",

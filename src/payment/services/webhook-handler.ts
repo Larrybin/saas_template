@@ -104,6 +104,7 @@ async function onCreateSubscription(
       await deps.creditsGateway.addSubscriptionCredits(
         userId,
         priceId,
+        periodStart,
         createCreditsTransaction(tx)
       );
     }
@@ -154,6 +155,7 @@ async function onUpdateSubscription(
       await deps.creditsGateway.addSubscriptionCredits(
         existing.userId,
         priceId,
+        periodStart,
         createCreditsTransaction(tx)
       );
     }
@@ -188,39 +190,42 @@ async function onOnetimePayment(
   const userId = session.metadata?.userId;
   const priceId = session.metadata?.priceId;
   if (!userId || !priceId) return;
-  const processed = await deps.paymentRepository.withTransaction(async (tx) => {
-    const existing = await deps.paymentRepository.findBySessionId(
-      session.id,
-      tx
-    );
-    if (existing) {
-      return false;
-    }
-    const now = new Date();
-    await deps.paymentRepository.insert(
-      {
-        id: randomUUID(),
-        priceId,
-        type: PaymentTypes.ONE_TIME,
-        userId,
-        customerId,
-        sessionId: session.id,
-        status: 'completed',
-        periodStart: now,
-        createdAt: now,
-        updatedAt: now,
-      },
-      tx
-    );
-    if (websiteConfig.credits?.enableCredits) {
-      await deps.creditsGateway.addLifetimeMonthlyCredits(
-        userId,
-        priceId,
-        createCreditsTransaction(tx)
+  const processed = await deps.paymentRepository.withTransaction(
+    async (tx) => {
+      const existing = await deps.paymentRepository.findBySessionId(
+        session.id,
+        tx
       );
+      if (existing) {
+        return false;
+      }
+      const now = new Date();
+      await deps.paymentRepository.insert(
+        {
+          id: randomUUID(),
+          priceId,
+          type: PaymentTypes.ONE_TIME,
+          userId,
+          customerId,
+          sessionId: session.id,
+          status: 'completed',
+          periodStart: now,
+          createdAt: now,
+          updatedAt: now,
+        },
+        tx
+      );
+      if (websiteConfig.credits?.enableCredits) {
+        await deps.creditsGateway.addLifetimeMonthlyCredits(
+          userId,
+          priceId,
+          now,
+          createCreditsTransaction(tx)
+        );
+      }
+      return true;
     }
-    return true;
-  });
+  );
   if (!processed) {
     return;
   }

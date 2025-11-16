@@ -249,14 +249,12 @@ export class CreditLedgerDomainService {
   async canAddCreditsByType(
     userId: string,
     creditType: string,
-    db?: DbExecutor,
-    periodKey?: number
+    periodKey: number,
+    db?: DbExecutor
   ): Promise<boolean> {
     const executor = await this.resolveExecutor(db);
-    if (!periodKey || !Number.isFinite(periodKey) || periodKey <= 0) {
-      throw new Error(
-        'periodKey is required when checking canAddCreditsByType'
-      );
+    if (!Number.isFinite(periodKey) || periodKey <= 0) {
+      throw new Error('periodKey is required when checking canAddCreditsByType');
     }
     const existing = await executor
       .select()

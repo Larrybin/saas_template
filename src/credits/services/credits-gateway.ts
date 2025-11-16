@@ -18,11 +18,13 @@ export interface CreditsGateway {
   addSubscriptionCredits(
     userId: string,
     priceId: string,
+    cycleRefDate: Date,
     transaction?: CreditsTransaction
   ): Promise<void>;
   addLifetimeMonthlyCredits(
     userId: string,
     priceId: string,
+    cycleRefDate: Date,
     transaction?: CreditsTransaction
   ): Promise<void>;
 }

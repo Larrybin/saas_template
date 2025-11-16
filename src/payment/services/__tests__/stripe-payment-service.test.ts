@@ -443,10 +443,11 @@ describe('StripePaymentService', () => {
     expect(creditsGateway.addLifetimeMonthlyCredits).toHaveBeenCalledWith(
       'user-1',
       'price_lifetime',
+      expect.any(Date),
       expect.anything()
     );
     const lifetimeTx =
-      creditsGateway.addLifetimeMonthlyCredits.mock.calls[0][2];
+      creditsGateway.addLifetimeMonthlyCredits.mock.calls[0][3];
     expect(lifetimeTx?.unwrap()).toBe(tx);
     expect(notificationGateway.notifyPurchase).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId: 'cs_one_time', amount: 99 })
@@ -521,7 +522,8 @@ describe('StripePaymentService', () => {
 
     await service.handleWebhookEvent('payload', 'signature');
 
-    const subTxWrapper = creditsGateway.addSubscriptionCredits.mock.calls[0][2];
+    const subTxWrapper =
+      creditsGateway.addSubscriptionCredits.mock.calls[0][3];
     expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.withTransaction).toHaveBeenCalled();
     expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
@@ -598,7 +600,8 @@ describe('StripePaymentService', () => {
     await expect(
       service.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('sub grant fail');
-    const subTxWrapper = creditsGateway.addSubscriptionCredits.mock.calls[0][2];
+    const subTxWrapper =
+      creditsGateway.addSubscriptionCredits.mock.calls[0][3];
     expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.updateBySubscriptionId).toHaveBeenCalled();
     expect(paymentRepository.withTransaction).toHaveBeenCalled();

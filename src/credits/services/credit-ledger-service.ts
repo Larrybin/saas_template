@@ -4,7 +4,7 @@ import { CreditLedgerRepository } from '../data-access/credit-ledger-repository'
 import type { DbExecutor } from '../data-access/types';
 import { CreditLedgerDomainService } from '../domain/credit-ledger-domain-service';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
-import { getPeriodKey } from '../utils/period-key';
+import { getCurrentPeriodKey, getPeriodKey } from '../utils/period-key';
 import type { AddCreditsPayload, CreditsGateway } from './credits-gateway';
 import type { CreditsTransaction } from './transaction-context';
 import { resolveExecutor } from './transaction-context';
@@ -66,11 +66,12 @@ export async function canAddCreditsByType(
   creditType: string,
   periodKey?: number
 ) {
+  const effectivePeriodKey =
+    periodKey ?? getCurrentPeriodKey();
   return creditLedgerDomainService.canAddCreditsByType(
     userId,
     creditType,
-    undefined,
-    periodKey
+    effectivePeriodKey
   );
 }
 
@@ -93,7 +94,11 @@ export async function addRegisterGiftCredits(userId: string) {
   });
 }
 
-export async function addMonthlyFreeCredits(userId: string, planId: string) {
+export async function addMonthlyFreeCredits(
+  userId: string,
+  planId: string,
+  refDate?: Date
+) {
   const pricePlan = findPlanByPlanId(planId);
   if (
     !pricePlan ||
@@ -103,8 +108,7 @@ export async function addMonthlyFreeCredits(userId: string, planId: string) {
   ) {
     return;
   }
-  const now = new Date();
-  const periodKey = getPeriodKey(now);
+  const periodKey = getCurrentPeriodKey(refDate);
   const canAdd = await canAddCreditsByType(
     userId,
     CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
@@ -126,14 +130,15 @@ export async function addMonthlyFreeCredits(userId: string, planId: string) {
 export async function addSubscriptionCredits(
   userId: string,
   priceId: string,
+  cycleRefDate?: Date,
   transaction?: CreditsTransaction
 ) {
   const plan = findPlanByPriceId(priceId);
   if (!plan?.credits?.enable) {
     return;
   }
-  const now = new Date();
-  const periodKey = getPeriodKey(now);
+  const refDate = cycleRefDate ?? new Date();
+  const periodKey = getPeriodKey(refDate);
   const canAdd = await canAddCreditsByType(
     userId,
     CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
@@ -156,14 +161,15 @@ export async function addSubscriptionCredits(
 export async function addLifetimeMonthlyCredits(
   userId: string,
   priceId: string,
+  cycleRefDate?: Date,
   transaction?: CreditsTransaction
 ) {
   const plan = findPlanByPriceId(priceId);
   if (!plan?.isLifetime || plan.disabled || !plan.credits?.enable) {
     return;
   }
-  const now = new Date();
-  const periodKey = getPeriodKey(now);
+  const refDate = cycleRefDate ?? new Date();
+  const periodKey = getPeriodKey(refDate);
   const canAdd = await canAddCreditsByType(
     userId,
     CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
@@ -194,16 +200,18 @@ export class CreditLedgerService implements CreditsGateway {
   async addSubscriptionCredits(
     userId: string,
     priceId: string,
+    cycleRefDate: Date,
     transaction?: CreditsTransaction
   ): Promise<void> {
-    await addSubscriptionCredits(userId, priceId, transaction);
+    await addSubscriptionCredits(userId, priceId, cycleRefDate, transaction);
   }
 
   async addLifetimeMonthlyCredits(
     userId: string,
     priceId: string,
+    cycleRefDate: Date,
     transaction?: CreditsTransaction
   ): Promise<void> {
-    await addLifetimeMonthlyCredits(userId, priceId, transaction);
+    await addLifetimeMonthlyCredits(userId, priceId, cycleRefDate, transaction);
   }
 }

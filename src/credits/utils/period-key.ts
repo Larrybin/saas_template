@@ -1,3 +1,9 @@
 export function getPeriodKey(date: Date): number {
-  return date.getFullYear() * 100 + (date.getMonth() + 1);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  return year * 100 + month;
+}
+
+export function getCurrentPeriodKey(refDate: Date = new Date()): number {
+  return getPeriodKey(refDate);
 }

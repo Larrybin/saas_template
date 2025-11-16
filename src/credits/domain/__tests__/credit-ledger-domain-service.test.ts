@@ -18,6 +18,7 @@ vi.mock('@/lib/server/logger', () => ({
 }));
 
 import type { ICreditLedgerRepository } from '../../data-access/credit-ledger-repository.interface';
+import { CREDIT_TRANSACTION_TYPE } from '../../types';
 import { CreditLedgerDomainService } from '../credit-ledger-domain-service';
 
 describe('CreditLedgerDomainService (period key)', () => {
@@ -48,7 +49,7 @@ describe('CreditLedgerDomainService (period key)', () => {
     await domainService.addCredits({
       userId: 'user-1',
       amount: 25,
-      type: 'TEST',
+      type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
       description: 'Stage B validation',
       periodKey: 202501,
     });

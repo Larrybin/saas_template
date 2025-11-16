@@ -2,7 +2,8 @@ import { featureFlags } from '@/config/feature-flags';
 import { findPlanByPriceId } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
 import { PlanIntervals, type PricePlan } from '@/payment/types';
-import { addCredits, canAddCreditsByType } from '../credits';
+import type { DbExecutor } from '../data-access/types';
+import { addCredits, addCreditsWithExecutor, canAddCreditsByType } from '../credits';
 import type {
   AddCreditsPayload,
   PeriodicAddCreditsPayload,
@@ -22,7 +23,10 @@ export class CreditDistributionService {
     })
   ) {}
 
-  async execute(commands: CreditCommand[]): Promise<CommandExecutionResult> {
+  async execute(
+    commands: CreditCommand[],
+    executor?: DbExecutor
+  ): Promise<CommandExecutionResult> {
     const result: CommandExecutionResult = {
       total: commands.length,
       processed: 0,
@@ -31,13 +35,25 @@ export class CreditDistributionService {
       flagEnabled: featureFlags.enableCreditPeriodKey,
     };
 
+    const canAdd = async (command: CreditCommand) =>
+      canAddCreditsByType(
+        command.userId,
+        command.type,
+        command.periodKey,
+        executor
+      );
+
+    const add = async (payload: PeriodicAddCreditsPayload) => {
+      if (executor) {
+        await addCreditsWithExecutor(payload, executor);
+        return;
+      }
+      await addCredits(payload);
+    };
+
     for (const command of commands) {
       try {
-        const eligible = await canAddCreditsByType(
-          command.userId,
-          command.type,
-          command.periodKey
-        );
+        const eligible = await canAdd(command);
         if (!eligible) {
           result.skipped += 1;
           continue;
@@ -51,7 +67,7 @@ export class CreditDistributionService {
           paymentId: command.paymentId,
           periodKey: command.periodKey,
         };
-        await addCredits(payload);
+        await add(payload);
         result.processed += 1;
       } catch (error) {
         result.errors.push({

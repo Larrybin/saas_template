@@ -31,6 +31,7 @@ import {
   type Subscription,
   type getSubscriptionsParams,
 } from '../types';
+import { getSubscriptionPeriodBounds } from '../services/utils/stripe-subscription';
 
 /**
  * Stripe payment provider implementation
@@ -537,6 +538,10 @@ export class StripeProvider implements PaymentProvider {
       return;
     }
 
+    const { periodStart, periodEnd } =
+      getSubscriptionPeriodBounds(stripeSubscription);
+    const effectivePeriodStart = periodStart ?? new Date();
+
     // create fields
     const createFields: any = {
       id: randomUUID(),
@@ -549,12 +554,8 @@ export class StripeProvider implements PaymentProvider {
       status: this.mapSubscriptionStatusToPaymentStatus(
         stripeSubscription.status
       ),
-      periodStart: stripeSubscription.current_period_start
-        ? new Date(stripeSubscription.current_period_start * 1000)
-        : null,
-      periodEnd: stripeSubscription.current_period_end
-        ? new Date(stripeSubscription.current_period_end * 1000)
-        : null,
+      periodStart: effectivePeriodStart,
+      periodEnd: periodEnd,
       cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
       trialStart: stripeSubscription.trial_start
         ? new Date(stripeSubscription.trial_start * 1000)
@@ -583,7 +584,7 @@ export class StripeProvider implements PaymentProvider {
       await addSubscriptionCredits(
         userId,
         priceId,
-        createFields.periodStart ?? new Date()
+        effectivePeriodStart
       );
       console.log('<< Added subscription monthly credits for user');
     }
@@ -618,12 +619,10 @@ export class StripeProvider implements PaymentProvider {
       .limit(1);
 
     // get new period start and end
-    const newPeriodStart = stripeSubscription.current_period_start
-      ? new Date(stripeSubscription.current_period_start * 1000)
-      : undefined;
-    const newPeriodEnd = stripeSubscription.current_period_end
-      ? new Date(stripeSubscription.current_period_end * 1000)
-      : undefined;
+    const {
+      periodStart: newPeriodStart,
+      periodEnd: newPeriodEnd,
+    } = getSubscriptionPeriodBounds(stripeSubscription);
 
     // Check if this is a renewal (period has changed and subscription is active)
     const isRenewal =

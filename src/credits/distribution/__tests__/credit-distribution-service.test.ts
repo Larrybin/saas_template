@@ -50,14 +50,14 @@ describe('CreditDistributionService', () => {
     const result = await service.execute([
       {
         userId: 'user-1',
-        type: 'TEST',
+        type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
         amount: 10,
         description: 'command-1',
         periodKey: 202501,
       },
       {
         userId: 'user-2',
-        type: 'TEST',
+        type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
         amount: 15,
         description: 'command-2',
         periodKey: 202501,
@@ -76,15 +76,17 @@ describe('CreditDistributionService', () => {
     const result = await service.execute([
       {
         userId: 'user-1',
-        type: 'TEST',
+        type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
         amount: 10,
         description: 'first',
+        periodKey: 202501,
       },
       {
         userId: 'user-2',
-        type: 'TEST',
+        type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
         amount: 20,
         description: 'second',
+        periodKey: 202501,
       },
     ]);
 

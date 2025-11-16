@@ -20,7 +20,9 @@ import { getPeriodKey } from './utils/period-key';
 const baseLogger = getLogger({ span: 'credits.distribute' });
 const creditDistributionService = new CreditDistributionService();
 
-export async function distributeCreditsToAllUsers() {
+export async function distributeCreditsToAllUsers(options?: {
+  refDate?: Date;
+}) {
   const log = baseLogger.child({ span: 'distributeCreditsToAllUsers' });
   log.info('Starting credit distribution job');
 
@@ -70,12 +72,12 @@ export async function distributeCreditsToAllUsers() {
   log.info(
     {
       usersWithPayments: usersWithPayments.length,
-      enableCreditPeriodKey: true,
+      enableCreditPeriodKey: featureFlags.enableCreditPeriodKey,
     },
     'Loaded users for credit distribution'
   );
 
-  const now = new Date();
+  const now = options?.refDate ?? new Date();
   const monthLabel = `${now.getFullYear()}-${now.getMonth() + 1}`;
   const periodKey = getPeriodKey(now);
   const freePlan = getAllPricePlans().find(
@@ -262,7 +264,7 @@ export async function distributeCreditsToAllUsers() {
       usersCount,
       processedCount,
       errorCount,
-      enableCreditPeriodKey: true,
+      enableCreditPeriodKey: featureFlags.enableCreditPeriodKey,
     },
     'Finished credit distribution job'
   );

@@ -3,7 +3,10 @@ import { findPlanByPriceId } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
 import { PlanIntervals, type PricePlan } from '@/payment/types';
 import { addCredits, canAddCreditsByType } from '../credits';
-import type { AddCreditsPayload } from '../services/credits-gateway';
+import type {
+  AddCreditsPayload,
+  PeriodicAddCreditsPayload,
+} from '../services/credits-gateway';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 import type { CommandExecutionResult, CreditCommand } from './credit-command';
 
@@ -25,7 +28,7 @@ export class CreditDistributionService {
       processed: 0,
       skipped: 0,
       errors: [],
-      flagEnabled: true,
+      flagEnabled: featureFlags.enableCreditPeriodKey,
     };
 
     for (const command of commands) {
@@ -39,7 +42,7 @@ export class CreditDistributionService {
           result.skipped += 1;
           continue;
         }
-        const payload: AddCreditsPayload = {
+        const payload: PeriodicAddCreditsPayload = {
           userId: command.userId,
           amount: command.amount,
           type: command.type,

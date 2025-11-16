@@ -1,3 +1,4 @@
+import { CREDIT_TRANSACTION_TYPE } from '../types';
 import type { CreditsTransaction } from './transaction-context';
 
 export type AddCreditsPayload = {
@@ -8,6 +9,14 @@ export type AddCreditsPayload = {
   paymentId?: string;
   expireDays?: number;
   periodKey?: number;
+};
+
+export type PeriodicAddCreditsPayload = AddCreditsPayload & {
+  type:
+    | CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH
+    | CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL
+    | CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY;
+  periodKey: number;
 };
 
 export interface CreditsGateway {

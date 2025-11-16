@@ -33,6 +33,10 @@ All three commands are expected to pass locally and in CI before merging.
   - Client code / shared config: `import { clientEnv } from '@/env/client'`
 - `.env.example` documents every supported variable. Copy it per-environment and fill the required secrets before running `pnpm build`.
 
+### Social links configuration
+
+- By default, `src/config/website.tsx` sets `metadata.social` links to the placeholder `https://your-domain.com`. Replace these with your own GitHub/Twitter/Discord and other social URLs before going live.
+
 ### Payment safety guidelines
 
 - Stripe Checkout price IDs永远由服务端指定。前端只提交 `packageId` 或 `planId`，`createCreditCheckout`/`createCheckout` 会根据服务器配置选择合法的 Stripe `priceId`。

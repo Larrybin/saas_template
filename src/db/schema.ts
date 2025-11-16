@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { boolean, integer, pgTable, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -115,9 +116,13 @@ export const creditTransaction = pgTable("credit_transaction", {
 	expirationDateProcessedAt: timestamp("expiration_date_processed_at"),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+	periodKey: integer("period_key").notNull().default(0),
 }, (table) => ({
 	creditTransactionUserIdIdx: index("credit_transaction_user_id_idx").on(table.userId),
 	creditTransactionTypeIdx: index("credit_transaction_type_idx").on(table.type),
+	creditTransactionUserTypePeriodKeyIdx: uniqueIndex("credit_transaction_user_type_period_key_idx")
+		.on(table.userId, table.type, table.periodKey)
+		.where(sql`${table.periodKey} > 0`),
 }));
 
 export const stripeEvent = pgTable("stripe_event", {

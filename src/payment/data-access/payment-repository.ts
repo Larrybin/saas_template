@@ -20,10 +20,7 @@ export class PaymentRepository {
     return await db.transaction(async (tx) => await handler(tx));
   }
 
-  async listByUser(
-    userId: string,
-    db?: DbExecutor
-  ): Promise<PaymentRecord[]> {
+  async listByUser(userId: string, db?: DbExecutor): Promise<PaymentRecord[]> {
     const client = await this.resolveDb(db);
     return client
       .select()
@@ -58,7 +55,10 @@ export class PaymentRepository {
     return result[0];
   }
 
-  async insert(record: PaymentInsert, db?: DbExecutor): Promise<string | undefined> {
+  async insert(
+    record: PaymentInsert,
+    db?: DbExecutor
+  ): Promise<string | undefined> {
     const client = await this.resolveDb(db);
     const result = await client.insert(payment).values(record).returning({
       id: payment.id,

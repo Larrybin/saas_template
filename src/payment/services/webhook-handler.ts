@@ -75,6 +75,7 @@ async function onCreateSubscription(
   const userId = subscription.metadata.userId;
   if (!userId) return;
   const { periodStart, periodEnd } = getSubscriptionPeriodBounds(subscription);
+  const effectivePeriodStart = periodStart ?? new Date();
   await deps.paymentRepository.withTransaction(async (tx) => {
     await deps.paymentRepository.upsertSubscription(
       {
@@ -86,7 +87,7 @@ async function onCreateSubscription(
         subscriptionId: subscription.id,
         interval: mapStripeIntervalToPlanInterval(subscription),
         status: mapSubscriptionStatusToPaymentStatus(subscription.status),
-        periodStart,
+        periodStart: effectivePeriodStart,
         periodEnd,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         trialStart: subscription.trial_start
@@ -104,6 +105,7 @@ async function onCreateSubscription(
       await deps.creditsGateway.addSubscriptionCredits(
         userId,
         priceId,
+        effectivePeriodStart,
         createCreditsTransaction(tx)
       );
     }
@@ -150,14 +152,13 @@ async function onUpdateSubscription(
       periodStart &&
       existing.periodStart.getTime() !== periodStart.getTime() &&
       subscription.status === 'active';
-    if (
-      isRenewal &&
-      existing?.userId &&
-      websiteConfig.credits?.enableCredits
-    ) {
+    if (isRenewal && existing?.userId && websiteConfig.credits?.enableCredits) {
+      const effectivePeriodStart =
+        periodStart ?? existing.periodStart ?? new Date();
       await deps.creditsGateway.addSubscriptionCredits(
         existing.userId,
         priceId,
+        effectivePeriodStart,
         createCreditsTransaction(tx)
       );
     }
@@ -221,6 +222,7 @@ async function onOnetimePayment(
         await deps.creditsGateway.addLifetimeMonthlyCredits(
           userId,
           priceId,
+          now,
           createCreditsTransaction(tx)
         );
       }

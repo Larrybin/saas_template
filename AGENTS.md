@@ -1,5 +1,5 @@
 # Repository Guidelines
-
+使用Codex自带的apply_patch工具修改文件。尽量避免使用shell工具修改文件。
 ## Project Structure & Module Organization
 The Next.js application resides in `src/`, with routed pages under `src/app`, shared UI primitives in `src/components`, and reusable logic separated into `src/lib`, `src/hooks`, and `src/stores`. Domain-specific features stay self-contained, for example billing code in `src/payment`. Mail templates live in `src/mail`, static content is stored in `content/`, localized copy in `messages/`, and public assets under `public/`. End-to-end data fixtures and helpers belong in `tests/`, while generated artifacts such as build outputs or coverage reports are kept in `test-results/` and `.next/` and should not be edited manually.
 

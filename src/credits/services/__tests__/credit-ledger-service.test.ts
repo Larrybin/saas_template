@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { getDb } from '@/db';
+import { CREDIT_TRANSACTION_TYPE } from '../../types';
 import {
   addCredits,
   consumeCredits,
@@ -8,6 +9,19 @@ import {
 
 vi.mock('@/db', () => ({
   getDb: vi.fn(),
+}));
+
+vi.mock('@/lib/server/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    child: () => ({
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    }),
+  }),
 }));
 
 type GetDbMock = Mock<
@@ -172,6 +186,31 @@ describe('CreditLedgerService', () => {
     expect(transactionSpy).toHaveBeenCalledWith(
       expect.objectContaining({ expirationDate: undefined }),
       fakeDb
+    );
+  });
+
+  it('throws when periodic credits are missing periodKey', async () => {
+    await expect(
+      addCredits({
+        userId: 'user-1',
+        amount: 10,
+        type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+        description: 'missing periodKey',
+      })
+    ).rejects.toThrow('periodKey is required for periodic credit transactions');
+  });
+
+  it('throws when non-periodic credits set periodKey', async () => {
+    await expect(
+      addCredits({
+        userId: 'user-1',
+        amount: 10,
+        type: CREDIT_TRANSACTION_TYPE.PURCHASE_PACKAGE,
+        description: 'wrong periodKey',
+        periodKey: 202501,
+      } as any)
+    ).rejects.toThrow(
+      'periodKey should not be set for non-periodic credit transactions'
     );
   });
 });

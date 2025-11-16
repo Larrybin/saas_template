@@ -144,13 +144,6 @@ export function getNavbarLinks(): NestedMenuItem[] {
           external: false,
         },
         {
-          title: t('pages.items.roadmap.title'),
-          description: t('pages.items.roadmap.description'),
-          icon: <SquareKanbanIcon className="size-4 shrink-0" />,
-          href: Routes.Roadmap,
-          external: true,
-        },
-        {
           title: t('pages.items.changelog.title'),
           description: t('pages.items.changelog.description'),
           icon: <ListChecksIcon className="size-4 shrink-0" />,

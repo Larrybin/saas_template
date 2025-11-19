@@ -206,7 +206,11 @@ async function analyzeContent(
 ): Promise<AnalysisResults> {
   return withRetry(async () => {
     try {
-      let model: any;
+      let model:
+        | ReturnType<ReturnType<typeof createOpenAI>['chat']>
+        | ReturnType<ReturnType<typeof createGoogleGenerativeAI>['chat']>
+        | ReturnType<ReturnType<typeof createDeepSeek>['chat']>
+        | ReturnType<ReturnType<typeof createOpenRouter>['chat']>;
       let temperature: number | undefined;
       let maxTokens: number | undefined;
       switch (provider) {

@@ -41,41 +41,37 @@ interface HomePageProps {
 }
 
 export default async function HomePage(props: HomePageProps) {
-  const params = await props.params;
-  const { locale } = params;
-  const t = await getTranslations('HomePage');
+  await props.params;
 
   return (
-    <>
-      <div className="flex flex-col">
-        <HeroSection />
+    <div className="flex flex-col">
+      <HeroSection />
 
-        <LogoCloud />
+      <LogoCloud />
 
-        <StatsSection />
+      <StatsSection />
 
-        <IntegrationSection />
+      <IntegrationSection />
 
-        <FeaturesSection />
+      <FeaturesSection />
 
-        <Features2Section />
+      <Features2Section />
 
-        <Features3Section />
+      <Features3Section />
 
-        <Integration2Section />
+      <Integration2Section />
 
-        <PricingSection />
+      <PricingSection />
 
-        <FaqSection />
+      <FaqSection />
 
-        <CallToActionSection />
+      <CallToActionSection />
 
-        <TestimonialsSection />
+      <TestimonialsSection />
 
-        <NewsletterCard />
+      <NewsletterCard />
 
-        <CrispChat />
-      </div>
-    </>
+      <CrispChat />
+    </div>
   );
 }

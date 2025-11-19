@@ -55,7 +55,7 @@ describe('handleAnalyzeContentRequest', () => {
         content: 'hello world',
         screenshot: 'screenshot-url',
       })),
-      analyzeContent: vi.fn(async (content, url, provider) => ({
+      analyzeContent: vi.fn(async (_content, url, _provider) => ({
         title: 'Test Title',
         description: 'Test Description',
         introduction: 'Intro',

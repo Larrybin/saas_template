@@ -6,9 +6,8 @@ import { getCreditPackageById } from '@/credits/server';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { createCreditsTransaction } from '@/credits/services/transaction-context';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
-import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import type { PaymentRepository } from '../data-access/payment-repository';
-import { type PaymentStatus, PaymentTypes } from '../types';
+import { PaymentTypes } from '../types';
 import type { NotificationGateway } from './gateways/notification-gateway';
 import {
   getSubscriptionPeriodBounds,
@@ -147,8 +146,7 @@ async function onUpdateSubscription(
       return false;
     }
     const isRenewal =
-      existing &&
-      existing.periodStart &&
+      existing?.periodStart &&
       periodStart &&
       existing.periodStart.getTime() !== periodStart.getTime() &&
       subscription.status === 'active';

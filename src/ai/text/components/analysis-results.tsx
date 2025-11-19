@@ -24,11 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  ImageOptimization,
-  useLazyLoading,
-  useStableCallback,
-} from '../utils/performance';
+import { useLazyLoading } from '../utils/performance';
 
 // Memoized screenshot component for better performance
 const LazyScreenshot = memo(
@@ -196,8 +192,8 @@ export const AnalysisResults = memo(function AnalysisResults({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {results.features.map((feature, index) => (
-                    <div key={index} className="flex items-start gap-3">
+                  {results.features.map((feature) => (
+                    <div key={feature} className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-2" />
                       <p className="text-sm leading-relaxed text-muted-foreground">
                         {feature}
@@ -220,8 +216,12 @@ export const AnalysisResults = memo(function AnalysisResults({
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {results.useCases.map((useCase, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
+                  {results.useCases.map((useCase) => (
+                    <Badge
+                      key={useCase}
+                      variant="secondary"
+                      className="text-xs"
+                    >
                       {useCase}
                     </Badge>
                   ))}

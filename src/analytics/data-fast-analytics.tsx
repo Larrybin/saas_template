@@ -25,13 +25,11 @@ export default function DataFastAnalytics() {
   }
 
   return (
-    <>
-      <Script
-        defer
-        data-website-id={websiteId}
-        data-domain={domain}
-        src="https://datafa.st/js/script.js"
-      />
-    </>
+    <Script
+      defer
+      data-website-id={websiteId}
+      data-domain={domain}
+      src="https://datafa.st/js/script.js"
+    />
   );
 }

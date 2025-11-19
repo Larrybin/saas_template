@@ -168,11 +168,21 @@ export function useWebContentAnalyzer() {
           setTimeout(resolve, ANALYZE_STAGE_MIN_DELAY_MS)
         );
 
+        if (!result.data) {
+          throw new WebContentAnalyzerError(
+            ErrorType.ANALYSIS,
+            'Missing analysis data in response',
+            'Failed to analyze website content. Please try again.',
+            ErrorSeverity.MEDIUM,
+            true
+          );
+        }
+
         dispatch({
           type: 'SET_RESULTS',
           payload: {
-            results: result.data!.analysis,
-            screenshot: result.data!.screenshot,
+            results: result.data.analysis,
+            screenshot: result.data.screenshot,
           },
         });
 
@@ -219,35 +229,32 @@ export function useWebContentAnalyzer() {
         }, 0);
       }
     },
-    [dispatch, setAnalyzedError]
+    []
   );
 
   const handleNewAnalysis = useCallback(() => {
     dispatch({ type: 'RESET' });
     setAnalyzedError(null);
-  }, [dispatch, setAnalyzedError]);
+  }, []);
 
-  const handleError = useCallback(
-    (error: Error) => {
-      // eslint-disable-next-line no-console
-      console.error('WebContentAnalyzer component error:', error);
+  const handleError = useCallback((error: Error) => {
+    // eslint-disable-next-line no-console
+    console.error('WebContentAnalyzer component error:', error);
 
-      dispatch({
-        type: 'SET_ERROR',
-        payload: {
-          error:
-            'An unexpected error occurred. Please refresh the page and try again.',
-        },
+    dispatch({
+      type: 'SET_ERROR',
+      payload: {
+        error:
+          'An unexpected error occurred. Please refresh the page and try again.',
+      },
+    });
+
+    setTimeout(() => {
+      toast.error('Component error', {
+        description: 'An unexpected error occurred. Please refresh the page.',
       });
-
-      setTimeout(() => {
-        toast.error('Component error', {
-          description: 'An unexpected error occurred. Please refresh the page.',
-        });
-      }, 0);
-    },
-    [dispatch]
-  );
+    }, 0);
+  }, []);
 
   return {
     state,

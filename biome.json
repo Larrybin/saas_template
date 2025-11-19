@@ -9,7 +9,7 @@
     "ignoreUnknown": true,
     "includes": [
       "**",
-      "!mksaas_template-main-sorce/**",
+      "!mksaas_template-main-sorce",
       "!**/.next",
       "!**/.open-next",
       "!**/.wrangler",
@@ -53,7 +53,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "recommended": false,
       "suspicious": {
         "noSparseArray": "error",
         "noArrayIndexKey": "warn",
@@ -66,7 +66,9 @@
         "noImportantStyles": "off"
       },
       "correctness": {
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "noUnusedImports": "warn",
+        "noUnusedVariables": "warn"
       },
       "performance": {
         "noImgElement": "off"

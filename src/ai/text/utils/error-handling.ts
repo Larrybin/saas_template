@@ -210,7 +210,7 @@ export async function withRetry<T>(
   operation: () => Promise<T>,
   config: RetryConfig = defaultRetryConfig
 ): Promise<T> {
-  let lastError: WebContentAnalyzerError;
+  let lastError: WebContentAnalyzerError | null = null;
 
   for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
     try {
@@ -239,7 +239,17 @@ export async function withRetry<T>(
     }
   }
 
-  throw lastError!;
+  if (!lastError) {
+    throw new WebContentAnalyzerError(
+      ErrorType.UNKNOWN,
+      'Retry operation failed without an error',
+      'An unexpected error occurred. Please try again.',
+      ErrorSeverity.MEDIUM,
+      true
+    );
+  }
+
+  throw lastError;
 }
 
 // Error recovery suggestions
@@ -299,7 +309,7 @@ export function getRecoveryActions(error: WebContentAnalyzerError): Array<{
 // Error logging utility
 export function logError(
   error: WebContentAnalyzerError,
-  context?: Record<string, any>
+  context?: Record<string, unknown>
 ) {
   const logData = {
     type: error.type,

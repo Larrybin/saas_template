@@ -60,7 +60,8 @@
         "noShadowRestrictedNames": "error"
       },
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "noImportantStyles": "off"
       },
       "correctness": {
         "useExhaustiveDependencies": "warn"
@@ -128,5 +129,4 @@
       }
     }
   ]
-  }
 }

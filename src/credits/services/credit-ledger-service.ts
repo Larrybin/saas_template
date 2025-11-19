@@ -39,6 +39,13 @@ export async function addCredits(
   await creditLedgerDomainService.addCredits(payload, executor);
 }
 
+export async function addCreditsWithExecutor(
+  payload: AddCreditsPayload,
+  executor: DbExecutor
+) {
+  await creditLedgerDomainService.addCredits(payload, executor);
+}
+
 export async function hasEnoughCredits(options: {
   userId: string;
   requiredCredits: number;
@@ -64,14 +71,16 @@ export async function processExpiredCredits(userId: string) {
 export async function canAddCreditsByType(
   userId: string,
   creditType: string,
-  periodKey?: number
+  periodKey?: number,
+  executor?: DbExecutor
 ) {
   const effectivePeriodKey =
     periodKey ?? getCurrentPeriodKey();
   return creditLedgerDomainService.canAddCreditsByType(
     userId,
     creditType,
-    effectivePeriodKey
+    effectivePeriodKey,
+    executor
   );
 }
 

@@ -221,7 +221,10 @@ export class CreditLedgerDomainService {
     });
   }
 
-  async processExpiredCredits(userId: string, db?: DbExecutor) {
+  async processExpiredCredits(
+    userId: string,
+    db?: DbExecutor
+  ): Promise<number> {
     const executor = await this.resolveExecutor(db);
     const now = new Date();
     const transactions = await this.repository.findExpirableTransactions(
@@ -229,7 +232,7 @@ export class CreditLedgerDomainService {
       now,
       executor
     );
-    if (transactions.length === 0) return;
+    if (transactions.length === 0) return 0;
 
     let expiredTotal = 0;
     for (const trx of transactions) {
@@ -240,7 +243,7 @@ export class CreditLedgerDomainService {
       }
     }
 
-    if (expiredTotal <= 0) return;
+    if (expiredTotal <= 0) return 0;
 
     const currentRecord = await this.repository.findUserCredit(
       userId,
@@ -262,6 +265,56 @@ export class CreditLedgerDomainService {
       executor,
       now
     );
+
+    return expiredTotal;
+  }
+
+  async processExpiredCreditsForUsers(
+    userIds: string[],
+    db?: DbExecutor
+  ): Promise<{
+    processedCount: number;
+    errorCount: number;
+    totalExpiredCredits: number;
+  }> {
+    /**
+     * Best-effort batch processing.
+     *
+     * Each user is processed independently on the provided executor.
+     * Failures for individual users are logged and counted, but do NOT
+     * rollback already processed users, even if a transactional executor
+     * is passed in by the caller.
+     */
+    if (userIds.length === 0) {
+      this.logger.info(
+        'processExpiredCreditsForUsers, no users to process for expiration'
+      );
+      return { processedCount: 0, errorCount: 0, totalExpiredCredits: 0 };
+    }
+
+    const executor = await this.resolveExecutor(db);
+    let processedCount = 0;
+    let errorCount = 0;
+    let totalExpiredCredits = 0;
+
+    for (const userId of userIds) {
+      try {
+        const expiredCredits = await this.processExpiredCredits(
+          userId,
+          executor
+        );
+        totalExpiredCredits += expiredCredits;
+        processedCount += 1;
+      } catch (error) {
+        errorCount += 1;
+        this.logger.error(
+          { error, userId },
+          'processExpiredCreditsForUsers, failed to process user'
+        );
+      }
+    }
+
+    return { processedCount, errorCount, totalExpiredCredits };
   }
 
   async canAddCreditsByType(

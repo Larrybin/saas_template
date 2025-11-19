@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../credits', () => ({
   addCredits: vi.fn(),
   canAddCreditsByType: vi.fn(),
+  addCreditsWithExecutor: vi.fn(),
 }));
 
 vi.mock('@/lib/server/logger', () => ({
@@ -22,7 +23,11 @@ vi.mock('@/lib/price-plan', () => ({
 
 import { findPlanByPriceId } from '@/lib/price-plan';
 import { PlanIntervals, type PricePlan } from '@/payment/types';
-import { addCredits, canAddCreditsByType } from '../../credits';
+import {
+  addCredits,
+  addCreditsWithExecutor,
+  canAddCreditsByType,
+} from '../../credits';
 import { CREDIT_TRANSACTION_TYPE } from '../../types';
 import {
   CreditDistributionService,
@@ -30,6 +35,7 @@ import {
 } from '../credit-distribution-service';
 
 const mockedAddCredits = addCredits as unknown as ReturnType<typeof vi.fn>;
+const mockedAddCreditsWithExecutor = addCreditsWithExecutor as unknown as ReturnType<typeof vi.fn>;
 const mockedCanAdd = canAddCreditsByType as unknown as ReturnType<typeof vi.fn>;
 const mockedFindPlanByPriceId = findPlanByPriceId as unknown as ReturnType<
   typeof vi.fn
@@ -93,6 +99,43 @@ describe('CreditDistributionService', () => {
     expect(result.processed).toBe(0);
     expect(result.skipped).toBe(1);
     expect(result.errors).toHaveLength(1);
+  });
+
+  it('uses injected executor when provided', async () => {
+    const executor = {} as unknown;
+    mockedCanAdd.mockResolvedValue(true);
+    mockedAddCreditsWithExecutor.mockResolvedValue(undefined);
+
+    const result = await service.execute(
+      [
+        {
+          userId: 'user-1',
+          type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+          amount: 10,
+          description: 'executor-command-1',
+          periodKey: 202501,
+        },
+      ],
+      executor as never
+    );
+
+    expect(result.processed).toBe(1);
+    expect(mockedCanAdd).toHaveBeenCalledWith(
+      'user-1',
+      CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+      202501,
+      executor
+    );
+    expect(mockedAddCreditsWithExecutor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        amount: 10,
+        type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+        periodKey: 202501,
+      }),
+      executor
+    );
+    expect(mockedAddCredits).not.toHaveBeenCalled();
   });
 
   it('generates free commands with period key', () => {

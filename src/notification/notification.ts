@@ -1,5 +1,5 @@
-import { sendMessageToDiscord } from './discord';
-import { sendMessageToFeishu } from './feishu';
+import { sendMessageToDiscord } from "./discord";
+import { sendMessageToFeishu } from "./feishu";
 
 /**
  * Send a notification when a user makes a purchase
@@ -9,16 +9,16 @@ import { sendMessageToFeishu } from './feishu';
  * @param amount The purchase amount in the currency's main unit (e.g., dollars, not cents)
  */
 export async function sendNotification(
-  sessionId: string,
-  customerId: string,
-  userName: string,
-  amount: number
+	sessionId: string,
+	customerId: string,
+	userName: string,
+	amount: number,
 ): Promise<void> {
-  console.log('sendNotification', sessionId, customerId, userName, amount);
+	console.log("sendNotification", sessionId, customerId, userName, amount);
 
-  // Send message to Discord channel
-  await sendMessageToDiscord(sessionId, customerId, userName, amount);
+	// Send message to Discord channel
+	await sendMessageToDiscord(sessionId, customerId, userName, amount);
 
-  // Send message to Feishu group
-  await sendMessageToFeishu(sessionId, customerId, userName, amount);
+	// Send message to Feishu group
+	await sendMessageToFeishu(sessionId, customerId, userName, amount);
 }

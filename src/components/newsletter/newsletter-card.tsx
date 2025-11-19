@@ -1,30 +1,30 @@
-'use client';
+"use client";
 
-import { useTranslations } from 'next-intl';
-import { NewsletterForm } from '@/components/newsletter/newsletter-form';
-import { websiteConfig } from '@/config/website';
-import { HeaderSection } from '../layout/header-section';
+import { useTranslations } from "next-intl";
+import { NewsletterForm } from "@/components/newsletter/newsletter-form";
+import { websiteConfig } from "@/config/website";
+import { HeaderSection } from "../layout/header-section";
 
 export function NewsletterCard() {
-  // show nothing if newsletter is disabled
-  if (!websiteConfig.newsletter.enable) {
-    return null;
-  }
+	// show nothing if newsletter is disabled
+	if (!websiteConfig.newsletter.enable) {
+		return null;
+	}
 
-  const t = useTranslations('Newsletter');
+	const t = useTranslations("Newsletter");
 
-  return (
-    <div className="w-full p-16 rounded-lg bg-muted/50">
-      <div className="flex flex-col items-center justify-center gap-8">
-        {/* Header */}
-        <HeaderSection
-          title={t('title')}
-          subtitle={t('subtitle')}
-          description={t('description')}
-        />
+	return (
+		<div className="w-full p-16 rounded-lg bg-muted/50">
+			<div className="flex flex-col items-center justify-center gap-8">
+				{/* Header */}
+				<HeaderSection
+					title={t("title")}
+					subtitle={t("subtitle")}
+					description={t("description")}
+				/>
 
-        <NewsletterForm />
-      </div>
-    </div>
-  );
+				<NewsletterForm />
+			</div>
+		</div>
+	);
 }

@@ -17,7 +17,7 @@ export type Params = Record<string, string | Array<string> | undefined>;
  * searchParams = { tags: ["react", "nextjs"] }
  */
 export type SearchParams = {
-  [key: string]: string | string[] | undefined;
+	[key: string]: string | string[] | undefined;
 };
 
 /**
@@ -25,6 +25,6 @@ export type SearchParams = {
  * Both params and searchParams are Promises that resolve to their respective types
  */
 export type NextPageProps = {
-  params: Promise<Params>;
-  searchParams: Promise<SearchParams>;
+	params: Promise<Params>;
+	searchParams: Promise<SearchParams>;
 };

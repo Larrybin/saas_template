@@ -1,22 +1,22 @@
 const error = () => {
-  throw new Error('Logger is only available on the server runtime.');
+	throw new Error("Logger is only available on the server runtime.");
 };
 
 export const getLogger = () => ({
-  info: error,
-  warn: error,
-  error,
+	info: error,
+	warn: error,
+	error,
 });
 
 export const withLogContext = async <T>(
-  _bindings: unknown,
-  fn: () => Promise<T> | T
+	_bindings: unknown,
+	fn: () => Promise<T> | T,
 ) => await fn();
 
 export const createRequestLogger = getLogger;
 
 export const resolveRequestId = () => {
-  error();
+	error();
 };
 
 export const createLoggerFromHeaders = () => getLogger();

@@ -1,9 +1,9 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.3/schema.json",
   "vcs": {
-    "enabled": false,
+    "enabled": true,
     "clientKind": "git",
-    "useIgnoreFile": false
+    "useIgnoreFile": true
   },
   "files": {
     "ignoreUnknown": true,
@@ -52,25 +52,25 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": false,
+      "recommended": true,
       "suspicious": {
-        "noSparseArray": "off",
-        "noArrayIndexKey": "off",
-        "noExplicitAny": "off",
-        "noShadowRestrictedNames": "off"
+        "noSparseArray": "error",
+        "noArrayIndexKey": "warn",
+        "noExplicitAny": "warn",
+        "noShadowRestrictedNames": "error"
       },
       "complexity": {
         "noForEach": "off"
       },
       "correctness": {
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": "warn"
       },
       "performance": {
         "noImgElement": "off"
       },
       "style": {
-        "useTemplate": "off",
-        "noNonNullAssertion": "off",
+        "useTemplate": "warn",
+        "noNonNullAssertion": "warn",
         "useNodejsImportProtocol": "off",
         "useConsistentArrayType": {
           "level": "off",
@@ -84,33 +84,7 @@
         "noSvgWithoutTitle": "off",
         "useKeyWithClickEvents": "off"
       }
-    },
-    "includes": [
-      "**",
-      "!**/.next",
-      "!**/.open-next",
-      "!**/.wrangler",
-      "!**/.cursor",
-      "!**/.claude",
-      "!**/.kiro",
-      "!**/.vscode",
-      "!**/.source",
-      "!**/.pnpm-store",
-      "!**/node_modules",
-      "!**/dist",
-      "!**/build",
-      "!**/src/db",
-      "!**/tailwind.config.ts",
-      "!**/src/components/ui/**/*.tsx",
-      "!**/src/components/magicui/**/*.tsx",
-      "!**/src/components/animate-ui/**/*.tsx",
-      "!**/src/components/tailark/**/*.tsx",
-      "!**/src/components/ai-elements/**/*.tsx",
-      "!**/src/app/\\[\\[\\]locale\\]/preview",
-      "!**/src/payment/types.ts",
-      "!**/src/credits/types.ts",
-      "!**/src/types/index.d.ts"
-    ]
+    }
   },
   "javascript": {
     "formatter": {
@@ -123,5 +97,36 @@
     "parser": {
       "tailwindDirectives": true
     }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "tests/**",
+        "**/*.test.*",
+        "**/*.spec.*"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          },
+          "a11y": {
+            "useValidAnchor": "off",
+            "useKeyWithClickEvents": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "package.json"
+      ],
+      "json": {
+        "formatter": {
+          "expand": "auto"
+        }
+      }
+    }
+  ]
   }
 }

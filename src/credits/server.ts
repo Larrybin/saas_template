@@ -1,12 +1,12 @@
-import { websiteConfig } from '@/config/website';
-import type { CreditPackage } from './types';
+import { websiteConfig } from "@/config/website";
+import type { CreditPackage } from "./types";
 
 /**
  * Get all credit packages, can be used in server or client components
  * @returns Credit packages
  */
 export function getAllCreditPackages(): CreditPackage[] {
-  return Object.values(websiteConfig.credits.packages);
+	return Object.values(websiteConfig.credits.packages);
 }
 
 /**
@@ -15,5 +15,5 @@ export function getAllCreditPackages(): CreditPackage[] {
  * @returns Credit package
  */
 export function getCreditPackageById(id: string): CreditPackage | undefined {
-  return getAllCreditPackages().find((pkg) => pkg.id === id);
+	return getAllCreditPackages().find((pkg) => pkg.id === id);
 }

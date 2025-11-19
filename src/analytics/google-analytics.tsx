@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { GoogleAnalytics as NextGoogleAnalytics } from '@next/third-parties/google';
-import { clientEnv } from '@/env/client';
+import { GoogleAnalytics as NextGoogleAnalytics } from "@next/third-parties/google";
+import { clientEnv } from "@/env/client";
 
 /**
  * Google Analytics
@@ -11,14 +11,14 @@ import { clientEnv } from '@/env/client';
  * https://nextjs.org/docs/app/building-your-application/optimizing/third-party-libraries#google-analytics
  */
 export default function GoogleAnalytics() {
-  if (process.env.NODE_ENV !== 'production') {
-    return null;
-  }
+	if (process.env.NODE_ENV !== "production") {
+		return null;
+	}
 
-  const analyticsId = clientEnv.analytics.googleAnalyticsId;
-  if (!analyticsId) {
-    return null;
-  }
+	const analyticsId = clientEnv.analytics.googleAnalyticsId;
+	if (!analyticsId) {
+		return null;
+	}
 
-  return <NextGoogleAnalytics gaId={analyticsId} />;
+	return <NextGoogleAnalytics gaId={analyticsId} />;
 }

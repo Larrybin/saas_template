@@ -1,42 +1,42 @@
-import { Text } from '@react-email/components';
-import { createTranslator } from 'use-intl/core';
-import { defaultMessages } from '@/i18n/messages';
-import { routing } from '@/i18n/routing';
-import EmailLayout from '@/mail/components/email-layout';
-import type { BaseEmailProps } from '@/mail/types';
+import { Text } from "@react-email/components";
+import { createTranslator } from "use-intl/core";
+import { defaultMessages } from "@/i18n/messages";
+import { routing } from "@/i18n/routing";
+import EmailLayout from "@/mail/components/email-layout";
+import type { BaseEmailProps } from "@/mail/types";
 
 interface ContactMessageProps extends BaseEmailProps {
-  name: string;
-  email: string;
-  message: string;
+	name: string;
+	email: string;
+	message: string;
 }
 
 export default function ContactMessage({
-  name,
-  email,
-  message,
-  locale,
-  messages,
+	name,
+	email,
+	message,
+	locale,
+	messages,
 }: ContactMessageProps) {
-  const t = createTranslator({
-    locale,
-    messages,
-    namespace: 'Mail.contactMessage',
-  });
+	const t = createTranslator({
+		locale,
+		messages,
+		namespace: "Mail.contactMessage",
+	});
 
-  return (
-    <EmailLayout locale={locale} messages={messages}>
-      <Text>{t('name', { name })}</Text>
-      <Text>{t('email', { email })}</Text>
-      <Text>{t('message', { message })}</Text>
-    </EmailLayout>
-  );
+	return (
+		<EmailLayout locale={locale} messages={messages}>
+			<Text>{t("name", { name })}</Text>
+			<Text>{t("email", { email })}</Text>
+			<Text>{t("message", { message })}</Text>
+		</EmailLayout>
+	);
 }
 
 ContactMessage.PreviewProps = {
-  locale: routing.defaultLocale,
-  messages: defaultMessages,
-  name: 'username',
-  email: 'username@example.com',
-  message: 'This is a test message',
+	locale: routing.defaultLocale,
+	messages: defaultMessages,
+	name: "username",
+	email: "username@example.com",
+	message: "This is a test message",
 };

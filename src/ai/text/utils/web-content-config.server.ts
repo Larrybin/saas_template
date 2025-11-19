@@ -1,36 +1,36 @@
-import 'server-only';
+import "server-only";
 
-import { serverEnv } from '@/env/server';
+import { serverEnv } from "@/env/server";
 
 export const webContentAnalyzerServerConfig = {
-  firecrawl: {
-    baseUrl: 'https://api.firecrawl.dev',
-    formats: ['markdown', 'screenshot'] as const,
-    includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'p', 'article'] as const,
-    excludeTags: ['script', 'style', 'nav', 'footer', 'aside'] as const,
-    onlyMainContent: true,
-    waitFor: 2000,
-    screenshot: {
-      quality: 80,
-      fullPage: false,
-    },
-    rateLimit: {
-      maxConcurrentRequests: 3,
-      requestDelay: 1000,
-    },
-    maxContentSize: 100000,
-  },
+	firecrawl: {
+		baseUrl: "https://api.firecrawl.dev",
+		formats: ["markdown", "screenshot"] as const,
+		includeTags: ["title", "meta", "h1", "h2", "h3", "p", "article"] as const,
+		excludeTags: ["script", "style", "nav", "footer", "aside"] as const,
+		onlyMainContent: true,
+		waitFor: 2000,
+		screenshot: {
+			quality: 80,
+			fullPage: false,
+		},
+		rateLimit: {
+			maxConcurrentRequests: 3,
+			requestDelay: 1000,
+		},
+		maxContentSize: 100000,
+	},
 } as const;
 
 export function getFirecrawlApiKey() {
-  return serverEnv.ai.firecrawlApiKey;
+	return serverEnv.ai.firecrawlApiKey;
 }
 
 export function getFirecrawlConfig() {
-  return {
-    apiKey: getFirecrawlApiKey(),
-    ...webContentAnalyzerServerConfig.firecrawl,
-  };
+	return {
+		apiKey: getFirecrawlApiKey(),
+		...webContentAnalyzerServerConfig.firecrawl,
+	};
 }
 
 /**
@@ -38,11 +38,11 @@ export function getFirecrawlConfig() {
  * This must never run in the browser runtime.
  */
 export function validateFirecrawlConfig(): boolean {
-  if (!getFirecrawlApiKey()) {
-    console.warn(
-      'FIRECRAWL_API_KEY is not configured. Web content analysis features will not work.'
-    );
-    return false;
-  }
-  return true;
+	if (!getFirecrawlApiKey()) {
+		console.warn(
+			"FIRECRAWL_API_KEY is not configured. Web content analysis features will not work.",
+		);
+		return false;
+	}
+	return true;
 }

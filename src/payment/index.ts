@@ -1,15 +1,15 @@
-import { websiteConfig } from '@/config/website';
-import { StripePaymentService } from './services/stripe-payment-service';
+import { websiteConfig } from "@/config/website";
+import { StripePaymentService } from "./services/stripe-payment-service";
 import type {
-  CheckoutResult,
-  CreateCheckoutParams,
-  CreateCreditCheckoutParams,
-  CreatePortalParams,
-  getSubscriptionsParams,
-  PaymentProvider,
-  PortalResult,
-  Subscription,
-} from './types';
+	CheckoutResult,
+	CreateCheckoutParams,
+	CreateCreditCheckoutParams,
+	CreatePortalParams,
+	getSubscriptionsParams,
+	PaymentProvider,
+	PortalResult,
+	Subscription,
+} from "./types";
 
 /**
  * Global payment provider instance
@@ -22,10 +22,10 @@ let paymentProvider: PaymentProvider | null = null;
  * @throws Error if provider is not initialized
  */
 export const getPaymentProvider = (): PaymentProvider => {
-  if (!paymentProvider) {
-    return initializePaymentProvider();
-  }
-  return paymentProvider;
+	if (!paymentProvider) {
+		return initializePaymentProvider();
+	}
+	return paymentProvider;
 };
 
 /**
@@ -33,16 +33,16 @@ export const getPaymentProvider = (): PaymentProvider => {
  * @returns initialized payment provider
  */
 export const initializePaymentProvider = (): PaymentProvider => {
-  if (!paymentProvider) {
-    if (websiteConfig.payment.provider === 'stripe') {
-      paymentProvider = new StripePaymentService();
-    } else {
-      throw new Error(
-        `Unsupported payment provider: ${websiteConfig.payment.provider}`
-      );
-    }
-  }
-  return paymentProvider;
+	if (!paymentProvider) {
+		if (websiteConfig.payment.provider === "stripe") {
+			paymentProvider = new StripePaymentService();
+		} else {
+			throw new Error(
+				`Unsupported payment provider: ${websiteConfig.payment.provider}`,
+			);
+		}
+	}
+	return paymentProvider;
 };
 
 /**
@@ -51,10 +51,10 @@ export const initializePaymentProvider = (): PaymentProvider => {
  * @returns Checkout result
  */
 export const createCheckout = async (
-  params: CreateCheckoutParams
+	params: CreateCheckoutParams,
 ): Promise<CheckoutResult> => {
-  const provider = getPaymentProvider();
-  return provider.createCheckout(params);
+	const provider = getPaymentProvider();
+	return provider.createCheckout(params);
 };
 
 /**
@@ -63,10 +63,10 @@ export const createCheckout = async (
  * @returns Checkout result
  */
 export const createCreditCheckout = async (
-  params: CreateCreditCheckoutParams
+	params: CreateCreditCheckoutParams,
 ): Promise<CheckoutResult> => {
-  const provider = getPaymentProvider();
-  return provider.createCreditCheckout(params);
+	const provider = getPaymentProvider();
+	return provider.createCreditCheckout(params);
 };
 
 /**
@@ -75,10 +75,10 @@ export const createCreditCheckout = async (
  * @returns Portal result
  */
 export const createCustomerPortal = async (
-  params: CreatePortalParams
+	params: CreatePortalParams,
 ): Promise<PortalResult> => {
-  const provider = getPaymentProvider();
-  return provider.createCustomerPortal(params);
+	const provider = getPaymentProvider();
+	return provider.createCustomerPortal(params);
 };
 
 /**
@@ -87,11 +87,11 @@ export const createCustomerPortal = async (
  * @param signature Webhook signature
  */
 export const handleWebhookEvent = async (
-  payload: string,
-  signature: string
+	payload: string,
+	signature: string,
 ): Promise<void> => {
-  const provider = getPaymentProvider();
-  await provider.handleWebhookEvent(payload, signature);
+	const provider = getPaymentProvider();
+	await provider.handleWebhookEvent(payload, signature);
 };
 
 /**
@@ -100,8 +100,8 @@ export const handleWebhookEvent = async (
  * @returns Array of subscriptions
  */
 export const getSubscriptions = async (
-  params: getSubscriptionsParams
+	params: getSubscriptionsParams,
 ): Promise<Subscription[]> => {
-  const provider = getPaymentProvider();
-  return provider.getSubscriptions(params);
+	const provider = getPaymentProvider();
+	return provider.getSubscriptions(params);
 };

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
 import {
-  CreditCardIcon,
-  LayoutDashboardIcon,
-  Settings2Icon,
-} from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { Routes } from '@/routes';
-import type { MenuItem } from '@/types';
+	CreditCardIcon,
+	LayoutDashboardIcon,
+	Settings2Icon,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Routes } from "@/routes";
+import type { MenuItem } from "@/types";
 
 /**
  * Get avatar config with translations
@@ -20,23 +20,23 @@ import type { MenuItem } from '@/types';
  * @returns The avatar config with translated titles
  */
 export function getAvatarLinks(): MenuItem[] {
-  const t = useTranslations('Marketing.avatar');
+	const t = useTranslations("Marketing.avatar");
 
-  return [
-    {
-      title: t('dashboard'),
-      href: Routes.Dashboard,
-      icon: <LayoutDashboardIcon className="size-4 shrink-0" />,
-    },
-    {
-      title: t('billing'),
-      href: Routes.SettingsBilling,
-      icon: <CreditCardIcon className="size-4 shrink-0" />,
-    },
-    {
-      title: t('settings'),
-      href: Routes.SettingsProfile,
-      icon: <Settings2Icon className="size-4 shrink-0" />,
-    },
-  ];
+	return [
+		{
+			title: t("dashboard"),
+			href: Routes.Dashboard,
+			icon: <LayoutDashboardIcon className="size-4 shrink-0" />,
+		},
+		{
+			title: t("billing"),
+			href: Routes.SettingsBilling,
+			icon: <CreditCardIcon className="size-4 shrink-0" />,
+		},
+		{
+			title: t("settings"),
+			href: Routes.SettingsProfile,
+			icon: <Settings2Icon className="size-4 shrink-0" />,
+		},
+	];
 }

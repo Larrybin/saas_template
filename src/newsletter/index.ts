@@ -1,6 +1,6 @@
-import { websiteConfig } from '@/config/website';
-import { ResendNewsletterProvider } from './provider/resend';
-import type { NewsletterProvider } from './types';
+import { websiteConfig } from "@/config/website";
+import { ResendNewsletterProvider } from "./provider/resend";
+import type { NewsletterProvider } from "./types";
 
 /**
  * Global newsletter provider instance
@@ -12,10 +12,10 @@ let newsletterProvider: NewsletterProvider | null = null;
  * @returns current newsletter provider instance
  */
 export const getNewsletterProvider = (): NewsletterProvider => {
-  if (!newsletterProvider) {
-    return initializeNewsletterProvider();
-  }
-  return newsletterProvider;
+	if (!newsletterProvider) {
+		return initializeNewsletterProvider();
+	}
+	return newsletterProvider;
 };
 
 /**
@@ -23,17 +23,17 @@ export const getNewsletterProvider = (): NewsletterProvider => {
  * @returns initialized newsletter provider
  */
 export const initializeNewsletterProvider = (): NewsletterProvider => {
-  if (!newsletterProvider) {
-    if (websiteConfig.newsletter.provider === 'resend') {
-      newsletterProvider = new ResendNewsletterProvider();
-    } else {
-      throw new Error(
-        `Unsupported newsletter provider: ${websiteConfig.newsletter.provider}`
-      );
-    }
-  }
+	if (!newsletterProvider) {
+		if (websiteConfig.newsletter.provider === "resend") {
+			newsletterProvider = new ResendNewsletterProvider();
+		} else {
+			throw new Error(
+				`Unsupported newsletter provider: ${websiteConfig.newsletter.provider}`,
+			);
+		}
+	}
 
-  return newsletterProvider;
+	return newsletterProvider;
 };
 
 /**
@@ -42,8 +42,8 @@ export const initializeNewsletterProvider = (): NewsletterProvider => {
  * @returns True if the subscription was successful, false otherwise
  */
 export const subscribe = async (email: string): Promise<boolean> => {
-  const provider = getNewsletterProvider();
-  return provider.subscribe({ email });
+	const provider = getNewsletterProvider();
+	return provider.subscribe({ email });
 };
 
 /**
@@ -52,8 +52,8 @@ export const subscribe = async (email: string): Promise<boolean> => {
  * @returns True if the unsubscription was successful, false otherwise
  */
 export const unsubscribe = async (email: string): Promise<boolean> => {
-  const provider = getNewsletterProvider();
-  return provider.unsubscribe({ email });
+	const provider = getNewsletterProvider();
+	return provider.unsubscribe({ email });
 };
 
 /**
@@ -62,6 +62,6 @@ export const unsubscribe = async (email: string): Promise<boolean> => {
  * @returns True if the user is subscribed, false otherwise
  */
 export const isSubscribed = async (email: string): Promise<boolean> => {
-  const provider = getNewsletterProvider();
-  return provider.checkSubscribeStatus({ email });
+	const provider = getNewsletterProvider();
+	return provider.checkSubscribeStatus({ email });
 };

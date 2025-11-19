@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface Props {
-  children: ReactNode;
+	children: ReactNode;
 }
 
 /**
@@ -11,5 +11,5 @@ interface Props {
  * https://next-intl.dev/docs/environments/error-files#catching-non-localized-requests
  */
 export default function RootLayout({ children }: Props) {
-  return children;
+	return children;
 }

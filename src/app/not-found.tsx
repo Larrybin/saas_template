@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import Error from 'next/error';
+import Error from "next/error";
 
 /**
  * Catching non-localized requests
@@ -12,11 +12,11 @@ import Error from 'next/error';
  * https://next-intl.dev/docs/environments/error-files#catching-non-localized-requests
  */
 export default function GlobalNotFound() {
-  return (
-    <html lang="en">
-      <body>
-        <Error statusCode={404} />
-      </body>
-    </html>
-  );
+	return (
+		<html lang="en">
+			<body>
+				<Error statusCode={404} />
+			</body>
+		</html>
+	);
 }

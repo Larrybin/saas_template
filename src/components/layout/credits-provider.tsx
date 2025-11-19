@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { websiteConfig } from '@/config/website';
+import { websiteConfig } from "@/config/website";
 
 /**
  * Credits Provider Component
@@ -10,10 +10,10 @@ import { websiteConfig } from '@/config/website';
  * Only renders when credits are enabled in the website configuration.
  */
 export function CreditsProvider({ children }: { children: React.ReactNode }) {
-  // Only render when credits are enabled
-  if (!websiteConfig.credits.enableCredits) {
-    return <>{children}</>;
-  }
+	// Only render when credits are enabled
+	if (!websiteConfig.credits.enableCredits) {
+		return <>{children}</>;
+	}
 
-  return <>{children}</>;
+	return <>{children}</>;
 }

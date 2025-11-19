@@ -1,7 +1,7 @@
-import { createTokenizer } from '@orama/tokenizers/mandarin';
-import { createI18nSearchAPI } from 'fumadocs-core/search/server';
-import { docsI18nConfig } from '@/lib/docs/i18n';
-import { source } from '@/lib/source';
+import { createTokenizer } from "@orama/tokenizers/mandarin";
+import { createI18nSearchAPI } from "fumadocs-core/search/server";
+import { docsI18nConfig } from "@/lib/docs/i18n";
+import { source } from "@/lib/source";
 
 /**
  * Fumadocs i18n search configuration
@@ -13,45 +13,45 @@ import { source } from '@/lib/source';
  * https://fumadocs.dev/docs/headless/search/orama#special-languages
  * https://docs.orama.com/open-source/supported-languages/using-chinese-with-orama
  */
-const searchAPI = createI18nSearchAPI('advanced', {
-  // Pass the i18n config for proper language detection
-  i18n: docsI18nConfig,
+const searchAPI = createI18nSearchAPI("advanced", {
+	// Pass the i18n config for proper language detection
+	i18n: docsI18nConfig,
 
-  // Get all pages from all languages and map them to search indexes
-  indexes: source.getLanguages().flatMap(({ language, pages }) =>
-    pages.map((page) => ({
-      title: page.data.title,
-      description: page.data.description,
-      structuredData: page.data.structuredData,
-      id: page.url,
-      url: page.url,
-      locale: language,
-    }))
-  ),
+	// Get all pages from all languages and map them to search indexes
+	indexes: source.getLanguages().flatMap(({ language, pages }) =>
+		pages.map((page) => ({
+			title: page.data.title,
+			description: page.data.description,
+			structuredData: page.data.structuredData,
+			id: page.url,
+			url: page.url,
+			locale: language,
+		})),
+	),
 
-  // Configure special language tokenizers and search options
-  localeMap: {
-    // Chinese configuration with Mandarin tokenizer
-    zh: {
-      components: {
-        tokenizer: createTokenizer(),
-      },
-      search: {
-        // Lower threshold for better matches with Chinese text
-        threshold: 0,
-        // Lower tolerance for better precision
-        tolerance: 0,
-      },
-    },
+	// Configure special language tokenizers and search options
+	localeMap: {
+		// Chinese configuration with Mandarin tokenizer
+		zh: {
+			components: {
+				tokenizer: createTokenizer(),
+			},
+			search: {
+				// Lower threshold for better matches with Chinese text
+				threshold: 0,
+				// Lower tolerance for better precision
+				tolerance: 0,
+			},
+		},
 
-    // Use the default English tokenizer for English content
-    en: 'english',
-  },
+		// Use the default English tokenizer for English content
+		en: "english",
+	},
 
-  // Global search configuration
-  search: {
-    limit: 20,
-  },
+	// Global search configuration
+	search: {
+		limit: 20,
+	},
 });
 
 /**
@@ -68,6 +68,6 @@ const searchAPI = createI18nSearchAPI('advanced', {
  * https://github.com/fuma-nama/fumadocs/blob/dev/packages/core/src/search/orama/create-endpoint.ts#L19
  */
 export const GET = async (request: Request) => {
-  const response = await searchAPI.GET(request);
-  return response;
+	const response = await searchAPI.GET(request);
+	return response;
 };

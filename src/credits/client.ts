@@ -1,12 +1,12 @@
-import { getCreditPackages } from '@/config/credits-config';
-import type { CreditPackage } from './types';
+import { getCreditPackages } from "@/config/credits-config";
+import type { CreditPackage } from "./types";
 
 /**
  * Get credit packages, used in client components
  * @returns Credit packages
  */
 export function getCreditPackagesInClient(): CreditPackage[] {
-  return Object.values(getCreditPackages());
+	return Object.values(getCreditPackages());
 }
 
 /**
@@ -15,7 +15,7 @@ export function getCreditPackagesInClient(): CreditPackage[] {
  * @returns Credit package
  */
 export function getCreditPackageByIdInClient(
-  id: string
+	id: string,
 ): CreditPackage | undefined {
-  return getCreditPackagesInClient().find((pkg) => pkg.id === id);
+	return getCreditPackagesInClient().find((pkg) => pkg.id === id);
 }

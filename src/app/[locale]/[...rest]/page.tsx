@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound } from "next/navigation";
 
 /**
  * Catching unknown routes
@@ -9,5 +9,5 @@ import { notFound } from 'next/navigation';
  * https://next-intl.dev/docs/environments/error-files#catching-unknown-routes
  */
 export default function CatchAllPage() {
-  notFound();
+	notFound();
 }

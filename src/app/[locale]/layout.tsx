@@ -1,27 +1,27 @@
-import { notFound } from 'next/navigation';
-import { hasLocale, type Locale, NextIntlClientProvider } from 'next-intl';
-import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import type { ReactNode } from 'react';
-import { Toaster } from 'sonner';
-import { Analytics } from '@/analytics/analytics';
+import { notFound } from "next/navigation";
+import { hasLocale, type Locale, NextIntlClientProvider } from "next-intl";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import type { ReactNode } from "react";
+import { Toaster } from "sonner";
+import { Analytics } from "@/analytics/analytics";
 import {
-  fontBricolageGrotesque,
-  fontNotoSans,
-  fontNotoSansMono,
-  fontNotoSerif,
-} from '@/assets/fonts';
-import AffonsoScript from '@/components/affiliate/affonso';
-import PromotekitScript from '@/components/affiliate/promotekit';
-import { TailwindIndicator } from '@/components/layout/tailwind-indicator';
-import { routing } from '@/i18n/routing';
-import { cn } from '@/lib/utils';
-import { Providers } from './providers';
+	fontBricolageGrotesque,
+	fontNotoSans,
+	fontNotoSansMono,
+	fontNotoSerif,
+} from "@/assets/fonts";
+import AffonsoScript from "@/components/affiliate/affonso";
+import PromotekitScript from "@/components/affiliate/promotekit";
+import { TailwindIndicator } from "@/components/layout/tailwind-indicator";
+import { routing } from "@/i18n/routing";
+import { cn } from "@/lib/utils";
+import { Providers } from "./providers";
 
-import '@/styles/globals.css';
+import "@/styles/globals.css";
 
 interface LocaleLayoutProps {
-  children: ReactNode;
-  params: Promise<{ locale: Locale }>;
+	children: ReactNode;
+	params: Promise<{ locale: Locale }>;
 }
 
 /**
@@ -32,44 +32,44 @@ interface LocaleLayoutProps {
  * https://next-intl.dev/docs/usage/configuration#nextintlclientprovider
  */
 export default async function LocaleLayout({
-  children,
-  params,
+	children,
+	params,
 }: LocaleLayoutProps) {
-  const { locale } = await params;
+	const { locale } = await params;
 
-  // Ensure that the incoming `locale` is valid
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
+	// Ensure that the incoming `locale` is valid
+	if (!hasLocale(routing.locales, locale)) {
+		notFound();
+	}
 
-  return (
-    <html suppressHydrationWarning lang={locale}>
-      <head>
-        <AffonsoScript />
-        <PromotekitScript />
-      </head>
-      <body
-        suppressHydrationWarning
-        className={cn(
-          'size-full antialiased',
-          fontNotoSans.className,
-          fontNotoSerif.variable,
-          fontNotoSansMono.variable,
-          fontBricolageGrotesque.variable
-        )}
-      >
-        <NuqsAdapter>
-          <NextIntlClientProvider>
-            <Providers locale={locale}>
-              {children}
+	return (
+		<html suppressHydrationWarning lang={locale}>
+			<head>
+				<AffonsoScript />
+				<PromotekitScript />
+			</head>
+			<body
+				suppressHydrationWarning
+				className={cn(
+					"size-full antialiased",
+					fontNotoSans.className,
+					fontNotoSerif.variable,
+					fontNotoSansMono.variable,
+					fontBricolageGrotesque.variable,
+				)}
+			>
+				<NuqsAdapter>
+					<NextIntlClientProvider>
+						<Providers locale={locale}>
+							{children}
 
-              <Toaster richColors position="top-right" offset={64} />
-              <TailwindIndicator />
-              <Analytics />
-            </Providers>
-          </NextIntlClientProvider>
-        </NuqsAdapter>
-      </body>
-    </html>
-  );
+							<Toaster richColors position="top-right" offset={64} />
+							<TailwindIndicator />
+							<Analytics />
+						</Providers>
+					</NextIntlClientProvider>
+				</NuqsAdapter>
+			</body>
+		</html>
+	);
 }

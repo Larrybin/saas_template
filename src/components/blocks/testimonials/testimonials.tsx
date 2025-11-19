@@ -115,11 +115,11 @@ export default function TestimonialsSection() {
         />
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2 md:mt-12 lg:grid-cols-3">
-          {testimonialChunks.map((chunk, chunkIndex) => (
-            <div key={chunkIndex} className="space-y-3">
-              {chunk.map(({ name, role, quote, image }, index) => (
+          {testimonialChunks.map((chunk) => (
+            <div key={chunk[0]?.name ?? 'chunk'} className="space-y-3">
+              {chunk.map(({ name, role, quote, image }) => (
                 <Card
-                  key={index}
+                  key={name}
                   className="shadow-none bg-transparent hover:bg-accent dark:hover:bg-card"
                 >
                   <CardContent className="grid grid-cols-[auto_1fr] gap-3 pt-4">

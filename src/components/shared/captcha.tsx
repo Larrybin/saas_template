@@ -15,6 +15,10 @@ const Turnstile = dynamic(
   }
 );
 
+export type CaptchaRef = {
+  reset?: () => void;
+} | null;
+
 type Props = Omit<ComponentProps<typeof Turnstile>, 'siteKey'> & {
   validationError?: string;
 };
@@ -22,7 +26,7 @@ type Props = Omit<ComponentProps<typeof Turnstile>, 'siteKey'> & {
 /**
  * Captcha component for Cloudflare Turnstile
  */
-export const Captcha = forwardRef<any, Props>(
+export const Captcha = forwardRef<CaptchaRef, Props>(
   ({ validationError, ...props }, ref) => {
     const turnstileEnabled = websiteConfig.features.enableTurnstileCaptcha;
     const siteKey = clientEnv.turnstileSiteKey;

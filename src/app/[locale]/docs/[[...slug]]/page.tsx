@@ -8,7 +8,7 @@ import {
 import { notFound } from 'next/navigation';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
-import type { ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import * as Preview from '@/components/docs';
 import { getMDXComponents } from '@/components/docs/mdx-components';
 import {
@@ -112,7 +112,7 @@ export default async function DocPage({ params }: DocPageProps) {
         {/* MDX Content */}
         <MDX
           components={getMDXComponents({
-            a: ({ href, ...props }: { href?: string; [key: string]: any }) => {
+            a: ({ href, ...props }: ComponentPropsWithoutRef<'a'>) => {
               const found = source.getPageByHref(
                 href ?? '',
                 pageDir ? { dir: pageDir } : undefined

@@ -13,7 +13,7 @@ import { UsersTable } from '@/components/admin/users-table';
 import { useUsers } from '@/hooks/use-users';
 
 export function UsersPageClient() {
-  const t = useTranslations('Dashboard.admin.users');
+  const _t = useTranslations('Dashboard.admin.users');
 
   const [{ page, pageSize, search, sortId, sortDesc }, setQueryStates] =
     useQueryStates({

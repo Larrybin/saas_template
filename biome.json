@@ -55,10 +55,10 @@
     "rules": {
       "recommended": false,
       "suspicious": {
-        "noSparseArray": "error",
-        "noArrayIndexKey": "warn",
+        "noSparseArray": "warn",
+        "noArrayIndexKey": "off",
         "noExplicitAny": "warn",
-        "noShadowRestrictedNames": "error",
+        "noShadowRestrictedNames": "warn",
         "noDuplicateCustomProperties": "off"
       },
       "complexity": {

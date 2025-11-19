@@ -26,7 +26,7 @@ import { clientEnv } from '@/env/client';
 import { authClient } from '@/lib/auth-client';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
-import { Captcha } from '../shared/captcha';
+import { Captcha, type CaptchaRef } from '../shared/captcha';
 import { SocialLoginButton } from './social-login-button';
 
 interface RegisterFormProps {
@@ -52,7 +52,7 @@ export const RegisterForm = ({
   const [success, setSuccess] = useState<string | undefined>('');
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const captchaRef = useRef<any>(null);
+  const captchaRef = useRef<CaptchaRef>(null);
 
   // Check if credential login is enabled
   const credentialLoginEnabled = websiteConfig.auth.enableCredentialLogin;

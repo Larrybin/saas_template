@@ -27,10 +27,15 @@ export function BlogGridSkeleton({
 }: {
   count?: number;
 }) {
+  const skeletonKeys = Array.from(
+    { length: count },
+    (_, index) => `blog-skeleton-${index}`
+  );
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {[...Array(count)].map((_, index) => (
-        <BlogCardSkeleton key={index} />
+      {skeletonKeys.map((key) => (
+        <BlogCardSkeleton key={key} />
       ))}
     </div>
   );

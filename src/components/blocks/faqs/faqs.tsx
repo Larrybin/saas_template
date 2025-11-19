@@ -1,7 +1,7 @@
 'use client';
 
 import type { IconName } from 'lucide-react/dynamic';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { HeaderSection } from '@/components/layout/header-section';
 import {
   Accordion,
@@ -18,7 +18,6 @@ type FAQItem = {
 };
 
 export default function FaqSection() {
-  const locale = useLocale();
   const t = useTranslations('HomePage.faqs');
 
   const faqItems: FAQItem[] = [

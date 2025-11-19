@@ -2,6 +2,7 @@
 
 import { IconCaretDownFilled, IconCaretUpFilled } from '@tabler/icons-react';
 import {
+  type Column,
   type ColumnDef,
   type ColumnFiltersState,
   flexRender,
@@ -63,7 +64,7 @@ import { Skeleton } from '../ui/skeleton';
 
 interface DataTableColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
-  column: any;
+  column: Column<TData, TValue>;
   title: string;
 }
 
@@ -118,10 +119,15 @@ function DataTableColumnHeader<TData, TValue>({
 }
 
 function TableRowSkeleton({ columns }: { columns: number }) {
+  const skeletonColumnKeys = Array.from(
+    { length: columns },
+    (_, index) => `skeleton-col-${index}`
+  );
+
   return (
     <TableRow>
-      {Array.from({ length: columns }).map((_, index) => (
-        <TableCell key={index} className="py-4">
+      {skeletonColumnKeys.map((columnKey) => (
+        <TableCell key={columnKey} className="py-4">
           <div className="flex items-center gap-2 pl-3">
             <Skeleton className="h-6 w-full max-w-32" />
           </div>
@@ -165,6 +171,10 @@ export function UsersTable({
   const tTable = useTranslations('Common.table');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const skeletonRowKeys = Array.from(
+    { length: pageSize },
+    (_, index) => `skeleton-row-${index}`
+  );
 
   // show fake data in demo website
   const isDemo = isDemoWebsite();
@@ -459,8 +469,8 @@ export function UsersTable({
             <TableBody>
               {loading ? (
                 // Show skeleton rows while loading
-                Array.from({ length: pageSize }).map((_, index) => (
-                  <TableRowSkeleton key={index} columns={columns.length} />
+                skeletonRowKeys.map((rowKey) => (
+                  <TableRowSkeleton key={rowKey} columns={columns.length} />
                 ))
               ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (

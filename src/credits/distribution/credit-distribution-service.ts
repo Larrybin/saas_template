@@ -4,10 +4,7 @@ import { getLogger } from '@/lib/server/logger';
 import { PlanIntervals, type PricePlan } from '@/payment/types';
 import type { DbExecutor } from '../data-access/types';
 import { addCredits, addCreditsWithExecutor, canAddCreditsByType } from '../credits';
-import type {
-  AddCreditsPayload,
-  PeriodicAddCreditsPayload,
-} from '../services/credits-gateway';
+import type { PeriodicAddCreditsPayload } from '../services/credits-gateway';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 import type { CommandExecutionResult, CreditCommand } from './credit-command';
 

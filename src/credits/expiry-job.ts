@@ -25,7 +25,8 @@ export async function runExpirationJob(options?: {
 }): Promise<ExpirationJobResult> {
   const db = await getDb();
   const now = new Date();
-  const batchSize = options?.batchSize ?? 100;
+  const rawBatchSize = options?.batchSize ?? 100;
+  const batchSize = rawBatchSize > 0 ? rawBatchSize : 100;
 
   baseLogger.info(
     {
@@ -60,6 +61,23 @@ export async function runExpirationJob(options?: {
   let errorCount = 0;
   let totalExpiredCredits = 0;
   let batchCount = 0;
+
+  if (usersCount === 0) {
+    baseLogger.info(
+      {
+        usersCount,
+        batchSize,
+      },
+      'runExpirationJob, no users to process'
+    );
+    return {
+      usersCount,
+      processedCount: 0,
+      errorCount: 0,
+      totalExpiredCredits: 0,
+      batchCount: 0,
+    };
+  }
 
   baseLogger.info(
     {

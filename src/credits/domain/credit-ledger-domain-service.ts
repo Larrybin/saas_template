@@ -277,6 +277,14 @@ export class CreditLedgerDomainService {
     errorCount: number;
     totalExpiredCredits: number;
   }> {
+    /**
+     * Best-effort batch processing.
+     *
+     * Each user is processed independently on the provided executor.
+     * Failures for individual users are logged and counted, but do NOT
+     * rollback already processed users, even if a transactional executor
+     * is passed in by the caller.
+     */
     if (userIds.length === 0) {
       this.logger.info(
         'processExpiredCreditsForUsers, no users to process for expiration'

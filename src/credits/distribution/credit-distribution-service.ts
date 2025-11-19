@@ -58,14 +58,22 @@ export class CreditDistributionService {
           result.skipped += 1;
           continue;
         }
+
+        const { periodKey } = command;
+        if (!periodKey || !Number.isFinite(periodKey)) {
+          throw new Error(
+            'periodKey is required when executing periodic credit commands'
+          );
+        }
+
         const payload: PeriodicAddCreditsPayload = {
           userId: command.userId,
           amount: command.amount,
-          type: command.type,
+          type: command.type as PeriodicAddCreditsPayload['type'],
           description: command.description,
           expireDays: command.expireDays,
           paymentId: command.paymentId,
-          periodKey: command.periodKey,
+          periodKey,
         };
         await add(payload);
         result.processed += 1;

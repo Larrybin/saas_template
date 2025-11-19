@@ -1,16 +1,9 @@
-import { randomUUID } from 'crypto';
 import { Stripe } from 'stripe';
-import { websiteConfig } from '@/config/website';
 import { getCreditPackageById } from '@/credits/server';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { serverEnv } from '@/env/server';
-import {
-  findPlanByPlanId,
-  findPlanByPriceId,
-  findPriceInPlan,
-} from '@/lib/price-plan';
+import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
 import { PaymentRepository } from '../data-access/payment-repository';
 import { StripeEventRepository } from '../data-access/stripe-event-repository';
@@ -25,7 +18,6 @@ import {
   type PaymentStatus,
   PaymentTypes,
   type PlanInterval,
-  PlanIntervals,
   type PortalResult,
   type Subscription,
 } from '../types';
@@ -72,7 +64,11 @@ export class StripePaymentService implements PaymentProvider {
     if (!webhookSecret) {
       throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set.');
     }
-    this.stripe = deps.stripeClient ?? new Stripe(apiKey!);
+    if (deps.stripeClient) {
+      this.stripe = deps.stripeClient;
+    } else {
+      this.stripe = new Stripe(apiKey);
+    }
     this.webhookSecret = webhookSecret;
     this.creditsGateway = deps.creditsGateway ?? new CreditLedgerService();
     this.notificationGateway =

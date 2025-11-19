@@ -16,7 +16,7 @@ import { useCreditTransactions } from '@/hooks/use-credits';
  * Credit transactions component
  */
 export function CreditTransactions() {
-  const t = useTranslations('Dashboard.settings.credits.transactions');
+  const _t = useTranslations('Dashboard.settings.credits.transactions');
 
   const [{ page, pageSize, search, sortId, sortDesc }, setQueryStates] =
     useQueryStates({

@@ -7,7 +7,7 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import * as LucideIcons from 'lucide-react';
 import type { MDXComponents } from 'mdx/types';
-import type { ComponentProps, FC } from 'react';
+import type { ComponentProps, ComponentType } from 'react';
 import { ImageWrapper } from '@/components/docs/image-wrapper';
 import { Wrapper } from '@/components/docs/wrapper';
 import { YoutubeVideo } from '@/components/docs/youtube-video';
@@ -18,7 +18,7 @@ import { YoutubeVideo } from '@/components/docs/youtube-video';
  */
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   // Start with default components
-  const baseComponents: Record<string, any> = {
+  const baseComponents: MDXComponents = {
     ...defaultMdxComponents,
     ...LucideIcons,
     // ...((await import('lucide-react')) as unknown as MDXComponents),
@@ -34,7 +34,9 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     File,
     Folder,
     Files,
-    blockquote: Callout as unknown as FC<ComponentProps<'blockquote'>>,
+    blockquote: Callout as unknown as ComponentType<
+      ComponentProps<'blockquote'>
+    >,
     img: ImageWrapper,
   };
 

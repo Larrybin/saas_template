@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RemoveScroll } from 'react-remove-scroll';
 import LocaleSelector from '@/components/layout/locale-selector';
 import { Logo } from '@/components/layout/logo';
@@ -35,7 +35,7 @@ export function NavbarMobile({
 }: React.HTMLAttributes<HTMLDivElement>) {
   const t = useTranslations();
   const [open, setOpen] = React.useState<boolean>(false);
-  const localePathname = useLocalePathname();
+  const _localePathname = useLocalePathname();
   const [mounted, setMounted] = useState(false);
   const { data: session, isPending } = authClient.useSession();
   const currentUser = session?.user;
@@ -54,19 +54,19 @@ export function NavbarMobile({
     };
 
     handleRouteChangeStart();
-  }, [localePathname]);
+  }, []);
 
-  const handleChange = () => {
+  const handleChange = useCallback(() => {
     const mediaQueryList = window.matchMedia('(min-width: 1024px)');
     setOpen((open) => (open ? !mediaQueryList.matches : false));
-  };
+  }, []);
 
   useEffect(() => {
     handleChange();
     const mediaQueryList = window.matchMedia('(min-width: 1024px)');
     mediaQueryList.addEventListener('change', handleChange);
     return () => mediaQueryList.removeEventListener('change', handleChange);
-  }, []);
+  }, [handleChange]);
 
   const handleToggleMobileMenu = (): void => {
     setOpen((open) => !open);

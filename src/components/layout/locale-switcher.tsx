@@ -34,7 +34,7 @@ export default function LocaleSwitcher() {
   const pathname = useLocalePathname();
   const params = useParams();
   const locale = useLocale();
-  const { currentLocale, setCurrentLocale } = useLocaleStore();
+  const { currentLocale: _currentLocale, setCurrentLocale } = useLocaleStore();
   const [, startTransition] = useTransition();
   const t = useTranslations('Common');
 

@@ -1,5 +1,4 @@
 import type { SVGProps } from 'react';
-import React from 'react';
 
 /**
  * https://icon-sets.iconify.design/fa6-brands/discord/

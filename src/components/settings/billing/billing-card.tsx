@@ -96,7 +96,7 @@ export default function BillingCard() {
       url.searchParams.delete('session_id');
       localeRouter.replace(Routes.SettingsBilling + url.search);
     }
-  }, [searchParams, localeRouter]);
+  }, [searchParams, localeRouter, t]);
 
   // Render loading skeleton if not mounted or in a loading state
   const isPageLoading = isLoadingPayment || isLoadingSession;

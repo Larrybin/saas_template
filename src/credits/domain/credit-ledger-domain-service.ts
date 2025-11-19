@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
 import { addDays } from 'date-fns';
-import { and, eq, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
 import { getLogger } from '@/lib/server/logger';

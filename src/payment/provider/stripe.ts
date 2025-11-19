@@ -11,11 +11,7 @@ import { getCreditPackageById } from '@/credits/server';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { getDb } from '@/db';
 import { payment, user } from '@/db/schema';
-import {
-  findPlanByPlanId,
-  findPlanByPriceId,
-  findPriceInPlan,
-} from '@/lib/price-plan';
+import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import { sendNotification } from '@/notification/notification';
 import { getSubscriptionPeriodBounds } from '../services/utils/stripe-subscription';
 import {
@@ -277,8 +273,12 @@ export class StripeProvider implements PaymentProvider {
       const session =
         await this.stripe.checkout.sessions.create(checkoutParams);
 
+      if (!session.url) {
+        throw new Error('Checkout session URL is missing');
+      }
+
       return {
-        url: session.url!,
+        url: session.url,
         id: session.id,
       };
     } catch (error) {
@@ -297,7 +297,6 @@ export class StripeProvider implements PaymentProvider {
   ): Promise<CheckoutResult> {
     const {
       packageId,
-      priceId,
       customerEmail,
       successUrl,
       cancelUrl,
@@ -375,8 +374,12 @@ export class StripeProvider implements PaymentProvider {
       const session =
         await this.stripe.checkout.sessions.create(checkoutParams);
 
+      if (!session.url) {
+        throw new Error('Credit checkout session URL is missing');
+      }
+
       return {
-        url: session.url!,
+        url: session.url,
         id: session.id,
       };
     } catch (error) {
@@ -543,7 +546,7 @@ export class StripeProvider implements PaymentProvider {
     const effectivePeriodStart = periodStart ?? new Date();
 
     // create fields
-    const createFields: any = {
+    const createFields: Record<string, unknown> = {
       id: randomUUID(),
       priceId: priceId,
       type: PaymentTypes.SUBSCRIPTION,
@@ -627,7 +630,7 @@ export class StripeProvider implements PaymentProvider {
       payments[0].periodStart.getTime() !== newPeriodStart.getTime();
 
     // update fields
-    const updateFields: any = {
+    const updateFields: Record<string, unknown> = {
       priceId: priceId,
       interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
       status: this.mapSubscriptionStatusToPaymentStatus(
@@ -669,7 +672,7 @@ export class StripeProvider implements PaymentProvider {
         console.log('<< Added subscription renewal credits for user');
       } else {
         console.log(
-          '<< No renewal credits added for user, isRenewal: ' + isRenewal
+          `<< No renewal credits added for user, isRenewal: ${isRenewal}`
         );
       }
     } else {
@@ -743,7 +746,7 @@ export class StripeProvider implements PaymentProvider {
 
       if (existingPayment.length > 0) {
         console.log(
-          'One-time payment session already processed: ' + session.id
+          `One-time payment session already processed: ${session.id}`
         );
         return;
       }
@@ -783,7 +786,7 @@ export class StripeProvider implements PaymentProvider {
       const amount = session.amount_total ? session.amount_total / 100 : 0;
       await sendNotification(session.id, customerId, userId, amount);
     } catch (error) {
-      console.error('onOnetimePayment error for session: ' + session.id, error);
+      console.error(`onOnetimePayment error for session: ${session.id}`, error);
       throw error;
     }
   }
@@ -822,7 +825,7 @@ export class StripeProvider implements PaymentProvider {
     // get credit package
     const creditPackage = getCreditPackageById(packageId);
     if (!creditPackage) {
-      console.warn('Credit package ' + packageId + ' not found');
+      console.warn(`Credit package ${packageId} not found`);
       return;
     }
 
@@ -836,7 +839,7 @@ export class StripeProvider implements PaymentProvider {
         .limit(1);
 
       if (existingPayment.length > 0) {
-        console.log('Credit purchase session already processed: ' + session.id);
+        console.log(`Credit purchase session already processed: ${session.id}`);
         return;
       }
 
@@ -866,9 +869,9 @@ export class StripeProvider implements PaymentProvider {
         expireDays: creditPackage.expireDays,
       });
 
-      console.log('Added ' + credits + ' credits to user');
+      console.log(`Added ${credits} credits to user`);
     } catch (error) {
-      console.error('onCreditPurchase error for session: ' + session.id, error);
+      console.error(`onCreditPurchase error for session: ${session.id}`, error);
       throw error;
     }
   }

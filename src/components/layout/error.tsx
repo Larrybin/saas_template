@@ -16,7 +16,7 @@ import { useLocaleRouter } from '@/i18n/navigation';
  * 2. Learned how to recover from a server component error in Next.js from @asidorenko_
  * https://x.com/asidorenko_/status/1841547623712407994
  */
-export default function Error({ reset }: { reset: () => void }) {
+export default function ErrorLayout({ reset }: { reset: () => void }) {
   const t = useTranslations('ErrorPage');
   const router = useLocaleRouter();
   const [isPending, startTransition] = useTransition();

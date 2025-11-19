@@ -76,14 +76,14 @@ export async function getTemplate<T extends EmailTemplate>({
   locale = routing.defaultLocale,
 }: {
   template: T;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   locale?: Locale;
 }) {
   const mainTemplate = EmailTemplates[template];
   const messages = await getMessagesForLocale(locale);
 
   const email = mainTemplate({
-    ...(context as any),
+    ...(context as Record<string, unknown>),
     locale,
     messages,
   });

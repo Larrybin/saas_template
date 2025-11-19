@@ -16,7 +16,9 @@ export function createNewsletterAutoSubscribeHook(): UserLifecycleHook<'user.cre
 
     setTimeout(async () => {
       try {
-        const subscribed = await subscribe(user.email!);
+        const email = user.email;
+        if (!email) return;
+        const subscribed = await subscribe(email);
         if (!subscribed) {
           console.error(`Failed to subscribe user ${user.email} to newsletter`);
         }

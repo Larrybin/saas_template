@@ -44,7 +44,7 @@ export interface SendEmailParams {
 export interface SendEmailResult {
   success: boolean;
   messageId?: string;
-  error?: any;
+  error?: unknown;
 }
 
 /**
@@ -53,7 +53,7 @@ export interface SendEmailResult {
 export interface SendTemplateParams {
   to: string;
   template: EmailTemplate;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   locale?: Locale;
 }
 

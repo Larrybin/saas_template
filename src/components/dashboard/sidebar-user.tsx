@@ -53,7 +53,7 @@ export function SidebarUser({ user, className }: SidebarUserProps) {
   const { isMobile } = useSidebar();
   const pathname = useLocalePathname();
   const params = useParams();
-  const { currentLocale, setCurrentLocale } = useLocaleStore();
+  const { currentLocale: _currentLocale, setCurrentLocale } = useLocaleStore();
   const [, startTransition] = useTransition();
   const t = useTranslations();
 

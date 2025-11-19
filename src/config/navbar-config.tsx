@@ -1,36 +1,15 @@
 'use client';
 
 import {
-  AudioLinesIcon,
   BuildingIcon,
-  ChartNoAxesCombinedIcon,
-  CircleDollarSignIcon,
-  CircleHelpIcon,
-  ComponentIcon,
   CookieIcon,
   FileTextIcon,
-  FilmIcon,
-  FlameIcon,
-  FootprintsIcon,
   ImageIcon,
   ListChecksIcon,
-  LockKeyholeIcon,
-  LogInIcon,
   MailboxIcon,
   MailIcon,
   MessageCircleIcon,
-  NewspaperIcon,
-  RocketIcon,
   ShieldCheckIcon,
-  SnowflakeIcon,
-  SplitSquareVerticalIcon,
-  SquareCodeIcon,
-  SquareKanbanIcon,
-  SquarePenIcon,
-  ThumbsUpIcon,
-  UserPlusIcon,
-  UsersIcon,
-  WandSparklesIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Routes } from '@/routes';

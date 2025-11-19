@@ -1,5 +1,5 @@
 import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
-import type { ComponentProps, FC } from 'react';
+import type { ComponentProps } from 'react';
 
 interface ImageWrapperProps extends ComponentProps<'img'> {
   src: string;

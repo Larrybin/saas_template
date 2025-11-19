@@ -172,7 +172,8 @@ export function CreditDetailViewer({ transaction }: CreditDetailViewerProps) {
                   <span
                     className="font-mono text-sm cursor-pointer hover:bg-accent px-2 py-1 rounded border break-all"
                     onClick={() => {
-                      navigator.clipboard.writeText(transaction.paymentId!);
+                      if (!transaction.paymentId) return;
+                      navigator.clipboard.writeText(transaction.paymentId);
                       toast.success(t('paymentIdCopied'));
                     }}
                   >

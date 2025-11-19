@@ -1,49 +1,49 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import type { Locale } from "next-intl";
-import { getTranslations } from "next-intl/server";
-import { CustomPage } from "@/components/page/custom-page";
-import { constructMetadata } from "@/lib/metadata";
-import { pagesSource } from "@/lib/source";
-import { getUrlWithLocale } from "@/lib/urls/urls";
-import type { NextPageProps } from "@/types/next-page-props";
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import type { Locale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+import { CustomPage } from '@/components/page/custom-page';
+import { constructMetadata } from '@/lib/metadata';
+import { pagesSource } from '@/lib/source';
+import { getUrlWithLocale } from '@/lib/urls/urls';
+import type { NextPageProps } from '@/types/next-page-props';
 
 export async function generateMetadata({
-	params,
+  params,
 }: {
-	params: Promise<{ locale: Locale }>;
+  params: Promise<{ locale: Locale }>;
 }): Promise<Metadata | undefined> {
-	const { locale } = await params;
-	const page = pagesSource.getPage(["cookie-policy"], locale);
+  const { locale } = await params;
+  const page = pagesSource.getPage(['cookie-policy'], locale);
 
-	if (!page) {
-		console.warn(
-			`generateMetadata, page not found for cookie-policy, locale: ${locale}`,
-		);
-		return {};
-	}
+  if (!page) {
+    console.warn(
+      `generateMetadata, page not found for cookie-policy, locale: ${locale}`
+    );
+    return {};
+  }
 
-	const t = await getTranslations({ locale, namespace: "Metadata" });
+  const t = await getTranslations({ locale, namespace: 'Metadata' });
 
-	return constructMetadata({
-		title: page.data.title + " | " + t("title"),
-		description: page.data.description,
-		canonicalUrl: getUrlWithLocale("/cookie", locale),
-	});
+  return constructMetadata({
+    title: page.data.title + ' | ' + t('title'),
+    description: page.data.description,
+    canonicalUrl: getUrlWithLocale('/cookie', locale),
+  });
 }
 
 export default async function CookiePolicyPage(props: NextPageProps) {
-	const params = await props.params;
-	if (!params) {
-		notFound();
-	}
+  const params = await props.params;
+  if (!params) {
+    notFound();
+  }
 
-	const locale = params.locale as string;
-	const page = pagesSource.getPage(["cookie-policy"], locale);
+  const locale = params.locale as string;
+  const page = pagesSource.getPage(['cookie-policy'], locale);
 
-	if (!page) {
-		notFound();
-	}
+  if (!page) {
+    notFound();
+  }
 
-	return <CustomPage page={page} />;
+  return <CustomPage page={page} />;
 }

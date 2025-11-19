@@ -1,16 +1,16 @@
-import { type InferPageType, loader } from "fumadocs-core/source";
-import { createMDXSource } from "fumadocs-mdx/runtime/next";
-import * as LucideIcons from "lucide-react";
-import { createElement } from "react";
+import { type InferPageType, loader } from 'fumadocs-core/source';
+import { createMDXSource } from 'fumadocs-mdx/runtime/next';
+import * as LucideIcons from 'lucide-react';
+import { createElement } from 'react';
 import type {
-	BlogAuthorEntry,
-	BlogCategoryEntry,
-	BlogDocEntry,
-	ChangelogEntry,
-	MarketingPageEntry,
-} from "@/types/content";
-import { author, blog, category, changelog, docs, pages } from "../../.source";
-import { docsI18nConfig } from "./docs/i18n";
+  BlogAuthorEntry,
+  BlogCategoryEntry,
+  BlogDocEntry,
+  ChangelogEntry,
+  MarketingPageEntry,
+} from '@/types/content';
+import { author, blog, category, changelog, docs, pages } from '../../.source';
+import { docsI18nConfig } from './docs/i18n';
 
 /**
  * Turn a content source into a unified interface
@@ -19,31 +19,31 @@ import { docsI18nConfig } from "./docs/i18n";
  * https://fumadocs.dev/docs/headless/source-api
  */
 export const source = loader({
-	baseUrl: "/docs",
-	i18n: docsI18nConfig,
-	source: docs.toFumadocsSource(),
-	icon(iconName) {
-		if (!iconName) {
-			return undefined;
-		}
+  baseUrl: '/docs',
+  i18n: docsI18nConfig,
+  source: docs.toFumadocsSource(),
+  icon(iconName) {
+    if (!iconName) {
+      return undefined;
+    }
 
-		const IconComponent = (LucideIcons as Record<string, any>)[iconName];
-		if (IconComponent) {
-			return createElement(IconComponent);
-		}
+    const IconComponent = (LucideIcons as Record<string, any>)[iconName];
+    if (IconComponent) {
+      return createElement(IconComponent);
+    }
 
-		console.warn(`Icon not found: ${iconName}`);
-		return undefined;
-	},
+    console.warn(`Icon not found: ${iconName}`);
+    return undefined;
+  },
 });
 
 /**
  * Changelog source
  */
 export const changelogSource = loader({
-	baseUrl: "/changelog",
-	i18n: docsI18nConfig,
-	source: createMDXSource<ChangelogEntry, never>(changelog as ChangelogEntry[]),
+  baseUrl: '/changelog',
+  i18n: docsI18nConfig,
+  source: createMDXSource<ChangelogEntry, never>(changelog as ChangelogEntry[]),
 });
 
 /**
@@ -52,40 +52,40 @@ export const changelogSource = loader({
  * TODO: how to set the baseUrl for pages?
  */
 export const pagesSource = loader({
-	baseUrl: "/pages",
-	i18n: docsI18nConfig,
-	source: createMDXSource<MarketingPageEntry, never>(
-		pages as MarketingPageEntry[],
-	),
+  baseUrl: '/pages',
+  i18n: docsI18nConfig,
+  source: createMDXSource<MarketingPageEntry, never>(
+    pages as MarketingPageEntry[]
+  ),
 });
 
 /**
  * Blog authors source
  */
 export const authorSource = loader({
-	baseUrl: "/author",
-	i18n: docsI18nConfig,
-	source: createMDXSource<BlogAuthorEntry, never>(author as BlogAuthorEntry[]),
+  baseUrl: '/author',
+  i18n: docsI18nConfig,
+  source: createMDXSource<BlogAuthorEntry, never>(author as BlogAuthorEntry[]),
 });
 
 /**
  * Blog categories source
  */
 export const categorySource = loader({
-	baseUrl: "/category",
-	i18n: docsI18nConfig,
-	source: createMDXSource<BlogCategoryEntry, never>(
-		category as BlogCategoryEntry[],
-	),
+  baseUrl: '/category',
+  i18n: docsI18nConfig,
+  source: createMDXSource<BlogCategoryEntry, never>(
+    category as BlogCategoryEntry[]
+  ),
 });
 
 /**
  * Blog posts source
  */
 export const blogSource = loader({
-	baseUrl: "/blog",
-	i18n: docsI18nConfig,
-	source: createMDXSource<BlogDocEntry, never>(blog as BlogDocEntry[]),
+  baseUrl: '/blog',
+  i18n: docsI18nConfig,
+  source: createMDXSource<BlogDocEntry, never>(blog as BlogDocEntry[]),
 });
 
 export type ChangelogType = InferPageType<typeof changelogSource>;

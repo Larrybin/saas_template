@@ -1,7 +1,7 @@
 interface YoutubeVideoProps {
-	url: string;
-	width?: number;
-	height?: number;
+  url: string;
+  width?: number;
+  height?: number;
 }
 
 /**
@@ -17,23 +17,23 @@ interface YoutubeVideoProps {
  * @param {number} height - The height of the video
  */
 export const YoutubeVideo = ({
-	url,
-	width = 560,
-	height = 460,
+  url,
+  width = 560,
+  height = 460,
 }: YoutubeVideoProps) => {
-	return (
-		<div className="my-4">
-			<iframe
-				width={width}
-				height={height}
-				src={url}
-				title="YouTube video player"
-				frameBorder="0"
-				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-				referrerPolicy="strict-origin-when-cross-origin"
-				allowFullScreen
-				className="w-full aspect-video"
-			/>
-		</div>
-	);
+  return (
+    <div className="my-4">
+      <iframe
+        width={width}
+        height={height}
+        src={url}
+        title="YouTube video player"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allowFullScreen
+        className="w-full aspect-video"
+      />
+    </div>
+  );
 };

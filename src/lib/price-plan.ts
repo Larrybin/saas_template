@@ -1,5 +1,5 @@
-import { websiteConfig } from "@/config/website";
-import type { Price, PricePlan } from "@/payment/types";
+import { websiteConfig } from '@/config/website';
+import type { Price, PricePlan } from '@/payment/types';
 
 /**
  * Get all price plans (without translations, like name/description/features)
@@ -7,7 +7,7 @@ import type { Price, PricePlan } from "@/payment/types";
  * @returns Array of price plans
  */
 export const getAllPricePlans = (): PricePlan[] => {
-	return Object.values(websiteConfig.price.plans);
+  return Object.values(websiteConfig.price.plans);
 };
 
 /**
@@ -16,7 +16,7 @@ export const getAllPricePlans = (): PricePlan[] => {
  * @returns Plan or undefined if not found
  */
 export const findPlanByPlanId = (planId: string): PricePlan | undefined => {
-	return getAllPricePlans().find((plan) => plan.id === planId);
+  return getAllPricePlans().find((plan) => plan.id === planId);
 };
 
 /**
@@ -25,16 +25,16 @@ export const findPlanByPlanId = (planId: string): PricePlan | undefined => {
  * @returns Plan or undefined if not found
  */
 export const findPlanByPriceId = (priceId: string): PricePlan | undefined => {
-	const plans = getAllPricePlans();
-	for (const plan of plans) {
-		const matchingPrice = plan.prices.find(
-			(price) => price.priceId === priceId,
-		);
-		if (matchingPrice) {
-			return plan;
-		}
-	}
-	return undefined;
+  const plans = getAllPricePlans();
+  for (const plan of plans) {
+    const matchingPrice = plan.prices.find(
+      (price) => price.priceId === priceId
+    );
+    if (matchingPrice) {
+      return plan;
+    }
+  }
+  return undefined;
 };
 
 /**
@@ -44,13 +44,13 @@ export const findPlanByPriceId = (priceId: string): PricePlan | undefined => {
  * @returns Price or undefined if not found
  */
 export const findPriceInPlan = (
-	planId: string,
-	priceId: string,
+  planId: string,
+  priceId: string
 ): Price | undefined => {
-	const plan = findPlanByPlanId(planId);
-	if (!plan) {
-		console.error(`findPriceInPlan, Plan with ID ${planId} not found`);
-		return undefined;
-	}
-	return plan.prices.find((price) => price.priceId === priceId);
+  const plan = findPlanByPlanId(planId);
+  if (!plan) {
+    console.error(`findPriceInPlan, Plan with ID ${planId} not found`);
+    return undefined;
+  }
+  return plan.prices.find((price) => price.priceId === priceId);
 };

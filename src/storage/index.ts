@@ -1,7 +1,7 @@
-import { websiteConfig } from "@/config/website";
-import { storageConfig } from "./config/storage-config";
-import { S3Provider } from "./provider/s3";
-import type { StorageConfig, StorageProvider, UploadFileResult } from "./types";
+import { websiteConfig } from '@/config/website';
+import { storageConfig } from './config/storage-config';
+import { S3Provider } from './provider/s3';
+import type { StorageConfig, StorageProvider, UploadFileResult } from './types';
 
 /**
  * Default storage configuration
@@ -19,10 +19,10 @@ let storageProvider: StorageProvider | null = null;
  * @throws Error if provider is not initialized
  */
 export const getStorageProvider = (): StorageProvider => {
-	if (!storageProvider) {
-		return initializeStorageProvider();
-	}
-	return storageProvider;
+  if (!storageProvider) {
+    return initializeStorageProvider();
+  }
+  return storageProvider;
 };
 
 /**
@@ -30,16 +30,16 @@ export const getStorageProvider = (): StorageProvider => {
  * @returns initialized storage provider
  */
 export const initializeStorageProvider = (): StorageProvider => {
-	if (!storageProvider) {
-		if (websiteConfig.storage.provider === "s3") {
-			storageProvider = new S3Provider();
-		} else {
-			throw new Error(
-				`Unsupported storage provider: ${websiteConfig.storage.provider}`,
-			);
-		}
-	}
-	return storageProvider;
+  if (!storageProvider) {
+    if (websiteConfig.storage.provider === 's3') {
+      storageProvider = new S3Provider();
+    } else {
+      throw new Error(
+        `Unsupported storage provider: ${websiteConfig.storage.provider}`
+      );
+    }
+  }
+  return storageProvider;
 };
 
 /**
@@ -52,13 +52,13 @@ export const initializeStorageProvider = (): StorageProvider => {
  * @returns Promise with the URL of the uploaded file and its storage key
  */
 export const uploadFile = async (
-	file: Buffer | Blob,
-	filename: string,
-	contentType: string,
-	folder?: string,
+  file: Buffer | Blob,
+  filename: string,
+  contentType: string,
+  folder?: string
 ): Promise<UploadFileResult> => {
-	const provider = getStorageProvider();
-	return provider.uploadFile({ file, filename, contentType, folder });
+  const provider = getStorageProvider();
+  return provider.uploadFile({ file, filename, contentType, folder });
 };
 
 /**
@@ -68,6 +68,6 @@ export const uploadFile = async (
  * @returns Promise that resolves when the file is deleted
  */
 export const deleteFile = async (key: string): Promise<void> => {
-	const provider = getStorageProvider();
-	return provider.deleteFile(key);
+  const provider = getStorageProvider();
+  return provider.deleteFile(key);
 };

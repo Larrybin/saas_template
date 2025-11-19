@@ -1,17 +1,17 @@
 export class CreditsTransaction {
-	constructor(private readonly executor: unknown) {}
+  constructor(private readonly executor: unknown) {}
 
-	unwrap<TExecutor>(): TExecutor {
-		return this.executor as TExecutor;
-	}
+  unwrap<TExecutor>(): TExecutor {
+    return this.executor as TExecutor;
+  }
 }
 
 export function createCreditsTransaction(executor: unknown) {
-	return new CreditsTransaction(executor);
+  return new CreditsTransaction(executor);
 }
 
 export function resolveExecutor<TExecutor>(
-	tx?: CreditsTransaction,
+  tx?: CreditsTransaction
 ): TExecutor | undefined {
-	return tx ? tx.unwrap<TExecutor>() : undefined;
+  return tx ? tx.unwrap<TExecutor>() : undefined;
 }

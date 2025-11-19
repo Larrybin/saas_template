@@ -1,21 +1,21 @@
-import type { Logger } from "@/lib/logger";
+import type { Logger } from '@/lib/logger';
 
-export type LifecycleLogger = Pick<Logger, "error" | "info" | "warn">;
+export type LifecycleLogger = Pick<Logger, 'error' | 'info' | 'warn'>;
 
 export function createConsoleLifecycleLogger(): LifecycleLogger {
-	return {
-		error: console.error.bind(console),
-		info: console.info.bind(console),
-		warn: console.warn.bind(console),
-	};
+  return {
+    error: console.error.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+  };
 }
 
 export function createLifecycleLoggerFromAppLogger(
-	appLogger: Logger,
+  appLogger: Logger
 ): LifecycleLogger {
-	return {
-		error: appLogger.error.bind(appLogger),
-		info: appLogger.info.bind(appLogger),
-		warn: appLogger.warn.bind(appLogger),
-	};
+  return {
+    error: appLogger.error.bind(appLogger),
+    info: appLogger.info.bind(appLogger),
+    warn: appLogger.warn.bind(appLogger),
+  };
 }

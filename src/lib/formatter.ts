@@ -5,13 +5,13 @@
  * @returns Formatted price string
  */
 export function formatPrice(price: number, currency: string): string {
-	const formatter = new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency,
-		minimumFractionDigits: 0,
-	});
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+  });
 
-	return formatter.format(price / 100); // Convert from cents to dollars
+  return formatter.format(price / 100); // Convert from cents to dollars
 }
 
 /**
@@ -20,8 +20,8 @@ export function formatPrice(price: number, currency: string): string {
  * @returns Formatted date string in the format "Month Day, Year"
  */
 export function formatDate(date: Date): string {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}/${month}/${day}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}/${month}/${day}`;
 }

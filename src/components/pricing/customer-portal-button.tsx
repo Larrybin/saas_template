@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { Loader2Icon } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { toast } from "sonner";
-import { createPortalAction } from "@/actions/create-customer-portal-session";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Loader2Icon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { createPortalAction } from '@/actions/create-customer-portal-session';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface CustomerPortalButtonProps {
-	userId: string;
-	returnUrl?: string;
-	variant?:
-		| "default"
-		| "outline"
-		| "destructive"
-		| "secondary"
-		| "ghost"
-		| "link"
-		| null;
-	size?: "default" | "sm" | "lg" | "icon" | null;
-	className?: string;
-	children?: React.ReactNode;
+  userId: string;
+  returnUrl?: string;
+  variant?:
+    | 'default'
+    | 'outline'
+    | 'destructive'
+    | 'secondary'
+    | 'ghost'
+    | 'link'
+    | null;
+  size?: 'default' | 'sm' | 'lg' | 'icon' | null;
+  className?: string;
+  children?: React.ReactNode;
 }
 
 /**
@@ -33,57 +33,57 @@ interface CustomerPortalButtonProps {
  * NOTICE: Login is required when using this button.
  */
 export function CustomerPortalButton({
-	userId,
-	returnUrl,
-	variant = "default",
-	size = "default",
-	className,
-	children,
+  userId,
+  returnUrl,
+  variant = 'default',
+  size = 'default',
+  className,
+  children,
 }: CustomerPortalButtonProps) {
-	const t = useTranslations("Dashboard.settings.billing.CustomerPortalButton");
-	const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations('Dashboard.settings.billing.CustomerPortalButton');
+  const [isLoading, setIsLoading] = useState(false);
 
-	const handleClick = async () => {
-		try {
-			setIsLoading(true);
+  const handleClick = async () => {
+    try {
+      setIsLoading(true);
 
-			// Create customer portal session using server action
-			const result = await createPortalAction({
-				userId,
-				returnUrl,
-			});
+      // Create customer portal session using server action
+      const result = await createPortalAction({
+        userId,
+        returnUrl,
+      });
 
-			// Redirect to customer portal
-			if (result?.data?.success && result.data.data?.url) {
-				window.location.href = result.data.data?.url;
-			} else {
-				console.error("Create customer portal error, result:", result);
-				toast.error(t("createCustomerPortalFailed"));
-			}
-		} catch (error) {
-			console.error("Create customer portal error:", error);
-			toast.error(t("createCustomerPortalFailed"));
-		} finally {
-			setIsLoading(false);
-		}
-	};
+      // Redirect to customer portal
+      if (result?.data?.success && result.data.data?.url) {
+        window.location.href = result.data.data?.url;
+      } else {
+        console.error('Create customer portal error, result:', result);
+        toast.error(t('createCustomerPortalFailed'));
+      }
+    } catch (error) {
+      console.error('Create customer portal error:', error);
+      toast.error(t('createCustomerPortalFailed'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-	return (
-		<Button
-			variant={variant}
-			size={size}
-			className={cn(className, "cursor-pointer")}
-			onClick={handleClick}
-			disabled={isLoading}
-		>
-			{isLoading ? (
-				<>
-					<Loader2Icon className="mr-2 size-4 animate-spin" />
-					{t("loading")}
-				</>
-			) : (
-				children
-			)}
-		</Button>
-	);
+  return (
+    <Button
+      variant={variant}
+      size={size}
+      className={cn(className, 'cursor-pointer')}
+      onClick={handleClick}
+      disabled={isLoading}
+    >
+      {isLoading ? (
+        <>
+          <Loader2Icon className="mr-2 size-4 animate-spin" />
+          {t('loading')}
+        </>
+      ) : (
+        children
+      )}
+    </Button>
+  );
 }

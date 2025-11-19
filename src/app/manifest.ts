@@ -1,5 +1,5 @@
-import type { MetadataRoute } from "next";
-import { defaultMessages } from "@/i18n/messages";
+import type { MetadataRoute } from 'next';
+import { defaultMessages } from '@/i18n/messages';
 
 /**
  * Generates the Web App Manifest for the application
@@ -21,27 +21,27 @@ import { defaultMessages } from "@/i18n/messages";
  * @returns {MetadataRoute.Manifest} The manifest configuration object
  */
 export default function manifest(): MetadataRoute.Manifest {
-	return {
-		name: defaultMessages.Metadata.name,
-		short_name: defaultMessages.Metadata.name,
-		description: defaultMessages.Metadata.description,
-		start_url: "/",
-		display: "standalone",
-		background_color: "#ffffff",
-		theme_color: "#ffffff",
-		icons: [
-			{
-				src: "/android-chrome-192x192.png",
-				sizes: "192x192",
-				type: "image/png",
-				purpose: "maskable",
-			},
-			{
-				src: "/android-chrome-512x512.png",
-				sizes: "512x512",
-				type: "image/png",
-				purpose: "maskable",
-			},
-		],
-	};
+  return {
+    name: defaultMessages.Metadata.name,
+    short_name: defaultMessages.Metadata.name,
+    description: defaultMessages.Metadata.description,
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#ffffff',
+    theme_color: '#ffffff',
+    icons: [
+      {
+        src: '/android-chrome-192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'maskable',
+      },
+      {
+        src: '/android-chrome-512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
+      },
+    ],
+  };
 }

@@ -1,5 +1,5 @@
-import { createNavigation } from "next-intl/navigation";
-import { routing } from "./routing";
+import { createNavigation } from 'next-intl/navigation';
+import { routing } from './routing';
 
 /**
  * Navigation APIs
@@ -8,9 +8,9 @@ import { routing } from "./routing";
  * https://github.com/amannn/next-intl/blob/main/examples/example-app-router/src/i18n/navigation.ts
  */
 export const {
-	Link: LocaleLink,
-	getPathname: getLocalePathname,
-	redirect: localeRedirect,
-	usePathname: useLocalePathname,
-	useRouter: useLocaleRouter,
+  Link: LocaleLink,
+  getPathname: getLocalePathname,
+  redirect: localeRedirect,
+  usePathname: useLocalePathname,
+  useRouter: useLocaleRouter,
 } = createNavigation(routing);

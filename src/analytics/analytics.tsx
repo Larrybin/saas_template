@@ -1,13 +1,13 @@
-import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { websiteConfig } from "@/config/website";
-import { AhrefsAnalytics } from "./ahrefs-analytics";
-import DataFastAnalytics from "./data-fast-analytics";
-import GoogleAnalytics from "./google-analytics";
-import OpenPanelAnalytics from "./open-panel-analytics";
-import { PlausibleAnalytics } from "./plausible-analytics";
-import { SelineAnalytics } from "./seline-analytics";
-import { UmamiAnalytics } from "./umami-analytics";
+import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import { websiteConfig } from '@/config/website';
+import { AhrefsAnalytics } from './ahrefs-analytics';
+import DataFastAnalytics from './data-fast-analytics';
+import GoogleAnalytics from './google-analytics';
+import OpenPanelAnalytics from './open-panel-analytics';
+import { PlausibleAnalytics } from './plausible-analytics';
+import { SelineAnalytics } from './seline-analytics';
+import { UmamiAnalytics } from './umami-analytics';
 
 /**
  * Analytics Components all in one
@@ -19,40 +19,40 @@ import { UmamiAnalytics } from "./umami-analytics";
  * https://mksaas.com/docs/analytics
  */
 export function Analytics() {
-	if (process.env.NODE_ENV !== "production") {
-		return null;
-	}
+  if (process.env.NODE_ENV !== 'production') {
+    return null;
+  }
 
-	return (
-		<>
-			{/* google analytics */}
-			<GoogleAnalytics />
+  return (
+    <>
+      {/* google analytics */}
+      <GoogleAnalytics />
 
-			{/* umami analytics */}
-			<UmamiAnalytics />
+      {/* umami analytics */}
+      <UmamiAnalytics />
 
-			{/* plausible analytics */}
-			<PlausibleAnalytics />
+      {/* plausible analytics */}
+      <PlausibleAnalytics />
 
-			{/* ahrefs analytics */}
-			<AhrefsAnalytics />
+      {/* ahrefs analytics */}
+      <AhrefsAnalytics />
 
-			{/* datafast analytics */}
-			<DataFastAnalytics />
+      {/* datafast analytics */}
+      <DataFastAnalytics />
 
-			{/* openpanel analytics */}
-			<OpenPanelAnalytics />
+      {/* openpanel analytics */}
+      <OpenPanelAnalytics />
 
-			{/* seline analytics */}
-			<SelineAnalytics />
+      {/* seline analytics */}
+      <SelineAnalytics />
 
-			{/* vercel analytics */}
-			{/* https://vercel.com/docs/analytics/quickstart */}
-			{websiteConfig.analytics.enableVercelAnalytics && <VercelAnalytics />}
+      {/* vercel analytics */}
+      {/* https://vercel.com/docs/analytics/quickstart */}
+      {websiteConfig.analytics.enableVercelAnalytics && <VercelAnalytics />}
 
-			{/* speed insights */}
-			{/* https://vercel.com/docs/speed-insights/quickstart */}
-			{websiteConfig.analytics.enableSpeedInsights && <SpeedInsights />}
-		</>
-	);
+      {/* speed insights */}
+      {/* https://vercel.com/docs/speed-insights/quickstart */}
+      {websiteConfig.analytics.enableSpeedInsights && <SpeedInsights />}
+    </>
+  );
 }

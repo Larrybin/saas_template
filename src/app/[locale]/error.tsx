@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { lazy } from "react";
+import { lazy } from 'react';
 
 /**
  * Move error content to a separate chunk and load it only when needed
@@ -10,4 +10,4 @@ import { lazy } from "react";
  * from next-intl as part of this bundle, you can export a lazy reference from your error file.
  * https://next-intl.dev/docs/environments/error-files#errorjs
  */
-export default lazy(() => import("@/components/layout/error"));
+export default lazy(() => import('@/components/layout/error'));

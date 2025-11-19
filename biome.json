@@ -9,6 +9,7 @@
     "ignoreUnknown": true,
     "includes": [
       "**",
+      "!mksaas_template-main-sorce/**",
       "!**/.next",
       "!**/.open-next",
       "!**/.wrangler",
@@ -57,7 +58,8 @@
         "noSparseArray": "error",
         "noArrayIndexKey": "warn",
         "noExplicitAny": "warn",
-        "noShadowRestrictedNames": "error"
+        "noShadowRestrictedNames": "error",
+        "noDuplicateCustomProperties": "off"
       },
       "complexity": {
         "noForEach": "off",
@@ -101,11 +103,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "tests/**",
-        "**/*.test.*",
-        "**/*.spec.*"
-      ],
+      "includes": ["tests/**", "**/*.test.*", "**/*.spec.*"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -119,9 +117,7 @@
       }
     },
     {
-      "includes": [
-        "package.json"
-      ],
+      "includes": ["package.json"],
       "json": {
         "formatter": {
           "expand": "auto"

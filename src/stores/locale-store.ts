@@ -1,9 +1,9 @@
-import type { Locale } from "next-intl";
-import { create } from "zustand";
+import type { Locale } from 'next-intl';
+import { create } from 'zustand';
 
 interface LocaleState {
-	currentLocale: Locale;
-	setCurrentLocale: (locale: Locale) => void;
+  currentLocale: Locale;
+  setCurrentLocale: (locale: Locale) => void;
 }
 
 /**
@@ -13,9 +13,9 @@ interface LocaleState {
  * https://zustand.docs.pmnd.rs/apis/create
  */
 export const useLocaleStore = create<LocaleState>((set) => ({
-	currentLocale: "", // don't change, it will affect the language detection switch judgment
-	setCurrentLocale: (locale) =>
-		set((state) => ({
-			currentLocale: locale,
-		})),
+  currentLocale: '', // don't change, it will affect the language detection switch judgment
+  setCurrentLocale: (locale) =>
+    set(() => ({
+      currentLocale: locale,
+    })),
 }));

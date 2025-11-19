@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import { useLocaleRouter } from "@/i18n/navigation";
-import { authClient } from "@/lib/auth-client";
-import { cn } from "@/lib/utils";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useLocaleRouter } from '@/i18n/navigation';
+import { authClient } from '@/lib/auth-client';
+import { cn } from '@/lib/utils';
 
 interface ResetPasswordCardProps {
-	className?: string;
+  className?: string;
 }
 
 /**
@@ -37,40 +37,40 @@ interface ResetPasswordCardProps {
  * This effectively adds a credential provider to their account, enabling email/password login.
  */
 export function ResetPasswordCard({ className }: ResetPasswordCardProps) {
-	const t = useTranslations("Dashboard.settings.security.resetPassword");
-	const router = useLocaleRouter();
-	const { data: session } = authClient.useSession();
+  const t = useTranslations('Dashboard.settings.security.resetPassword');
+  const router = useLocaleRouter();
+  const { data: session } = authClient.useSession();
 
-	const handleSetupPassword = () => {
-		// Pre-fill the email if available to make it easier for the user
-		if (session?.user?.email) {
-			router.push(
-				`/auth/forgot-password?email=${encodeURIComponent(session.user.email)}`,
-			);
-		} else {
-			router.push("/auth/forgot-password");
-		}
-	};
+  const handleSetupPassword = () => {
+    // Pre-fill the email if available to make it easier for the user
+    if (session?.user?.email) {
+      router.push(
+        `/auth/forgot-password?email=${encodeURIComponent(session.user.email)}`
+      );
+    } else {
+      router.push('/auth/forgot-password');
+    }
+  };
 
-	return (
-		<Card
-			className={cn(
-				"w-full overflow-hidden pt-6 pb-0 flex flex-col",
-				className,
-			)}
-		>
-			<CardHeader>
-				<CardTitle className="text-lg font-semibold">{t("title")}</CardTitle>
-				<CardDescription>{t("description")}</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4 flex-1">
-				<p className="text-sm text-muted-foreground">{t("info")}</p>
-			</CardContent>
-			<CardFooter className="mt-auto px-6 py-4 flex justify-end items-center bg-muted rounded-none">
-				<Button onClick={handleSetupPassword} className="cursor-pointer">
-					{t("button")}
-				</Button>
-			</CardFooter>
-		</Card>
-	);
+  return (
+    <Card
+      className={cn(
+        'w-full overflow-hidden pt-6 pb-0 flex flex-col',
+        className
+      )}
+    >
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 flex-1">
+        <p className="text-sm text-muted-foreground">{t('info')}</p>
+      </CardContent>
+      <CardFooter className="mt-auto px-6 py-4 flex justify-end items-center bg-muted rounded-none">
+        <Button onClick={handleSetupPassword} className="cursor-pointer">
+          {t('button')}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
 }

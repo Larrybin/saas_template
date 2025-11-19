@@ -1,4 +1,4 @@
-import type { Transition, Variants } from "motion/react";
+import type { Transition, Variants } from 'motion/react';
 
 /**
  * Type-safe helper to define motion transitions without losing literal types.

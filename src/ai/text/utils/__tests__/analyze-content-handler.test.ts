@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 import type {
   AnalyzeContentHandlerDeps,
@@ -110,7 +110,7 @@ describe('handleAnalyzeContentRequest', () => {
   });
 
   it('returns 503 when Firecrawl config is invalid', async () => {
-    const validateFirecrawlConfigMock = validateFirecrawlConfig as unknown as vi.Mock;
+    const validateFirecrawlConfigMock = validateFirecrawlConfig as unknown as Mock;
     validateFirecrawlConfigMock.mockReturnValueOnce(false);
 
     const result = await handleAnalyzeContentRequest(

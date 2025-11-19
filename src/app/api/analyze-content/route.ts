@@ -4,6 +4,13 @@ import {
   handleAnalyzeContentRequest,
   type AnalyzeContentHandlerInput,
 } from '@/ai/text/utils/analyze-content-handler';
+import {
+  ErrorSeverity,
+  ErrorType,
+  WebContentAnalyzerError,
+  logError,
+} from '@/ai/text/utils/error-handling';
+import type { AnalyzeContentResponse } from '@/ai/text/utils/web-content-analyzer';
 import { ensureApiUser } from '@/lib/server/api-auth';
 import { enforceRateLimit } from '@/lib/server/rate-limit';
 
@@ -27,7 +34,30 @@ export async function POST(req: NextRequest) {
 
   const requestId = Math.random().toString(36).substring(7);
   const startTime = performance.now();
-  const body = await req.json();
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    const validationError = new WebContentAnalyzerError(
+      ErrorType.VALIDATION,
+      'Invalid JSON body',
+      'Request body must be valid JSON.',
+      ErrorSeverity.MEDIUM,
+      false,
+      error instanceof Error ? error : undefined,
+    );
+
+    logError(validationError, { requestId });
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: validationError.userMessage,
+      } satisfies AnalyzeContentResponse,
+      { status: 400 },
+    );
+  }
 
   const handlerInput: AnalyzeContentHandlerInput = {
     body,
@@ -40,4 +70,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(result.response, { status: result.status });
 }
-

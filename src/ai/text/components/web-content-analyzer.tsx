@@ -1,111 +1,25 @@
 'use client';
 
-import { Component, useCallback, useReducer, useState } from 'react';
-import { toast } from 'sonner';
-import type {
-  AnalysisState,
-  AnalyzeContentResponse,
-  ModelProvider,
-  WebContentAnalyzerProps,
-} from '@/ai/text/utils/web-content-analyzer';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+
+import type { WebContentAnalyzerProps } from '@/ai/text/utils/web-content-analyzer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import {
-  classifyError,
-  ErrorSeverity,
-  ErrorType,
-  logError,
-  WebContentAnalyzerError,
-  withRetry,
-} from '../utils/error-handling';
+
+import { useWebContentAnalyzer } from './use-web-content-analyzer';
 import { AnalysisResults as AnalysisResultsComponent } from './analysis-results';
 import { LoadingStates } from './loading-states';
 import { UrlInputForm } from './url-input-form';
 
-// Action types for state reducer
-type AnalysisAction =
-  | { type: 'START_ANALYSIS'; payload: { url: string } }
-  | { type: 'SET_LOADING_STAGE'; payload: { stage: 'scraping' | 'analyzing' } }
-  | {
-      type: 'SET_RESULTS';
-      payload: { results: AnalysisState['results']; screenshot?: string };
-    }
-  | { type: 'SET_ERROR'; payload: { error: string } }
-  | { type: 'RESET' };
-
-// State reducer for better state management and performance
-function analysisReducer(
-  state: AnalysisState,
-  action: AnalysisAction
-): AnalysisState {
-  switch (action.type) {
-    case 'START_ANALYSIS':
-      return {
-        ...state,
-        url: action.payload.url,
-        isLoading: true,
-        loadingStage: 'scraping',
-        results: null,
-        error: null,
-        screenshot: undefined,
-      };
-    case 'SET_LOADING_STAGE':
-      return {
-        ...state,
-        loadingStage: action.payload.stage,
-      };
-    case 'SET_RESULTS':
-      return {
-        ...state,
-        isLoading: false,
-        loadingStage: null,
-        results: action.payload.results,
-        screenshot: action.payload.screenshot,
-        error: null,
-      };
-    case 'SET_ERROR':
-      return {
-        ...state,
-        isLoading: false,
-        loadingStage: null,
-        error: action.payload.error,
-      };
-    case 'RESET':
-      return {
-        url: '',
-        isLoading: false,
-        loadingStage: null,
-        results: null,
-        error: null,
-        screenshot: undefined,
-      };
-    default:
-      return state;
-  }
-}
-
-// Initial state
-const initialState: AnalysisState = {
-  url: '',
-  isLoading: false,
-  loadingStage: null,
-  results: null,
-  error: null,
-  screenshot: undefined,
-};
-
-// Error boundary component for handling component errors
 class ErrorBoundary extends Component<
   {
-    children: React.ReactNode;
+    children: ReactNode;
     onError: (error: Error) => void;
   },
   { hasError: boolean }
 > {
-  constructor(props: {
-    children: React.ReactNode;
-    onError: (error: Error) => void;
-  }) {
+  constructor(props: { children: ReactNode; onError: (error: Error) => void }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -114,7 +28,7 @@ class ErrorBoundary extends Component<
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error(
       'WebContentAnalyzer Error Boundary caught an error:',
       error,
@@ -190,181 +104,14 @@ class ErrorBoundary extends Component<
 }
 
 export function WebContentAnalyzer({ className }: WebContentAnalyzerProps) {
-  // Use reducer for better state management and performance
-  const [state, dispatch] = useReducer(analysisReducer, initialState);
-
-  // Model provider state
-  const [modelProvider, setModelProvider] =
-    useState<ModelProvider>('openrouter');
-
-  // Enhanced error state
-  const [analyzedError, setAnalyzedError] =
-    useState<WebContentAnalyzerError | null>(null);
-
-  // Handle analysis submission with enhanced error handling
-  const handleAnalyzeUrl = useCallback(
-    async (url: string, provider: ModelProvider) => {
-      // Reset state and start analysis
-      dispatch({ type: 'START_ANALYSIS', payload: { url } });
-      setAnalyzedError(null);
-
-      try {
-        // Use retry mechanism for the API call
-        const result = await withRetry(async () => {
-          const response = await fetch('/api/analyze-content', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ url, modelProvider: provider }),
-          });
-
-          const data: AnalyzeContentResponse = await response.json();
-
-          // Handle HTTP errors
-          if (!response.ok) {
-            // Create specific error based on status code
-            let errorType = ErrorType.UNKNOWN;
-            let severity = ErrorSeverity.MEDIUM;
-            let retryable = true;
-
-            switch (response.status) {
-              case 400:
-                errorType = ErrorType.VALIDATION;
-                retryable = false;
-                break;
-              case 408:
-                errorType = ErrorType.TIMEOUT;
-                break;
-              case 422:
-                errorType = ErrorType.SCRAPING;
-                break;
-              case 429:
-                errorType = ErrorType.RATE_LIMIT;
-                break;
-              case 503:
-                errorType = ErrorType.SERVICE_UNAVAILABLE;
-                severity = ErrorSeverity.HIGH;
-                break;
-              default:
-                errorType = ErrorType.NETWORK;
-            }
-
-            throw new WebContentAnalyzerError(
-              errorType,
-              data.error || `HTTP ${response.status}: ${response.statusText}`,
-              data.error || 'Failed to analyze website. Please try again.',
-              severity,
-              retryable
-            );
-          }
-
-          if (!data.success || !data.data) {
-            throw new WebContentAnalyzerError(
-              ErrorType.ANALYSIS,
-              data.error || 'Analysis failed',
-              data.error ||
-                'Failed to analyze website content. Please try again.',
-              ErrorSeverity.MEDIUM,
-              true
-            );
-          }
-
-          return data;
-        });
-
-        // Update state to analyzing stage
-        dispatch({
-          type: 'SET_LOADING_STAGE',
-          payload: { stage: 'analyzing' },
-        });
-
-        // Simulate a brief delay for analyzing stage to show progress
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Set results and complete analysis
-        dispatch({
-          type: 'SET_RESULTS',
-          payload: {
-            results: result.data!.analysis,
-            screenshot: result.data!.screenshot,
-          },
-        });
-
-        // Show success toast - defer to avoid flushSync during render
-        setTimeout(() => {
-          toast.success('Website analysis completed successfully!', {
-            description: `Analyzed ${new URL(url).hostname}`,
-          });
-        }, 0);
-      } catch (error) {
-        // Classify the error
-        const analyzedError =
-          error instanceof WebContentAnalyzerError
-            ? error
-            : classifyError(error);
-
-        // Log the error
-        logError(analyzedError, { url, component: 'WebContentAnalyzer' });
-
-        // Update state with error
-        dispatch({
-          type: 'SET_ERROR',
-          payload: { error: analyzedError.userMessage },
-        });
-
-        // Set the analyzed error for the ErrorDisplay component
-        setAnalyzedError(analyzedError);
-
-        // Show error toast with appropriate severity - defer to avoid flushSync during render
-        const toastOptions = {
-          description: analyzedError.userMessage,
-        };
-
-        setTimeout(() => {
-          switch (analyzedError.severity) {
-            case ErrorSeverity.CRITICAL:
-            case ErrorSeverity.HIGH:
-              toast.error('Analysis Failed', toastOptions);
-              break;
-            case ErrorSeverity.MEDIUM:
-              toast.warning('Analysis Failed', toastOptions);
-              break;
-            case ErrorSeverity.LOW:
-              toast.info('Analysis Issue', toastOptions);
-              break;
-          }
-        }, 0);
-      }
-    },
-    []
-  );
-
-  // Handle starting a new analysis
-  const handleNewAnalysis = useCallback(() => {
-    dispatch({ type: 'RESET' });
-    setAnalyzedError(null);
-  }, []);
-
-  // Handle component errors
-  const handleError = useCallback((error: Error) => {
-    console.error('WebContentAnalyzer component error:', error);
-
-    dispatch({
-      type: 'SET_ERROR',
-      payload: {
-        error:
-          'An unexpected error occurred. Please refresh the page and try again.',
-      },
-    });
-
-    // Defer toast to avoid flushSync during render
-    setTimeout(() => {
-      toast.error('Component error', {
-        description: 'An unexpected error occurred. Please refresh the page.',
-      });
-    }, 0);
-  }, []);
+  const {
+    state,
+    modelProvider,
+    setModelProvider,
+    handleAnalyzeUrl,
+    handleNewAnalysis,
+    handleError,
+  } = useWebContentAnalyzer();
 
   return (
     <ErrorBoundary onError={handleError}>

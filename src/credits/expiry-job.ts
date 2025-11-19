@@ -17,16 +17,22 @@ export type ExpirationJobResult = {
   processedCount: number;
   errorCount: number;
   totalExpiredCredits: number;
+  batchCount: number;
 };
 
 export async function runExpirationJob(options?: {
   batchSize?: number;
 }): Promise<ExpirationJobResult> {
-  baseLogger.info('>>> expiration job start');
-
   const db = await getDb();
   const now = new Date();
   const batchSize = options?.batchSize ?? 100;
+
+  baseLogger.info(
+    {
+      batchSize,
+    },
+    '>>> expiration job start'
+  );
 
   const usersWithExpirableCredits = await db
     .selectDistinct({
@@ -53,6 +59,7 @@ export async function runExpirationJob(options?: {
   let processedCount = 0;
   let errorCount = 0;
   let totalExpiredCredits = 0;
+  let batchCount = 0;
 
   baseLogger.info(
     {
@@ -79,6 +86,7 @@ export async function runExpirationJob(options?: {
         errorCount += batchResult.errorCount;
         totalExpiredCredits += batchResult.totalExpiredCredits;
       });
+      batchCount += 1;
     } catch (error) {
       const batchNumber = i / batchSize + 1;
       baseLogger.error(
@@ -105,10 +113,10 @@ export async function runExpirationJob(options?: {
       processedCount,
       errorCount,
       totalExpiredCredits,
+      batchCount,
     },
     '<<< expiration job end'
   );
 
-  return { usersCount, processedCount, errorCount, totalExpiredCredits };
+  return { usersCount, processedCount, errorCount, totalExpiredCredits, batchCount };
 }
-

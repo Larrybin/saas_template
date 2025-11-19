@@ -86,6 +86,7 @@ describe('runExpirationJob', () => {
       processedCount: 3,
       errorCount: 0,
       totalExpiredCredits: 15,
+      batchCount: 2,
     });
   });
 });

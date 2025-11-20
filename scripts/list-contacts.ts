@@ -3,17 +3,21 @@ import { Resend } from 'resend';
 
 dotenv.config();
 
-const resendApiKey = process.env.RESEND_API_KEY;
+const resendApiKey: string = (() => {
+  const value = process.env.RESEND_API_KEY;
+  if (!value) {
+    throw new Error('RESEND_API_KEY is not set');
+  }
+  return value;
+})();
 
-if (!resendApiKey) {
-  throw new Error('RESEND_API_KEY is not set');
-}
-
-const audienceId = process.env.RESEND_AUDIENCE_ID;
-
-if (!audienceId) {
-  throw new Error('RESEND_AUDIENCE_ID is not set');
-}
+const audienceId: string = (() => {
+  const value = process.env.RESEND_AUDIENCE_ID;
+  if (!value) {
+    throw new Error('RESEND_AUDIENCE_ID is not set');
+  }
+  return value;
+})();
 
 const resend = new Resend(resendApiKey);
 

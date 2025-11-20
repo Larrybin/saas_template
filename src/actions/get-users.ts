@@ -61,7 +61,7 @@ export const getUsersAction = adminActionClient
       const sortDirection = sortConfig?.desc ? desc : asc;
 
       const db = await getDb();
-      let [items, [{ count }]] = await Promise.all([
+      let [items, countRows] = await Promise.all([
         db
           .select()
           .from(user)
@@ -69,8 +69,13 @@ export const getUsersAction = adminActionClient
           .orderBy(sortDirection(sortField))
           .limit(pageSize)
           .offset(offset),
-        db.select({ count: sql`count(*)` }).from(user).where(where),
+        db
+          .select({ count: sql`count(*)` })
+          .from(user)
+          .where(where)
+          .limit(1),
       ]);
+      const totalCount = countRows[0]?.count ?? 0;
 
       // hide user data in demo website
       const isDemo = isDemoWebsite();
@@ -87,7 +92,7 @@ export const getUsersAction = adminActionClient
         success: true,
         data: {
           items,
-          total: Number(count),
+          total: Number(totalCount),
         },
       };
     } catch (error) {

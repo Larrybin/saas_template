@@ -56,10 +56,6 @@ export class StripePaymentService implements PaymentProvider {
   private readonly stripeEventRepository: StripeEventRepository;
 
   constructor(deps: StripePaymentServiceDeps = {}) {
-    const apiKey = deps.stripeClient ? null : serverEnv.stripeSecretKey;
-    if (!deps.stripeClient && !apiKey) {
-      throw new Error('STRIPE_SECRET_KEY environment variable is not set');
-    }
     const webhookSecret = deps.webhookSecret ?? serverEnv.stripeWebhookSecret;
     if (!webhookSecret) {
       throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set.');
@@ -67,6 +63,10 @@ export class StripePaymentService implements PaymentProvider {
     if (deps.stripeClient) {
       this.stripe = deps.stripeClient;
     } else {
+      const apiKey = serverEnv.stripeSecretKey;
+      if (!apiKey) {
+        throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+      }
       this.stripe = new Stripe(apiKey);
     }
     this.webhookSecret = webhookSecret;

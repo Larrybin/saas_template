@@ -1,8 +1,6 @@
 import { randomUUID } from 'crypto';
 import { addDays } from 'date-fns';
-import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { creditTransaction } from '@/db/schema';
 import { getLogger } from '@/lib/server/logger';
 import type {
   CreditTransactionInsert,
@@ -11,6 +9,7 @@ import type {
 import type { DbExecutor, Transaction } from '../data-access/types';
 import type { AddCreditsPayload } from '../services/credits-gateway';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
+import { InsufficientCreditsError, InvalidCreditPayloadError } from './errors';
 
 export type ConsumeCreditsPayload = {
   userId: string;
@@ -37,17 +36,17 @@ export class CreditLedgerDomainService {
   private validateAddCreditsPayload(payload: AddCreditsPayload) {
     const { userId, amount, type, description, expireDays } = payload;
     if (!userId || !type || !description) {
-      throw new Error('Invalid params');
+      throw new InvalidCreditPayloadError('Invalid params');
     }
     if (!Number.isFinite(amount) || amount <= 0) {
-      throw new Error('Invalid amount');
+      throw new InvalidCreditPayloadError('Invalid amount');
     }
     if (
       expireDays !== undefined &&
       expireDays !== null &&
       (!Number.isFinite(expireDays) || expireDays < 0)
     ) {
-      throw new Error('Invalid expire days');
+      throw new InvalidCreditPayloadError('Invalid expire days');
     }
 
     const isPeriodicType =
@@ -60,7 +59,7 @@ export class CreditLedgerDomainService {
         !Number.isFinite(payload.periodKey) ||
         (payload.periodKey ?? 0) <= 0
       ) {
-        throw new Error(
+        throw new InvalidCreditPayloadError(
           'periodKey is required for periodic credit transactions'
         );
       }
@@ -69,7 +68,7 @@ export class CreditLedgerDomainService {
       payload.periodKey !== null &&
       payload.periodKey > 0
     ) {
-      throw new Error(
+      throw new InvalidCreditPayloadError(
         'periodKey should not be set for non-periodic credit transactions'
       );
     }
@@ -165,7 +164,7 @@ export class CreditLedgerDomainService {
     );
     const currentBalance = balanceRecord?.currentCredits ?? 0;
     if (currentBalance < payload.amount) {
-      throw new Error('Insufficient credits');
+      throw new InsufficientCreditsError();
     }
 
     const transactions = await this.repository.findFifoEligibleTransactions(
@@ -187,7 +186,7 @@ export class CreditLedgerDomainService {
       remainingToDeduct -= deductFromThis;
     }
     if (remainingToDeduct > 0) {
-      throw new Error('Insufficient credits');
+      throw new InsufficientCreditsError();
     }
 
     const newBalance = currentBalance - payload.amount;
@@ -208,10 +207,10 @@ export class CreditLedgerDomainService {
 
   async consumeCredits(payload: ConsumeCreditsPayload, db?: DbExecutor) {
     if (!payload.userId || !payload.description) {
-      throw new Error('Invalid params');
+      throw new InvalidCreditPayloadError('Invalid params');
     }
     if (!Number.isFinite(payload.amount) || payload.amount <= 0) {
-      throw new Error('Invalid amount');
+      throw new InvalidCreditPayloadError('Invalid amount');
     }
     const executor = await this.resolveExecutor(db);
     if (this.isTransaction(executor)) {
@@ -328,22 +327,17 @@ export class CreditLedgerDomainService {
   ): Promise<boolean> {
     const executor = await this.resolveExecutor(db);
     if (!Number.isFinite(periodKey) || periodKey <= 0) {
-      throw new Error(
+      throw new InvalidCreditPayloadError(
         'periodKey is required when checking canAddCreditsByType'
       );
     }
-    const existing = await executor
-      .select()
-      .from(creditTransaction)
-      .where(
-        and(
-          eq(creditTransaction.userId, userId),
-          eq(creditTransaction.type, creditType),
-          eq(creditTransaction.periodKey, periodKey)
-        )
-      )
-      .limit(1);
-    return existing.length === 0;
+    const existing = await this.repository.findTransactionByTypeAndPeriodKey(
+      userId,
+      creditType,
+      periodKey,
+      executor
+    );
+    return existing === undefined;
   }
 
   async hasTransactionOfType(
@@ -352,16 +346,11 @@ export class CreditLedgerDomainService {
     db?: DbExecutor
   ): Promise<boolean> {
     const executor = await this.resolveExecutor(db);
-    const existing = await executor
-      .select()
-      .from(creditTransaction)
-      .where(
-        and(
-          eq(creditTransaction.userId, userId),
-          eq(creditTransaction.type, creditType)
-        )
-      )
-      .limit(1);
-    return existing.length > 0;
+    const existing = await this.repository.findFirstTransactionOfType(
+      userId,
+      creditType,
+      executor
+    );
+    return existing !== undefined;
   }
 }

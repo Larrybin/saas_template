@@ -1,8 +1,12 @@
-export class PaymentSecurityError extends Error {
-  readonly code = 'PAYMENT_SECURITY_VIOLATION';
+import { DomainError } from '@/lib/domain-errors';
 
+export class PaymentSecurityError extends DomainError {
   constructor(message: string) {
-    super(message);
+    super({
+      code: 'PAYMENT_SECURITY_VIOLATION',
+      message,
+      retryable: false,
+    });
     this.name = 'PaymentSecurityError';
   }
 }

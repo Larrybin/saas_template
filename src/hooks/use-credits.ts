@@ -4,6 +4,10 @@ import { consumeCreditsAction } from '@/actions/consume-credits';
 import { getCreditBalanceAction } from '@/actions/get-credit-balance';
 import { getCreditStatsAction } from '@/actions/get-credit-stats';
 import { getCreditTransactionsAction } from '@/actions/get-credit-transactions';
+import {
+  type DomainErrorLike,
+  getDomainErrorMessage,
+} from '@/lib/domain-error-utils';
 
 // Query keys
 export const creditsKeys = {
@@ -69,10 +73,22 @@ export function useConsumeCredits() {
         amount,
         description,
       });
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to consume credits');
+      const data = result?.data as
+        | ({ success?: boolean; error?: string } & DomainErrorLike)
+        | undefined;
+      if (!data?.success) {
+        const resolvedMessage =
+          data?.error ?? getDomainErrorMessage(data?.code);
+        const error = new Error(resolvedMessage) as Error & DomainErrorLike;
+        if (typeof data?.code === 'string') {
+          error.code = data.code;
+        }
+        if (typeof data?.retryable === 'boolean') {
+          error.retryable = data.retryable;
+        }
+        throw error;
       }
-      return result.data;
+      return data;
     },
     onSuccess: () => {
       // Invalidate credit balance and stats after consuming credits

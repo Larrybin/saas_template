@@ -26,32 +26,30 @@ export async function handleStripeWebhookEvent(
   event: Stripe.Event,
   deps: WebhookDeps
 ): Promise<void> {
-  if (event.type.startsWith('customer.subscription.')) {
-    await handleSubscriptionEvent(event, deps);
-    return;
-  }
-  if (event.type === 'checkout.session.completed') {
-    await handleCheckoutEvent(event, deps);
-  }
-}
-
-async function handleSubscriptionEvent(event: Stripe.Event, deps: WebhookDeps) {
-  const subscription = event.data.object as Stripe.Subscription;
   switch (event.type) {
     case 'customer.subscription.created':
-      await onCreateSubscription(subscription, deps);
+      await onCreateSubscription(
+        event.data.object as Stripe.Subscription,
+        deps
+      );
       break;
     case 'customer.subscription.updated':
-      await onUpdateSubscription(subscription, deps);
+      await onUpdateSubscription(
+        event.data.object as Stripe.Subscription,
+        deps
+      );
       break;
     case 'customer.subscription.deleted':
-      await onDeleteSubscription(subscription, deps);
+      await onDeleteSubscription(
+        event.data.object as Stripe.Subscription,
+        deps
+      );
+      break;
+    case 'checkout.session.completed':
+      await handleCheckoutEvent(event, deps);
       break;
     default:
-      deps.logger.debug(
-        { eventType: event.type },
-        'Ignored subscription event'
-      );
+      deps.logger.debug({ eventType: event.type }, 'Ignored Stripe event');
   }
 }
 

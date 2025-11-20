@@ -1,17 +1,23 @@
-export class CreditsTransaction {
-  constructor(private readonly executor: unknown) {}
+import type { DbExecutor } from '../data-access/types';
 
-  unwrap<TExecutor>(): TExecutor {
-    return this.executor as TExecutor;
+/**
+ * Lightweight transaction wrapper used by CreditsGateway callers
+ * to pass an existing database executor without leaking its concrete type.
+ */
+export class CreditsTransaction {
+  constructor(private readonly executor: DbExecutor) {}
+
+  unwrap(): DbExecutor {
+    return this.executor;
   }
 }
 
-export function createCreditsTransaction(executor: unknown) {
+export function createCreditsTransaction(executor: DbExecutor) {
   return new CreditsTransaction(executor);
 }
 
-export function resolveExecutor<TExecutor>(
+export function resolveExecutor(
   tx?: CreditsTransaction
-): TExecutor | undefined {
-  return tx ? tx.unwrap<TExecutor>() : undefined;
+): DbExecutor | undefined {
+  return tx ? tx.unwrap() : undefined;
 }

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { createCreditCheckoutSession } from '@/actions/create-credit-checkout-session';
 import { Button } from '@/components/ui/button';
 import { websiteConfig } from '@/config/website';
+import { getDomainErrorMessage } from '@/lib/domain-error-utils';
 
 interface CreditCheckoutButtonProps {
   userId: string;
@@ -46,7 +47,8 @@ export function CreditCheckoutButton({
   children,
   disabled = false,
 }: CreditCheckoutButtonProps) {
-  const t = useTranslations('Dashboard.settings.credits.packages');
+  const t = useTranslations();
+  const translate = (key: string) => t(key as Parameters<typeof t>[0]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
@@ -109,9 +111,11 @@ export function CreditCheckoutButton({
           Object.keys(mergedMetadata).length > 0 ? mergedMetadata : undefined,
       });
 
+      const payload = result?.data;
+
       // Redirect to checkout page
-      if (result?.data?.success) {
-        const rawRedirectUrl = result?.data?.data?.url;
+      if (payload?.success) {
+        const rawRedirectUrl = payload?.data?.url;
         if (typeof rawRedirectUrl === 'string') {
           redirectTo(rawRedirectUrl as string);
         } else {
@@ -119,15 +123,32 @@ export function CreditCheckoutButton({
             'Create credit checkout session error, missing url:',
             result
           );
-          toast.error(t('checkoutFailed'));
+          toast.error(
+            translate('Dashboard.settings.credits.packages.checkoutFailed')
+          );
         }
       } else {
         console.error('Create credit checkout session error, result:', result);
-        toast.error(t('checkoutFailed'));
+        const code =
+          payload && 'code' in payload
+            ? (payload as { code?: string }).code
+            : undefined;
+        const fallbackKey =
+          code === 'PAYMENT_SECURITY_VIOLATION'
+            ? 'Dashboard.settings.credits.packages.purchaseFailed'
+            : 'Dashboard.settings.credits.packages.checkoutFailed';
+        const message = getDomainErrorMessage(
+          code,
+          translate,
+          translate(fallbackKey)
+        );
+        toast.error(message);
       }
     } catch (error) {
       console.error('Create credit checkout session error:', error);
-      toast.error(t('checkoutFailed'));
+      toast.error(
+        translate('Dashboard.settings.credits.packages.checkoutFailed')
+      );
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +165,7 @@ export function CreditCheckoutButton({
       {isLoading ? (
         <>
           <Loader2Icon className="mr-2 size-4 animate-spin" />
-          {t('loading')}
+          {translate('Dashboard.settings.credits.packages.loading')}
         </>
       ) : (
         children

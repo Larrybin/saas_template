@@ -605,7 +605,8 @@
           "creditsAdded": "积分已添加到您的账户",
           "viewTransactions": "查看积分记录",
           "retry": "重试",
-          "expiringCredits": "{credits} 积分将在 {days} 天内过期"
+          "expiringCredits": "{credits} 积分将在 {days} 天内过期",
+          "insufficientCredits": "积分不足，请购买更多积分以继续。"
         },
         "packages": {
           "title": "积分套餐",

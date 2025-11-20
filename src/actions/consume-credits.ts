@@ -20,18 +20,10 @@ export const consumeCreditsAction = userActionClient
     const { amount, description } = parsedInput;
     const currentUser = (ctx as { user: User }).user;
 
-    try {
-      await consumeCredits({
-        userId: currentUser.id,
-        amount,
-        description: description || `Consume credits: ${amount}`,
-      });
-      return { success: true };
-    } catch (error) {
-      console.error('consume credits error:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
-    }
+    await consumeCredits({
+      userId: currentUser.id,
+      amount,
+      description: description || `Consume credits: ${amount}`,
+    });
+    return { success: true };
   });

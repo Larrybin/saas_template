@@ -59,17 +59,17 @@ export const ForgotPasswordForm = ({ className }: { className?: string }) => {
         redirectTo: `${Routes.ResetPassword}`,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: (_ctx) => {
           // console.log('forgotPassword, request:', ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
-        onResponse: (ctx) => {
+        onResponse: (_ctx) => {
           // console.log('forgotPassword, response:', ctx.response);
           setIsPending(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: (_ctx) => {
           // console.log('forgotPassword, success:', ctx.data);
           setSuccess(t('checkEmail'));
         },

@@ -48,6 +48,10 @@ export function NewsletterFormCard({ className }: NewsletterFormCardProps) {
     return null;
   }
 
+  return <NewsletterFormCardContent className={className} />;
+}
+
+function NewsletterFormCardContent({ className }: NewsletterFormCardProps) {
   const t = useTranslations('Dashboard.settings.notification');
   const { data: session } = authClient.useSession();
   const currentUser = session?.user;

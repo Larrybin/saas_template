@@ -13,6 +13,10 @@ export function CreditsBalanceButton() {
     return null;
   }
 
+  return <CreditsBalanceButtonContent />;
+}
+
+function CreditsBalanceButtonContent() {
   const router = useLocaleRouter();
 
   // Use TanStack Query hook for credit balance

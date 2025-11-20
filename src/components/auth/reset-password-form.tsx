@@ -72,17 +72,17 @@ export const ResetPasswordForm = () => {
         token,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: (_ctx) => {
           // console.log("resetPassword, request:", ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
-        onResponse: (ctx) => {
+        onResponse: (_ctx) => {
           // console.log("resetPassword, response:", ctx.response);
           setIsPending(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: (_ctx) => {
           // console.log("resetPassword, success:", ctx.data);
           // setSuccess("Password reset successfully");
           router.push(`${Routes.Login}`);

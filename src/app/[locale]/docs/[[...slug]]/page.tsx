@@ -8,7 +8,7 @@ import {
 import { notFound } from 'next/navigation';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ComponentType, ReactNode } from 'react';
 import * as Preview from '@/components/docs';
 import { getMDXComponents } from '@/components/docs/mdx-components';
 import {
@@ -56,9 +56,13 @@ export async function generateMetadata({ params }: DocPageProps) {
   });
 }
 
+const previewComponents: Record<string, ComponentType> = {
+  ...Preview,
+};
+
 function PreviewRenderer({ preview }: { preview: string }): ReactNode {
   if (preview && preview in Preview) {
-    const Comp = Preview[preview as keyof typeof Preview];
+    const Comp = previewComponents[preview];
     return <Comp />;
   }
 

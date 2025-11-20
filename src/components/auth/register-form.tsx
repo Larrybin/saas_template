@@ -135,17 +135,17 @@ export const RegisterForm = ({
         callbackURL: callbackUrl,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: (_ctx) => {
           // console.log('register, request:', ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
-        onResponse: (ctx) => {
+        onResponse: (_ctx) => {
           // console.log('register, response:', ctx.response);
           setIsPending(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: (_ctx) => {
           // sign up success, user information stored in ctx.data
           // console.log("register, success:", ctx.data);
           setSuccess(t('checkEmail'));

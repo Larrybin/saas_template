@@ -53,7 +53,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": false,
+      "recommended": true,
       "suspicious": {
         "noSparseArray": "warn",
         "noArrayIndexKey": "off",

@@ -292,16 +292,27 @@ export function CustomTextEffect({
           {per !== 'line' && typeof children === 'string' ? (
             <span className="sr-only">{children}</span>
           ) : null}
-          {segments.map((segment, index) => (
-            <AnimationComponent
-              key={index}
-              segment={segment}
-              variants={computedVariants.item}
-              per={per}
-              segmentWrapperClassName={segmentWrapperClassName}
-              children={typeof segment !== 'string' ? segment : undefined}
-            />
-          ))}
+          {segments.map((segment, index) =>
+            typeof segment === 'string' ? (
+              <AnimationComponent
+                key={index}
+                segment={segment}
+                variants={computedVariants.item}
+                per={per}
+                segmentWrapperClassName={segmentWrapperClassName}
+              />
+            ) : (
+              <AnimationComponent
+                key={index}
+                segment={segment}
+                variants={computedVariants.item}
+                per={per}
+                segmentWrapperClassName={segmentWrapperClassName}
+              >
+                {segment}
+              </AnimationComponent>
+            )
+          )}
         </MotionTag>
       )}
     </AnimatePresence>

@@ -84,16 +84,16 @@ export function UpdatePasswordCard({ className }: UpdatePasswordCardProps) {
         revokeOtherSessions: true,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: (_ctx) => {
           // console.log('update password, request:', ctx.url);
           setIsSaving(true);
           setError('');
         },
-        onResponse: (ctx) => {
+        onResponse: (_ctx) => {
           // console.log('update password, response:', ctx.response);
           setIsSaving(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: (_ctx) => {
           // update password success, user information stored in ctx.data
           // console.log("update password, success:", ctx.data);
           toast.success(t('success'));

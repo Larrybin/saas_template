@@ -862,7 +862,7 @@ export class StripeProvider implements PaymentProvider {
       const amount = session.amount_total ? session.amount_total / 100 : 0;
       await addCredits({
         userId,
-        amount: Number.parseInt(credits),
+        amount: Number.parseInt(credits, 10),
         type: CREDIT_TRANSACTION_TYPE.PURCHASE_PACKAGE,
         description: `+${credits} credits for package ${packageId} ($${amount.toLocaleString()})`,
         paymentId: session.id,

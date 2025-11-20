@@ -36,6 +36,10 @@ export function UpdateAvatarCard({ className }: UpdateAvatarCardProps) {
     return null;
   }
 
+  return <UpdateAvatarCardContent className={className} />;
+}
+
+function UpdateAvatarCardContent({ className }: UpdateAvatarCardProps) {
   const t = useTranslations('Dashboard.settings.profile');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | undefined>('');

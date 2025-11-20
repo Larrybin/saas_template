@@ -7,11 +7,7 @@ import { getDb } from '@/db/index';
 import { serverEnv } from '@/env/server';
 import { defaultMessages } from '@/i18n/messages';
 import { LOCALE_COOKIE_NAME, routing } from '@/i18n/routing';
-import { getLogger } from '@/lib/logger';
-import {
-  createDefaultUserLifecycleHooks,
-  createUserLifecycleManager,
-} from '@/lib/user-lifecycle';
+import { handleAuthUserCreated } from '@/lib/auth-domain';
 import { sendEmail } from '@/mail';
 import { getBaseUrl, getUrlWithLocaleInCallbackUrl } from './urls/urls';
 
@@ -37,11 +33,6 @@ const googleProvider =
         clientSecret: serverEnv.oauth.google.clientSecret,
       }
     : undefined;
-
-const userLifecycleManager = createUserLifecycleManager({
-  hooks: createDefaultUserLifecycleHooks(),
-  logger: getLogger({ span: 'user-lifecycle' }),
-});
 
 export const auth = betterAuth({
   baseURL: getBaseUrl(),
@@ -87,7 +78,7 @@ export const auth = betterAuth({
     // https://www.better-auth.com/docs/concepts/email#auto-signin-after-verification
     autoSignInAfterVerification: true,
     // https://www.better-auth.com/docs/authentication/email-password#require-email-verification
-    sendVerificationEmail: async ({ user, url, token }, request) => {
+    sendVerificationEmail: async ({ user, url }, request) => {
       const locale = getLocaleFromRequest(request);
       const localizedUrl = getUrlWithLocaleInCallbackUrl(url, locale);
 
@@ -131,9 +122,10 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          await userLifecycleManager.emit({
-            type: 'user.created',
-            user,
+          await handleAuthUserCreated({
+            id: user.id,
+            email: user.email,
+            name: user.name,
           });
         },
       },
@@ -153,7 +145,7 @@ export const auth = betterAuth({
   onAPIError: {
     // https://www.better-auth.com/docs/reference/options#onapierror
     errorURL: '/auth/error',
-    onError: (error, ctx) => {
+    onError: (error, _ctx) => {
       console.error('auth error:', error);
     },
   },

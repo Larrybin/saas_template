@@ -13,6 +13,10 @@ export function CreditsBalanceMenu() {
     return null;
   }
 
+  return <CreditsBalanceMenuContent />;
+}
+
+function CreditsBalanceMenuContent() {
   const t = useTranslations('Marketing.avatar');
   const router = useLocaleRouter();
 
@@ -24,7 +28,8 @@ export function CreditsBalanceMenu() {
   };
 
   return (
-    <div
+    <button
+      type="button"
       className="flex items-center justify-between cursor-pointer w-full"
       onClick={handleClick}
     >
@@ -41,6 +46,6 @@ export function CreditsBalanceMenu() {
           )}
         </p>
       </div>
-    </div>
+    </button>
   );
 }

@@ -30,6 +30,10 @@ export default function LocaleSwitcher() {
     return null;
   }
 
+  return <LocaleSwitcherContent />;
+}
+
+function LocaleSwitcherContent() {
   const router = useLocaleRouter();
   const pathname = useLocalePathname();
   const params = useParams();

@@ -26,22 +26,12 @@ type Props = Omit<ComponentProps<typeof Turnstile>, 'siteKey'> & {
 /**
  * Captcha component for Cloudflare Turnstile
  */
-export const Captcha = forwardRef<CaptchaRef, Props>(
-  ({ validationError, ...props }, ref) => {
-    const turnstileEnabled = websiteConfig.features.enableTurnstileCaptcha;
-    const siteKey = clientEnv.turnstileSiteKey;
+type CaptchaInnerProps = Props & {
+  siteKey: string;
+};
 
-    // If turnstile is disabled in config, don't render anything
-    if (!turnstileEnabled) {
-      return null;
-    }
-
-    // If turnstile is enabled but site key is missing, show error message
-    if (!siteKey) {
-      console.error('Captcha: NEXT_PUBLIC_TURNSTILE_SITE_KEY is not set');
-      return null;
-    }
-
+const CaptchaInner = forwardRef<CaptchaRef, CaptchaInnerProps>(
+  ({ validationError, siteKey, ...props }, ref) => {
     const theme = useTheme();
     const locale = useLocale();
 
@@ -64,6 +54,35 @@ export const Captcha = forwardRef<CaptchaRef, Props>(
           </FormMessage>
         )}
       </>
+    );
+  }
+);
+
+CaptchaInner.displayName = 'CaptchaInner';
+
+export const Captcha = forwardRef<CaptchaRef, Props>(
+  ({ validationError, ...props }, ref) => {
+    const turnstileEnabled = websiteConfig.features.enableTurnstileCaptcha;
+    const siteKey = clientEnv.turnstileSiteKey;
+
+    // If turnstile is disabled in config, don't render anything
+    if (!turnstileEnabled) {
+      return null;
+    }
+
+    // If turnstile is enabled but site key is missing, show error message
+    if (!siteKey) {
+      console.error('Captcha: NEXT_PUBLIC_TURNSTILE_SITE_KEY is not set');
+      return null;
+    }
+
+    return (
+      <CaptchaInner
+        {...props}
+        validationError={validationError}
+        siteKey={siteKey}
+        ref={ref}
+      />
     );
   }
 );

@@ -32,6 +32,10 @@ export default function LocaleSelector() {
     return null;
   }
 
+  return <LocaleSelectorContent />;
+}
+
+function LocaleSelectorContent() {
   const router = useLocaleRouter();
   const pathname = useLocalePathname();
   const params = useParams();

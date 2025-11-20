@@ -63,8 +63,18 @@ export const LoginWrapper = ({
   }
 
   return (
-    <span onClick={handleLogin} className="cursor-pointer">
+    <button
+      type="button"
+      onClick={handleLogin}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleLogin();
+        }
+      }}
+      className="cursor-pointer"
+    >
       {children}
-    </span>
+    </button>
   );
 };

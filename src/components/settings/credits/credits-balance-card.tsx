@@ -32,6 +32,10 @@ export default function CreditsBalanceCard() {
     return null;
   }
 
+  return <CreditsBalanceCardContent />;
+}
+
+function CreditsBalanceCardContent() {
   const t = useTranslations('Dashboard.settings.credits.balance');
   const searchParams = useSearchParams();
   const localeRouter = useLocaleRouter();

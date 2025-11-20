@@ -15,6 +15,27 @@ const DEFAULT_THEME = websiteConfig.ui.theme?.defaultTheme ?? 'default';
 function setThemeCookie(theme: string) {
   if (typeof window === 'undefined') return;
 
+  const cookieStore = (
+    window as Window & {
+      cookieStore?: {
+        set: (options: unknown) => Promise<void>;
+      };
+    }
+  ).cookieStore;
+
+  if (cookieStore && typeof cookieStore.set === 'function') {
+    void cookieStore.set({
+      name: COOKIE_NAME,
+      value: theme,
+      path: '/',
+      maxAge: 31536000,
+      sameSite: 'lax',
+      secure: window.location.protocol === 'https:',
+    });
+    return;
+  }
+
+  // biome-ignore lint/suspicious/noDocumentCookie: Fallback for browsers without Cookie Store API
   document.cookie = `${COOKIE_NAME}=${theme}; path=/; max-age=31536000; SameSite=Lax; ${
     window.location.protocol === 'https:' ? 'Secure;' : ''
   }`;

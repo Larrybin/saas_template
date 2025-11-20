@@ -22,6 +22,10 @@ export function UpgradeCard() {
     return null;
   }
 
+  return <UpgradeCardContent />;
+}
+
+function UpgradeCardContent() {
   const t = useTranslations('Dashboard.upgrade');
   const [mounted, setMounted] = useState(false);
   const { data: session } = authClient.useSession();

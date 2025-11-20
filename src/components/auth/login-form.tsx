@@ -134,17 +134,17 @@ export const LoginForm = ({
         callbackURL: callbackUrl,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: (_ctx) => {
           // console.log("login, request:", ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
-        onResponse: (ctx) => {
+        onResponse: (_ctx) => {
           // console.log("login, response:", ctx.response);
           setIsPending(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: (_ctx) => {
           // console.log("login, success:", ctx.data);
           // setSuccess("Login successful");
           // router.push(callbackUrl || "/dashboard");

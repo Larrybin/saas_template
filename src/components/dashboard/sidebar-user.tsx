@@ -41,13 +41,12 @@ import { UserAvatar } from '../layout/user-avatar';
 
 interface SidebarUserProps {
   user: User;
-  className?: string;
 }
 
 /**
  * User navigation for the dashboard sidebar
  */
-export function SidebarUser({ user, className }: SidebarUserProps) {
+export function SidebarUser({ user }: SidebarUserProps) {
   const { setTheme } = useTheme();
   const router = useLocaleRouter();
   const { isMobile } = useSidebar();

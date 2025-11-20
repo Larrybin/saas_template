@@ -169,8 +169,9 @@ export function CreditDetailViewer({ transaction }: CreditDetailViewerProps) {
                   <span className="text-muted-foreground text-xs">
                     {t('columns.paymentId')}:
                   </span>
-                  <span
-                    className="font-mono text-sm cursor-pointer hover:bg-accent px-2 py-1 rounded border break-all"
+                  <button
+                    type="button"
+                    className="font-mono text-sm cursor-pointer hover:bg-accent px-2 py-1 rounded border break-all text-left"
                     onClick={() => {
                       if (!transaction.paymentId) return;
                       navigator.clipboard.writeText(transaction.paymentId);
@@ -178,7 +179,7 @@ export function CreditDetailViewer({ transaction }: CreditDetailViewerProps) {
                     }}
                   >
                     {transaction.paymentId}
-                  </span>
+                  </button>
                 </div>
               )}
 

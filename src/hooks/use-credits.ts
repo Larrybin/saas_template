@@ -4,10 +4,93 @@ import { consumeCreditsAction } from '@/actions/consume-credits';
 import { getCreditBalanceAction } from '@/actions/get-credit-balance';
 import { getCreditStatsAction } from '@/actions/get-credit-stats';
 import { getCreditTransactionsAction } from '@/actions/get-credit-transactions';
+import type { CreditTransaction } from '@/components/settings/credits/credit-transactions-table';
+import {
+  handleAuthFromEnvelope,
+  useAuthErrorHandler,
+} from '@/hooks/use-auth-error-handler';
 import {
   type DomainErrorLike,
   getDomainErrorMessage,
 } from '@/lib/domain-error-utils';
+
+type CreditBalanceSuccess = { success: true; credits: number };
+type CreditBalanceError = { success: false; error?: string } & DomainErrorLike;
+type CreditBalanceData = CreditBalanceSuccess | CreditBalanceError;
+
+type CreditStatsSuccess = {
+  success: true;
+  data: {
+    expiringCredits: {
+      amount: number;
+    };
+  };
+};
+type CreditStatsError = { success: false; error?: string } & DomainErrorLike;
+type CreditStatsData = CreditStatsSuccess | CreditStatsError;
+
+type CreditTransactionsSuccess = {
+  success: true;
+  data: {
+    items: CreditTransaction[];
+    total: number;
+  };
+};
+type CreditTransactionsError = {
+  success: false;
+  error?: string;
+} & DomainErrorLike;
+type CreditTransactionsData = CreditTransactionsSuccess | CreditTransactionsError;
+
+type AuthErrorHandler = ReturnType<typeof useAuthErrorHandler>;
+
+function unwrapCreditBalance(
+  data: CreditBalanceData | undefined,
+  handleAuthError: AuthErrorHandler
+): CreditBalanceSuccess {
+  if (!data) {
+    throw new Error('Failed to fetch credit balance');
+  }
+
+  if (!data.success) {
+    handleAuthFromEnvelope(handleAuthError, data);
+    throw new Error(data.error || 'Failed to fetch credit balance');
+  }
+
+  return data;
+}
+
+function unwrapCreditStats(
+  data: CreditStatsData | undefined,
+  handleAuthError: AuthErrorHandler
+): CreditStatsSuccess {
+  if (!data) {
+    throw new Error('Failed to fetch credit stats');
+  }
+
+  if (!data.success) {
+    handleAuthFromEnvelope(handleAuthError, data);
+    throw new Error(data.error || 'Failed to fetch credit stats');
+  }
+
+  return data;
+}
+
+function unwrapCreditTransactions(
+  data: CreditTransactionsData | undefined,
+  handleAuthError: AuthErrorHandler
+): CreditTransactionsSuccess {
+  if (!data) {
+    throw new Error('Failed to fetch credit transactions');
+  }
+
+  if (!data.success) {
+    handleAuthFromEnvelope(handleAuthError, data);
+    throw new Error(data.error || 'Failed to fetch credit transactions');
+  }
+
+  return data;
+}
 
 // Query keys
 export const creditsKeys = {
@@ -25,34 +108,38 @@ export const creditsKeys = {
 
 // Hook to fetch credit balance
 export function useCreditBalance() {
+  const handleAuthError = useAuthErrorHandler();
+
   return useQuery({
     queryKey: creditsKeys.balance(),
     queryFn: async () => {
       console.log('Fetching credit balance...');
       const result = await getCreditBalanceAction();
-      if (!result?.data?.success) {
-        throw new Error(
-          result?.data?.error || 'Failed to fetch credit balance'
-        );
-      }
-      console.log('Credit balance fetched:', result.data.credits);
-      return result.data.credits || 0;
+      const data = unwrapCreditBalance(
+        result?.data as CreditBalanceData | undefined,
+        handleAuthError
+      );
+      console.log('Credit balance fetched:', data.credits);
+      return data.credits || 0;
     },
   });
 }
 
 // Hook to fetch credit statistics
 export function useCreditStats() {
+  const handleAuthError = useAuthErrorHandler();
+
   return useQuery({
     queryKey: creditsKeys.stats(),
     queryFn: async () => {
       console.log('Fetching credit stats...');
       const result = await getCreditStatsAction();
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to fetch credit stats');
-      }
-      console.log('Credit stats fetched:', result.data.data);
-      return result.data.data;
+      const data = unwrapCreditStats(
+        result?.data as CreditStatsData | undefined,
+        handleAuthError
+      );
+      console.log('Credit stats fetched:', data.data);
+      return data.data;
     },
   });
 }
@@ -60,6 +147,7 @@ export function useCreditStats() {
 // Hook to consume credits
 export function useConsumeCredits() {
   const queryClient = useQueryClient();
+  const handleAuthError = useAuthErrorHandler();
 
   return useMutation({
     mutationFn: async ({
@@ -77,6 +165,10 @@ export function useConsumeCredits() {
         | ({ success?: boolean; error?: string } & DomainErrorLike)
         | undefined;
       if (!data?.success) {
+        if (data?.code === 'AUTH_UNAUTHORIZED') {
+          handleAuthError({ code: data.code, message: data.error });
+        }
+
         const resolvedMessage =
           data?.error ?? getDomainErrorMessage(data?.code);
         const error = new Error(resolvedMessage) as Error & DomainErrorLike;
@@ -109,6 +201,8 @@ export function useCreditTransactions(
   search: string,
   sorting: SortingState
 ) {
+  const handleAuthError = useAuthErrorHandler();
+
   return useQuery({
     queryKey: creditsKeys.transactionsList({
       pageIndex,
@@ -124,15 +218,14 @@ export function useCreditTransactions(
         sorting,
       });
 
-      if (!result?.data?.success) {
-        throw new Error(
-          result?.data?.error || 'Failed to fetch credit transactions'
-        );
-      }
+      const data = unwrapCreditTransactions(
+        result?.data as CreditTransactionsData | undefined,
+        handleAuthError
+      );
 
       return {
-        items: result.data.data?.items || [],
-        total: result.data.data?.total || 0,
+        items: data.data?.items || [],
+        total: data.data?.total || 0,
       };
     },
   });

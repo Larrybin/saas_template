@@ -3,6 +3,22 @@ const DOMAIN_ERROR_I18N_KEYS: Record<string, string> = {
     'Dashboard.settings.credits.balance.insufficientCredits',
   PAYMENT_SECURITY_VIOLATION:
     'Dashboard.settings.credits.packages.purchaseFailed',
+  AUTH_UNAUTHORIZED: 'Common.unauthorized',
+  AI_CONTENT_VALIDATION_ERROR: 'AITextPage.analyzer.errors.invalidUrl',
+  AI_CONTENT_NETWORK_ERROR: 'AITextPage.analyzer.errors.networkError',
+  AI_CONTENT_TIMEOUT: 'AITextPage.analyzer.errors.timeout',
+  AI_CONTENT_RATE_LIMIT: 'AITextPage.analyzer.errors.rateLimit',
+  AI_CONTENT_AUTH_ERROR: 'AITextPage.analyzer.errors.authError',
+  AI_CONTENT_SERVICE_UNAVAILABLE:
+    'AITextPage.analyzer.errors.serviceUnavailable',
+  AI_CONTENT_ANALYSIS_ERROR: 'AITextPage.analyzer.errors.analysisError',
+  AI_CONTENT_SCRAPING_ERROR: 'AITextPage.analyzer.errors.scrapingError',
+  AI_CONTENT_UNKNOWN_ERROR: 'AITextPage.analyzer.errors.unknownError',
+  AI_IMAGE_INVALID_JSON: 'AIImagePage.errors.invalidRequest',
+  AI_IMAGE_INVALID_PARAMS: 'AIImagePage.errors.invalidParams',
+  AI_IMAGE_INVALID_RESPONSE: 'AIImagePage.errors.providerError',
+  AI_IMAGE_TIMEOUT: 'AIImagePage.errors.timeout',
+  AI_IMAGE_PROVIDER_ERROR: 'AIImagePage.errors.providerError',
 };
 
 export type DomainErrorLike = {

@@ -29,12 +29,17 @@ export const uploadFileFromBrowser = async (
       body: formData,
     });
 
-    if (!response.ok) {
-      const error = (await response.json()) as { message: string };
-      throw new Error(error.message || 'Failed to upload file');
+    const json = (await response.json()) as
+      | { success: true; data: UploadFileResult }
+      | { success: false; error?: string; code?: string; retryable?: boolean };
+
+    if (!response.ok || !json.success) {
+      const errorMessage =
+        (!json.success && json.error) || 'Failed to upload file';
+      throw new Error(errorMessage);
     }
 
-    return await response.json();
+    return json.data;
   } catch (error) {
     const message =
       error instanceof Error

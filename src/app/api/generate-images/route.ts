@@ -7,10 +7,14 @@ import {
   type ImageModel,
 } from 'ai';
 import { type NextRequest, NextResponse } from 'next/server';
-import type { GenerateImageRequest } from '@/ai/image/lib/api-types';
+import type {
+  GenerateImageRequest,
+  GenerateImageResponse,
+} from '@/ai/image/lib/api-types';
 import type { ProviderKey } from '@/ai/image/lib/provider-config';
 import { serverEnv } from '@/env/server';
 import { ensureApiUser } from '@/lib/server/api-auth';
+import { createLoggerFromHeaders } from '@/lib/server/logger';
 import { enforceRateLimit } from '@/lib/server/rate-limit';
 
 /**
@@ -70,6 +74,11 @@ const withTimeout = <T>(
 };
 
 export async function POST(req: NextRequest) {
+  const logger = createLoggerFromHeaders(req.headers, {
+    span: 'ai-generate-images',
+    route: '/api/generate-images',
+  });
+
   const authResult = await ensureApiUser(req);
   if (!authResult.ok) {
     return authResult.response;
@@ -87,18 +96,43 @@ export async function POST(req: NextRequest) {
     return rateLimitResult.response;
   }
 
-  const requestId = Math.random().toString(36).substring(7);
-  const { prompt, provider, modelId } =
-    (await req.json()) as GenerateImageRequest;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    logger.warn('Invalid JSON body for image generation request', { error });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Request body must be valid JSON.',
+        code: 'AI_IMAGE_INVALID_JSON',
+        retryable: false,
+      } satisfies GenerateImageResponse,
+      { status: 400 }
+    );
+  }
+
+  const { prompt, provider, modelId } = body as GenerateImageRequest;
 
   try {
-    if (!prompt || !provider || !modelId || !providerConfig[provider]) {
-      const error = 'Invalid request parameters';
-      console.error(`${error} [requestId=${requestId}]`);
-      return NextResponse.json({ error }, { status: 400 });
+    if (!prompt || !provider || !modelId || !(provider in providerConfig)) {
+      logger.warn('Invalid image generation request parameters', {
+        provider,
+        modelId,
+        promptLength: typeof prompt === 'string' ? prompt.length : undefined,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid request parameters',
+          code: 'AI_IMAGE_INVALID_PARAMS',
+          retryable: false,
+        } satisfies GenerateImageResponse,
+        { status: 400 }
+      );
     }
 
-    const config = providerConfig[provider];
+    const config = providerConfig[provider as ProviderKey];
     const startstamp = performance.now();
     const generatePromise = generateImage({
       model: config.createImageModel(modelId),
@@ -113,16 +147,20 @@ export async function POST(req: NextRequest) {
       providerOptions: { vertex: { addWatermark: false } },
     }).then(({ image, warnings }) => {
       if (warnings?.length > 0) {
-        console.warn(
-          `Warnings [requestId=${requestId}, provider=${provider}, model=${modelId}]: `,
-          warnings
-        );
+        logger.warn('Image generation completed with warnings', {
+          provider,
+          modelId,
+          warnings,
+        });
       }
-      console.log(
-        `Completed image request [requestId=${requestId}, provider=${provider}, model=${modelId}, elapsed=${(
-          (performance.now() - startstamp) / 1000
-        ).toFixed(1)}s].`
+      const elapsedSeconds = ((performance.now() - startstamp) / 1000).toFixed(
+        1
       );
+      logger.info('Completed image generation request', {
+        provider,
+        modelId,
+        elapsedSeconds,
+      });
 
       return {
         provider,
@@ -131,20 +169,68 @@ export async function POST(req: NextRequest) {
     });
 
     const result = await withTimeout(generatePromise, TIMEOUT_MILLIS);
-    return NextResponse.json(result, {
-      status: 'image' in result ? 200 : 500,
-    });
-  } catch (error) {
-    // Log full error detail on the server, but return a generic error message
-    // to avoid leaking any sensitive information to the client.
-    console.error(
-      `Error generating image [requestId=${requestId}, provider=${provider}, model=${modelId}]: `,
-      error
-    );
+
+    if (!('image' in result) || !result.image) {
+      logger.error('Image generation returned invalid result shape', {
+        provider,
+        modelId,
+        result,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Image generation failed due to an unexpected provider response.',
+          code: 'AI_IMAGE_INVALID_RESPONSE',
+          retryable: true,
+        } satisfies GenerateImageResponse,
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json(
       {
+        success: true,
+        data: {
+          provider,
+          image: result.image,
+        },
+      } satisfies GenerateImageResponse,
+      { status: 200 }
+    );
+  } catch (error) {
+    const baseLog = {
+      provider,
+      modelId,
+      error,
+    };
+
+    if (
+      error instanceof Error &&
+      (error.message.toLowerCase().includes('timed out') ||
+        error.message.toLowerCase().includes('timeout'))
+    ) {
+      logger.error('Image generation timed out', baseLog);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Image generation timed out. Please try again.',
+          code: 'AI_IMAGE_TIMEOUT',
+          retryable: true,
+        } satisfies GenerateImageResponse,
+        { status: 504 }
+      );
+    }
+
+    logger.error('Error generating image', baseLog);
+
+    return NextResponse.json(
+      {
+        success: false,
         error: 'Failed to generate image. Please try again later.',
-      },
+        code: 'AI_IMAGE_PROVIDER_ERROR',
+        retryable: true,
+      } satisfies GenerateImageResponse,
       { status: 500 }
     );
   }

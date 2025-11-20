@@ -4,6 +4,7 @@
 
 // Import configuration for performance settings
 import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
+import { DomainError } from '@/lib/domain-errors';
 
 // Error types for different failure scenarios
 export enum ErrorType {
@@ -27,10 +28,21 @@ export enum ErrorSeverity {
 }
 
 // Custom error class for web content analyzer
-export class WebContentAnalyzerError extends Error {
+const AI_ERROR_CODE_MAP: Record<ErrorType, string> = {
+  [ErrorType.VALIDATION]: 'AI_CONTENT_VALIDATION_ERROR',
+  [ErrorType.NETWORK]: 'AI_CONTENT_NETWORK_ERROR',
+  [ErrorType.SCRAPING]: 'AI_CONTENT_SCRAPING_ERROR',
+  [ErrorType.ANALYSIS]: 'AI_CONTENT_ANALYSIS_ERROR',
+  [ErrorType.TIMEOUT]: 'AI_CONTENT_TIMEOUT',
+  [ErrorType.RATE_LIMIT]: 'AI_CONTENT_RATE_LIMIT',
+  [ErrorType.AUTHENTICATION]: 'AI_CONTENT_AUTH_ERROR',
+  [ErrorType.SERVICE_UNAVAILABLE]: 'AI_CONTENT_SERVICE_UNAVAILABLE',
+  [ErrorType.UNKNOWN]: 'AI_CONTENT_UNKNOWN_ERROR',
+};
+
+export class WebContentAnalyzerError extends DomainError {
   public readonly type: ErrorType;
   public readonly severity: ErrorSeverity;
-  public readonly retryable: boolean;
   public readonly userMessage: string;
   public readonly originalError: Error | undefined;
 
@@ -42,11 +54,14 @@ export class WebContentAnalyzerError extends Error {
     retryable = false,
     originalError?: Error
   ) {
-    super(message);
+    super({
+      code: AI_ERROR_CODE_MAP[type],
+      message,
+      retryable,
+    });
     this.name = 'WebContentAnalyzerError';
     this.type = type;
     this.severity = severity;
-    this.retryable = retryable;
     this.userMessage = userMessage;
     this.originalError = originalError;
   }

@@ -8,6 +8,7 @@
     "login": "登录",
     "logout": "退出",
     "signUp": "注册",
+    "unauthorized": "请先登录后再执行此操作。",
     "language": "切换语言",
     "mode": {
       "label": "切换模式",
@@ -1025,6 +1026,12 @@
         "invalidUrl": "请输入以 http:// 或 https:// 开头的有效 URL",
         "analysisError": "分析网站失败，请重试。",
         "networkError": "网络错误，请检查您的连接并重试。",
+        "timeout": "分析请求超时，请稍后重试或尝试更简单的页面。",
+        "rateLimit": "分析请求过于频繁，请稍后再试。",
+        "authError": "分析请求认证失败，请刷新页面后重试。",
+        "serviceUnavailable": "分析服务暂时不可用，请稍后重试。",
+        "scrapingError": "无法访问或抓取目标网页，请检查 URL 后重试。",
+        "unknownError": "分析过程中发生未知错误，请稍后重试。",
         "insufficientCredits": "积分不足，请购买更多积分以继续。"
       }
     },
@@ -1045,7 +1052,13 @@
   },
   "AIImagePage": {
     "title": "AI 图片",
-    "description": "MkSaaS 让您在几天内轻松构建您的 AI SaaS，简单且毫不费力"
+    "description": "MkSaaS 让您在几天内轻松构建您的 AI SaaS，简单且毫不费力",
+    "errors": {
+      "invalidRequest": "请求格式无效，请刷新页面后重试。",
+      "invalidParams": "图片生成参数无效，请检查提示词和所选模型。",
+      "providerError": "图片生成服务发生错误，请稍后重试或切换其他服务商。",
+      "timeout": "图片生成请求超时，请简化提示词或稍后重试。"
+    }
   },
   "AIChatPage": {
     "title": "AI 聊天",

@@ -55,16 +55,34 @@ export async function GET(request: Request) {
   }
 
   log.info('Distribute credits job triggered');
-  const { usersCount, processedCount, errorCount } =
-    await distributeCreditsToAllUsers();
-  log.info(
-    { usersCount, processedCount, errorCount },
-    'Distribute credits completed'
-  );
-  return NextResponse.json({
-    message: `distribute credits success, users: ${usersCount}, processed: ${processedCount}, errors: ${errorCount}`,
-    usersCount,
-    processedCount,
-    errorCount,
-  });
+  try {
+    const { usersCount, processedCount, errorCount } =
+      await distributeCreditsToAllUsers();
+    log.info(
+      { usersCount, processedCount, errorCount },
+      'Distribute credits completed'
+    );
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          usersCount,
+          processedCount,
+          errorCount,
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    log.error({ error }, 'Distribute credits job failed');
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Distribute credits job failed',
+        code: 'CREDITS_DISTRIBUTION_FAILED',
+        retryable: true,
+      },
+      { status: 500 }
+    );
+  }
 }

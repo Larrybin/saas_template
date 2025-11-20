@@ -26,6 +26,8 @@ export interface AnalyzeContentResponse {
   };
   error?: string;
   creditsConsumed?: number;
+  code?: string;
+  retryable?: boolean;
 }
 
 // Firecrawl Response Type Definitions
@@ -132,6 +134,8 @@ export const analyzeContentResponseSchema = z.object({
     })
     .optional(),
   error: z.string().optional(),
+  code: z.string().optional(),
+  retryable: z.boolean().optional(),
   creditsConsumed: z.number().optional(),
 });
 

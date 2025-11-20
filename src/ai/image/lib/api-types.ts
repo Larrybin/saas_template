@@ -7,6 +7,12 @@ export interface GenerateImageRequest {
 }
 
 export interface GenerateImageResponse {
-  image?: string;
+  success: boolean;
+  data?: {
+    provider: ProviderKey;
+    image: string;
+  };
   error?: string;
+  code?: string;
+  retryable?: boolean;
 }

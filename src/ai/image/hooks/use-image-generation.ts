@@ -1,4 +1,10 @@
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import {
+  handleAuthFromEnvelope,
+  useAuthErrorHandler,
+} from '@/hooks/use-auth-error-handler';
+import { getDomainErrorMessage } from '@/lib/domain-error-utils';
 import type { GenerateImageResponse } from '../lib/api-types';
 import type {
   ImageError,
@@ -34,6 +40,8 @@ export function useImageGeneration(): UseImageGenerationReturn {
   const [failedProviders, setFailedProviders] = useState<ProviderKey[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activePrompt, setActivePrompt] = useState('');
+  const t = useTranslations();
+  const handleAuthError = useAuthErrorHandler();
 
   const resetState = () => {
     setImages([]);
@@ -91,8 +99,31 @@ export function useImageGeneration(): UseImageGenerationReturn {
             body: JSON.stringify(request),
           });
           const data = (await response.json()) as GenerateImageResponse;
-          if (!response.ok) {
-            throw new Error(data.error || `Server error: ${response.status}`);
+
+          if (response.status === 401) {
+            handleAuthFromEnvelope(handleAuthError, {
+              code: data.code,
+              error: data.error,
+            });
+          }
+
+          if (!response.ok || !data.success || !data.data) {
+            const errorMessage =
+              data.error ||
+              `Server error: ${response.status} ${response.statusText}`;
+
+            const error = new Error(errorMessage) as Error & {
+              code?: string;
+              retryable?: boolean;
+            };
+            if (data.code) {
+              error.code = data.code;
+            }
+            if (typeof data.retryable === 'boolean') {
+              error.retryable = data.retryable;
+            }
+
+            throw error;
           }
 
           const completionTime = Date.now();
@@ -114,7 +145,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
           setImages((prevImages) =>
             prevImages.map((item) =>
               item.provider === provider
-                ? { ...item, image: data.image ?? null, modelId }
+                ? { ...item, image: data.data?.image ?? null, modelId }
                 : item
             )
           );
@@ -123,15 +154,30 @@ export function useImageGeneration(): UseImageGenerationReturn {
             `Error [provider=${provider}, modelId=${modelId}]:`,
             err
           );
+
+          const errorObject = err as Error & {
+            code?: string;
+            retryable?: boolean;
+          };
+
+          const resolvedMessage = getDomainErrorMessage(
+            errorObject.code,
+            (key) => t(key as Parameters<typeof t>[0]),
+            errorObject instanceof Error && errorObject.message
+              ? errorObject.message
+              : 'Failed to generate image. Please try again.'
+          );
+
           setFailedProviders((prev) => [...prev, provider]);
           setErrors((prev) => [
             ...prev,
             {
               provider,
-              message:
-                err instanceof Error
-                  ? err.message
-                  : 'An unexpected error occurred',
+              message: resolvedMessage,
+              ...(errorObject.code ? { code: errorObject.code } : {}),
+              ...(typeof errorObject.retryable === 'boolean'
+                ? { retryable: errorObject.retryable }
+                : {}),
             },
           ]);
 

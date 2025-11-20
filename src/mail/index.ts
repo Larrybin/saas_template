@@ -10,6 +10,7 @@ import {
   type MailProvider,
   type SendRawEmailParams,
   type SendTemplateParams,
+  type TemplateContextMap,
 } from './types';
 
 /**
@@ -76,17 +77,26 @@ export async function getTemplate<T extends EmailTemplate>({
   locale = routing.defaultLocale,
 }: {
   template: T;
-  context: Record<string, unknown>;
+  context: TemplateContextMap[T];
   locale?: Locale;
 }) {
   const mainTemplate = EmailTemplates[template];
   const messages = await getMessagesForLocale(locale);
 
-  const email = (mainTemplate as any)({
-    ...(context as Record<string, unknown>),
+  const props: TemplateContextMap[T] & {
+    locale: Locale;
+    messages: Messages;
+  } = {
+    ...(context as TemplateContextMap[T]),
     locale,
     messages,
-  });
+  };
+
+  const email = (
+    mainTemplate as (
+      p: TemplateContextMap[T] & { locale: Locale; messages: Messages }
+    ) => unknown
+  )(props);
 
   // Get the subject from the messages
   const subject =

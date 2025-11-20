@@ -20,7 +20,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
   // Start with default components
   const baseComponents: MDXComponents = {
     ...defaultMdxComponents,
-    ...(LucideIcons as unknown as Record<string, ComponentType<any>>),
+    ...(LucideIcons as unknown as Record<string, ComponentType<unknown>>),
     YoutubeVideo,
     Tabs,
     Tab,

@@ -28,7 +28,7 @@ export const source = loader({
     }
 
     const IconComponent = (
-      LucideIcons as unknown as Record<string, ComponentType<any>>
+      LucideIcons as unknown as Record<string, ComponentType<unknown>>
     )[iconName];
     if (IconComponent) {
       return createElement(IconComponent);

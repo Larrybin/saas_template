@@ -10,6 +10,8 @@ export function MastodonIcon(props: SVGProps<SVGSVGElement>) {
       width={448}
       height={512}
       viewBox="0 0 448 512"
+      aria-hidden="true"
+      focusable="false"
       {...props}
     >
       <path

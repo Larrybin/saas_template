@@ -10,6 +10,8 @@ export function TelegramIcon(props: SVGProps<SVGSVGElement>) {
       width={496}
       height={512}
       viewBox="0 0 496 512"
+      aria-hidden="true"
+      focusable="false"
       {...props}
     >
       <path

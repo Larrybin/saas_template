@@ -10,6 +10,8 @@ export function DiscordIcon(props: SVGProps<SVGSVGElement>) {
       width={640}
       height={512}
       viewBox="0 0 640 512"
+      aria-hidden="true"
+      focusable="false"
       {...props}
     >
       <path

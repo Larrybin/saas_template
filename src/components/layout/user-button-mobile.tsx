@@ -101,18 +101,17 @@ export function UserButtonMobile({ user }: UserButtonProps) {
               key="logout"
               className="rounded-lg text-foreground hover:bg-muted"
             >
-              <a
-                href="#"
-                onClick={async (event) => {
-                  event.preventDefault();
+              <button
+                type="button"
+                onClick={async () => {
                   closeDrawer();
-                  handleSignOut();
+                  await handleSignOut();
                 }}
-                className="flex w-full items-center gap-3 px-2.5 py-2"
+                className="flex w-full items-center gap-3 px-2.5 py-2 text-left"
               >
                 <LogOutIcon className="size-4" />
                 <p className="text-sm">{t('Common.logout')}</p>
-              </a>
+              </button>
             </li>
           </ul>
         </DrawerContent>

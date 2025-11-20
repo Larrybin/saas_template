@@ -55,10 +55,10 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noSparseArray": "warn",
+        "noSparseArray": "error",
         "noArrayIndexKey": "off",
-        "noExplicitAny": "warn",
-        "noShadowRestrictedNames": "warn",
+        "noExplicitAny": "error",
+        "noShadowRestrictedNames": "error",
         "noDuplicateCustomProperties": "off"
       },
       "complexity": {
@@ -67,15 +67,15 @@
       },
       "correctness": {
         "useExhaustiveDependencies": "warn",
-        "noUnusedImports": "warn",
-        "noUnusedVariables": "warn"
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
       },
       "performance": {
         "noImgElement": "off"
       },
       "style": {
         "useTemplate": "warn",
-        "noNonNullAssertion": "warn",
+        "noNonNullAssertion": "error",
         "useNodejsImportProtocol": "off",
         "useConsistentArrayType": {
           "level": "off",
@@ -85,9 +85,9 @@
         }
       },
       "a11y": {
-        "useValidAnchor": "off",
-        "noSvgWithoutTitle": "off",
-        "useKeyWithClickEvents": "off"
+        "useValidAnchor": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useKeyWithClickEvents": "warn"
       }
     }
   },

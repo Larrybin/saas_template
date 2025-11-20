@@ -86,7 +86,7 @@ export async function getTemplate<T extends EmailTemplate>({
     ...(context as Record<string, unknown>),
     locale,
     messages,
-  } as any);
+  } as unknown as Parameters<typeof mainTemplate>[0]);
 
   // Get the subject from the messages
   const subject =

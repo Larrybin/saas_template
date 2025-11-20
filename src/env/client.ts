@@ -18,10 +18,11 @@ const emailString = z
     const trimmed = value.trim();
     if (trimmed.includes('<') && trimmed.endsWith('>')) {
       const match = /<([^>]+)>$/.exec(trimmed);
-      if (!match) {
+      if (!match || match[1] === undefined) {
         return false;
       }
-      return z.string().email().safeParse(match[1].trim()).success;
+      const [, emailAddress] = match;
+      return z.string().email().safeParse(emailAddress.trim()).success;
     }
 
     return z.string().email().safeParse(trimmed).success;

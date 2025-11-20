@@ -180,13 +180,23 @@ export function classifyError(error: unknown): WebContentAnalyzerError {
   }
 
   // Unknown error
+  if (error instanceof Error) {
+    return new WebContentAnalyzerError(
+      ErrorType.UNKNOWN,
+      error.message,
+      'An unexpected error occurred. Please try again.',
+      ErrorSeverity.MEDIUM,
+      true,
+      error
+    );
+  }
+
   return new WebContentAnalyzerError(
     ErrorType.UNKNOWN,
-    error instanceof Error ? error.message : 'Unknown error occurred',
+    'Unknown error occurred',
     'An unexpected error occurred. Please try again.',
     ErrorSeverity.MEDIUM,
-    true,
-    error instanceof Error ? error : undefined
+    true
   );
 }
 

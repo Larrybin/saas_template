@@ -82,11 +82,11 @@ export async function getTemplate<T extends EmailTemplate>({
   const mainTemplate = EmailTemplates[template];
   const messages = await getMessagesForLocale(locale);
 
-  const email = mainTemplate({
+  const email = (mainTemplate as any)({
     ...(context as Record<string, unknown>),
     locale,
     messages,
-  } as unknown as Parameters<typeof mainTemplate>[0]);
+  });
 
   // Get the subject from the messages
   const subject =

@@ -24,11 +24,13 @@ type RateLimitResult =
     };
 
 const redisConfig = serverEnv.rateLimit;
+const redisRestUrl = redisConfig?.redisRestUrl;
+const redisRestToken = redisConfig?.redisRestToken;
 const redisClient =
-  redisConfig?.redisRestUrl && redisConfig.redisRestToken
+  redisRestUrl && redisRestToken
     ? new Redis({
-        url: redisConfig.redisRestUrl,
-        token: redisConfig.redisRestToken,
+        url: redisRestUrl,
+        token: redisRestToken,
       })
     : null;
 

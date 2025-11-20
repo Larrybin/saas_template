@@ -12,7 +12,10 @@ function validateBasicAuth(request: Request, logger: Logger): boolean {
   }
 
   // Extract credentials from Authorization header
-  const base64Credentials = authHeader.split(' ')[1];
+  const [, base64Credentials] = authHeader.split(' ');
+  if (!base64Credentials) {
+    return false;
+  }
   const credentials = Buffer.from(base64Credentials, 'base64').toString(
     'utf-8'
   );

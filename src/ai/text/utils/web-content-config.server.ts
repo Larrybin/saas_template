@@ -22,8 +22,8 @@ export const webContentAnalyzerServerConfig = {
   },
 } as const;
 
-export function getFirecrawlApiKey() {
-  return serverEnv.ai.firecrawlApiKey;
+export function getFirecrawlApiKey(): string | null {
+  return serverEnv.ai.firecrawlApiKey ?? null;
 }
 
 export function getFirecrawlConfig() {

@@ -6,7 +6,7 @@ This module provides a flexible payment integration with Stripe, supporting both
 
 - `/payment/types.ts` - Type definitions for the payment module
 - `/payment/index.ts` - Main payment interface and global provider instance
-- `/payment/provider/stripe.ts` - Stripe payment provider implementation
+- `/payment/services/stripe-payment-service.ts` - Stripe payment service and Stripe SDK integration
 - `/actions/create-checkout-session.ts` - Server action for creating subscription checkout sessions
 - `/actions/create-credit-checkout-session.ts` - Server action for creating credit checkout sessions
 - `/actions/create-customer-portal-session.ts` - Server action for creating customer portal sessions

@@ -1,14 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.3/schema.json",
   "vcs": {
-    "enabled": false,
+    "enabled": true,
     "clientKind": "git",
-    "useIgnoreFile": false
+    "useIgnoreFile": true
   },
   "files": {
     "ignoreUnknown": true,
     "includes": [
       "**",
+      "!mksaas_template-main-sorce",
       "!**/.next",
       "!**/.open-next",
       "!**/.wrangler",
@@ -52,25 +53,29 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": false,
+      "recommended": true,
       "suspicious": {
-        "noSparseArray": "off",
+        "noSparseArray": "error",
         "noArrayIndexKey": "off",
-        "noExplicitAny": "off",
-        "noShadowRestrictedNames": "off"
+        "noExplicitAny": "error",
+        "noShadowRestrictedNames": "error",
+        "noDuplicateCustomProperties": "off"
       },
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "noImportantStyles": "off"
       },
       "correctness": {
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": "warn",
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
       },
       "performance": {
         "noImgElement": "off"
       },
       "style": {
-        "useTemplate": "off",
-        "noNonNullAssertion": "off",
+        "useTemplate": "warn",
+        "noNonNullAssertion": "error",
         "useNodejsImportProtocol": "off",
         "useConsistentArrayType": {
           "level": "off",
@@ -80,37 +85,11 @@
         }
       },
       "a11y": {
-        "useValidAnchor": "off",
-        "noSvgWithoutTitle": "off",
-        "useKeyWithClickEvents": "off"
+        "useValidAnchor": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useKeyWithClickEvents": "warn"
       }
-    },
-    "includes": [
-      "**",
-      "!**/.next",
-      "!**/.open-next",
-      "!**/.wrangler",
-      "!**/.cursor",
-      "!**/.claude",
-      "!**/.kiro",
-      "!**/.vscode",
-      "!**/.source",
-      "!**/.pnpm-store",
-      "!**/node_modules",
-      "!**/dist",
-      "!**/build",
-      "!**/src/db",
-      "!**/tailwind.config.ts",
-      "!**/src/components/ui/**/*.tsx",
-      "!**/src/components/magicui/**/*.tsx",
-      "!**/src/components/animate-ui/**/*.tsx",
-      "!**/src/components/tailark/**/*.tsx",
-      "!**/src/components/ai-elements/**/*.tsx",
-      "!**/src/app/\\[\\[\\]locale\\]/preview",
-      "!**/src/payment/types.ts",
-      "!**/src/credits/types.ts",
-      "!**/src/types/index.d.ts"
-    ]
+    }
   },
   "javascript": {
     "formatter": {
@@ -123,5 +102,29 @@
     "parser": {
       "tailwindDirectives": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["tests/**", "**/*.test.*", "**/*.spec.*"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          },
+          "a11y": {
+            "useValidAnchor": "off",
+            "useKeyWithClickEvents": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["package.json"],
+      "json": {
+        "formatter": {
+          "expand": "auto"
+        }
+      }
+    }
+  ]
 }

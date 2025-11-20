@@ -27,6 +27,26 @@ export interface BaseEmailProps {
   messages: Messages;
 }
 
+type ContactMessageComponentProps = Parameters<typeof ContactMessage>[0];
+type ForgotPasswordComponentProps = Parameters<typeof ForgotPassword>[0];
+type SubscribeNewsletterComponentProps = Parameters<
+  typeof SubscribeNewsletter
+>[0];
+type VerifyEmailComponentProps = Parameters<typeof VerifyEmail>[0];
+
+/**
+ * Context（除去 BaseEmailProps 后的自定义字段）按模板名映射
+ */
+export type TemplateContextMap = {
+  forgotPassword: Omit<ForgotPasswordComponentProps, keyof BaseEmailProps>;
+  verifyEmail: Omit<VerifyEmailComponentProps, keyof BaseEmailProps>;
+  subscribeNewsletter: Omit<
+    SubscribeNewsletterComponentProps,
+    keyof BaseEmailProps
+  >;
+  contactMessage: Omit<ContactMessageComponentProps, keyof BaseEmailProps>;
+};
+
 /**
  * Common email sending parameters
  */
@@ -44,7 +64,7 @@ export interface SendEmailParams {
 export interface SendEmailResult {
   success: boolean;
   messageId?: string;
-  error?: any;
+  error?: unknown;
 }
 
 /**
@@ -53,7 +73,7 @@ export interface SendEmailResult {
 export interface SendTemplateParams {
   to: string;
   template: EmailTemplate;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   locale?: Locale;
 }
 

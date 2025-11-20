@@ -81,7 +81,7 @@ export const getCreditTransactionsAction = userActionClient
       const sortDirection = sortConfig?.desc ? desc : asc;
 
       const db = await getDb();
-      const [items, [{ count }]] = await Promise.all([
+      const [items, countRows] = await Promise.all([
         db
           .select({
             id: creditTransaction.id,
@@ -105,14 +105,16 @@ export const getCreditTransactionsAction = userActionClient
         db
           .select({ count: sql`count(*)` })
           .from(creditTransaction)
-          .where(where),
+          .where(where)
+          .limit(1),
       ]);
+      const totalCount = countRows[0]?.count ?? 0;
 
       return {
         success: true,
         data: {
           items,
-          total: Number(count),
+          total: Number(totalCount),
         },
       };
     } catch (error) {

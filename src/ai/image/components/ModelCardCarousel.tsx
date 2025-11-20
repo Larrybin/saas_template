@@ -97,10 +97,10 @@ export function ModelCardCarousel({ models }: ModelCardCarouselProps) {
       {/* Dot Indicators */}
       <div className="absolute -bottom-6 left-0 right-0">
         <div className="flex justify-center gap-1">
-          {models.map((_, index) => (
+          {models.map((model, index) => (
             <button
               type="button"
-              key={index}
+              key={model.label}
               className={cn(
                 'h-1.5 rounded-full transition-all',
                 index === currentSlide

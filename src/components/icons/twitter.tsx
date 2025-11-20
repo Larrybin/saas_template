@@ -1,5 +1,4 @@
 import type { SVGProps } from 'react';
-import React from 'react';
 
 /**
  * https://icon-sets.iconify.design/fa6-brands/twitter/
@@ -11,6 +10,8 @@ export function TwitterIcon(props: SVGProps<SVGSVGElement>) {
       width={48}
       height={48}
       viewBox="0 0 512 512"
+      aria-hidden="true"
+      focusable="false"
       {...props}
     >
       <path

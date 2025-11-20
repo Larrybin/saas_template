@@ -1,4 +1,4 @@
-import { CREDIT_TRANSACTION_TYPE } from '../types';
+import type { CREDIT_TRANSACTION_TYPE } from '../types';
 import type { CreditsTransaction } from './transaction-context';
 
 export type AddCreditsPayload = {

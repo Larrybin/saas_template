@@ -12,7 +12,7 @@ interface CreditCheckoutButtonProps {
   userId: string;
   packageId: string;
   priceId: string;
-  metadata?: Record<string, string>;
+  metadata?: Record<string, string> | undefined;
   variant?:
     | 'default'
     | 'outline'
@@ -50,23 +50,32 @@ export function CreditCheckoutButton({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
+    const redirectTo = (url: string) => {
+      window.location.href = url;
+    };
+
     try {
       setIsLoading(true);
 
-      const mergedMetadata = metadata ? { ...metadata } : {};
+      const mergedMetadata: Record<string, string> = metadata
+        ? { ...metadata }
+        : {};
 
       // add promotekit_referral to metadata if enabled promotekit affiliate
       if (websiteConfig.features.enablePromotekitAffiliate) {
-        const promotekitReferral =
+        const rawPromotekitReferral =
           typeof window !== 'undefined'
-            ? (window as any).promotekit_referral
+            ? (window as Window & { promotekit_referral?: string })
+                .promotekit_referral
             : undefined;
+        const promotekitReferral = rawPromotekitReferral ?? '';
         if (promotekitReferral) {
           console.log(
             'create credit checkout button, promotekitReferral:',
             promotekitReferral
           );
-          mergedMetadata.promotekit_referral = promotekitReferral;
+          const referral = promotekitReferral;
+          mergedMetadata.promotekit_referral = referral;
         }
       }
 
@@ -78,7 +87,8 @@ export function CreditCheckoutButton({
                 const match = document.cookie.match(
                   /(?:^|; )affonso_referral=([^;]*)/
                 );
-                return match ? decodeURIComponent(match[1]) : null;
+                const value = match?.[1];
+                return value ? decodeURIComponent(value) : null;
               })()
             : null;
         if (affonsoReferral) {
@@ -100,8 +110,17 @@ export function CreditCheckoutButton({
       });
 
       // Redirect to checkout page
-      if (result?.data?.success && result.data.data?.url) {
-        window.location.href = result.data.data?.url;
+      if (result?.data?.success) {
+        const rawRedirectUrl = result?.data?.data?.url;
+        if (typeof rawRedirectUrl === 'string') {
+          redirectTo(rawRedirectUrl as string);
+        } else {
+          console.error(
+            'Create credit checkout session error, missing url:',
+            result
+          );
+          toast.error(t('checkoutFailed'));
+        }
       } else {
         console.error('Create credit checkout session error, result:', result);
         toast.error(t('checkoutFailed'));

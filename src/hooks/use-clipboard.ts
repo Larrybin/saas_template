@@ -10,7 +10,7 @@ interface BlockProps {
 }
 
 export const useCopyToClipboard = (block: BlockProps) => {
-  const { title, category, code, eventName } = block;
+  const { code } = block;
   const [copied, setCopied] = useState(false);
 
   const copy = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {

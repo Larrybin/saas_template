@@ -17,8 +17,8 @@ import {
 import {
   type AnalysisResults,
   type AnalyzeContentResponse,
-  type ModelProvider,
   analyzeContentRequestSchema,
+  type ModelProvider,
   validateUrl,
 } from '@/ai/text/utils/web-content-analyzer';
 import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
@@ -77,12 +77,12 @@ const analysisSchema = z.object({
 
 const withTimeout = <T>(
   promise: Promise<T>,
-  timeoutMillis: number,
+  timeoutMillis: number
 ): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out')), timeoutMillis),
+      setTimeout(() => reject(new Error('Request timed out')), timeoutMillis)
     ),
   ]);
 };
@@ -94,7 +94,7 @@ const truncateContent = (content: string, maxLength: number): string => {
 
   const { contentTruncation } = webContentAnalyzerConfig;
   const preferredLength = Math.floor(
-    maxLength * contentTruncation.preferredTruncationPoint,
+    maxLength * contentTruncation.preferredTruncationPoint
   );
 
   if (content.length < contentTruncation.minContentLength) {
@@ -131,8 +131,8 @@ const truncateContent = (content: string, maxLength: number): string => {
   if (paragraphs.length > 1) {
     let paragraphLength = 0;
 
-    for (let i = 0; i < paragraphs.length; i++) {
-      const nextLength = paragraphLength + paragraphs[i].length + 2;
+    for (const [index, paragraph] of paragraphs.entries()) {
+      const nextLength = paragraphLength + paragraph.length + 2;
 
       if (nextLength > maxLength) {
         break;
@@ -141,7 +141,7 @@ const truncateContent = (content: string, maxLength: number): string => {
       paragraphLength = nextLength;
 
       if (paragraphLength > preferredLength) {
-        return paragraphs.slice(0, i + 1).join('\n\n');
+        return paragraphs.slice(0, index + 1).join('\n\n');
       }
     }
   }
@@ -157,7 +157,7 @@ const truncateContent = (content: string, maxLength: number): string => {
 };
 
 async function scrapeWebpage(
-  url: string,
+  url: string
 ): Promise<{ content: string; screenshot?: string }> {
   return withRetry(async () => {
     const firecrawl = getFirecrawlClient();
@@ -181,13 +181,13 @@ async function scrapeWebpage(
           'No content found on the webpage',
           'The webpage appears to be empty or inaccessible. Please try a different URL.',
           ErrorSeverity.MEDIUM,
-          false,
+          false
         );
       }
 
       return {
         content: truncateContent(content, MAX_CONTENT_LENGTH),
-        screenshot,
+        ...(screenshot ? { screenshot } : {}),
       };
     } catch (error) {
       if (error instanceof WebContentAnalyzerError) {
@@ -202,11 +202,15 @@ async function scrapeWebpage(
 async function analyzeContent(
   content: string,
   url: string,
-  provider: ModelProvider,
+  provider: ModelProvider
 ): Promise<AnalysisResults> {
   return withRetry(async () => {
     try {
-      let model: any;
+      let model:
+        | ReturnType<ReturnType<typeof createOpenAI>['chat']>
+        | ReturnType<ReturnType<typeof createGoogleGenerativeAI>['chat']>
+        | ReturnType<ReturnType<typeof createDeepSeek>['chat']>
+        | ReturnType<ReturnType<typeof createOpenRouter>['chat']>;
       let temperature: number | undefined;
       let maxTokens: number | undefined;
       switch (provider) {
@@ -217,7 +221,7 @@ async function analyzeContent(
               'OpenAI API key is not configured',
               'OpenAI provider is temporarily unavailable.',
               ErrorSeverity.CRITICAL,
-              false,
+              false
             );
           }
           model = openAIClient.chat(webContentAnalyzerConfig.openai.model);
@@ -231,7 +235,7 @@ async function analyzeContent(
               'Google Generative AI key is not configured',
               'Gemini provider is temporarily unavailable.',
               ErrorSeverity.CRITICAL,
-              false,
+              false
             );
           }
           model = geminiClient.chat(webContentAnalyzerConfig.gemini.model);
@@ -245,7 +249,7 @@ async function analyzeContent(
               'DeepSeek API key is not configured',
               'DeepSeek provider is temporarily unavailable.',
               ErrorSeverity.CRITICAL,
-              false,
+              false
             );
           }
           model = deepseekClient.chat(webContentAnalyzerConfig.deepseek.model);
@@ -259,11 +263,11 @@ async function analyzeContent(
               'OpenRouter API key is not configured',
               'OpenRouter provider is temporarily unavailable.',
               ErrorSeverity.CRITICAL,
-              false,
+              false
             );
           }
           model = openRouterClient.chat(
-            webContentAnalyzerConfig.openrouter.model,
+            webContentAnalyzerConfig.openrouter.model
           );
           temperature = webContentAnalyzerConfig.openrouter.temperature;
           maxTokens = webContentAnalyzerConfig.openrouter.maxTokens;
@@ -274,7 +278,7 @@ async function analyzeContent(
             'Invalid model provider',
             'Please select a valid model provider.',
             ErrorSeverity.MEDIUM,
-            false,
+            false
           );
       }
       const { object } = await generateObject({
@@ -313,7 +317,7 @@ async function analyzeContent(
             'AI service is temporarily overloaded. Please wait a moment and try again.',
             ErrorSeverity.MEDIUM,
             true,
-            error,
+            error
           );
         }
         if (message.includes('timeout') || message.includes('aborted')) {
@@ -323,7 +327,7 @@ async function analyzeContent(
             'AI analysis timed out. Please try again with a shorter webpage.',
             ErrorSeverity.MEDIUM,
             true,
-            error,
+            error
           );
         }
       }
@@ -356,7 +360,7 @@ const defaultDeps: AnalyzeContentHandlerDeps = {
 
 export async function handleAnalyzeContentRequest(
   input: AnalyzeContentHandlerInput,
-  deps: AnalyzeContentHandlerDeps = defaultDeps,
+  deps: AnalyzeContentHandlerDeps = defaultDeps
 ): Promise<AnalyzeContentHandlerResult> {
   const { body, requestId, requestUrl, startTime } = input;
 
@@ -369,7 +373,7 @@ export async function handleAnalyzeContentRequest(
         'Invalid request parameters',
         'Please provide a valid URL.',
         ErrorSeverity.MEDIUM,
-        false,
+        false
       );
 
       logError(validationError, {
@@ -392,12 +396,15 @@ export async function handleAnalyzeContentRequest(
 
     const urlValidation = validateUrl(url);
     if (!urlValidation.success) {
+      const firstIssue = urlValidation.error?.issues[0];
+      const urlMessage = firstIssue?.message ?? 'Invalid URL';
+
       const urlError = new WebContentAnalyzerError(
         ErrorType.VALIDATION,
-        urlValidation.error.issues[0]?.message ?? 'Invalid URL',
+        urlMessage,
         'Please enter a valid URL starting with http:// or https://',
         ErrorSeverity.MEDIUM,
-        false,
+        false
       );
 
       logError(urlError, { requestId, url });
@@ -417,7 +424,7 @@ export async function handleAnalyzeContentRequest(
         'Firecrawl API key is not configured',
         'Web content analysis service is temporarily unavailable.',
         ErrorSeverity.CRITICAL,
-        false,
+        false
       );
 
       logError(configError, { requestId });
@@ -439,7 +446,10 @@ export async function handleAnalyzeContentRequest(
         const { content, screenshot } = await deps.scrapeWebpage(url);
         const analysis = await deps.analyzeContent(content, url, modelProvider);
 
-        return { analysis, screenshot };
+        return {
+          analysis,
+          ...(screenshot ? { screenshot } : {}),
+        };
       } catch (error) {
         if (error instanceof WebContentAnalyzerError) {
           throw error;
@@ -454,7 +464,7 @@ export async function handleAnalyzeContentRequest(
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
     // eslint-disable-next-line no-console
     console.log(
-      `Analysis completed [requestId=${requestId}, elapsed=${elapsed}s]`,
+      `Analysis completed [requestId=${requestId}, elapsed=${elapsed}s]`
     );
 
     return {

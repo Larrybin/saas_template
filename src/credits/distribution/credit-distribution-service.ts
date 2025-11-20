@@ -2,8 +2,12 @@ import { featureFlags } from '@/config/feature-flags';
 import { findPlanByPriceId } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
 import { PlanIntervals, type PricePlan } from '@/payment/types';
+import {
+  addCredits,
+  addCreditsWithExecutor,
+  canAddCreditsByType,
+} from '../credits';
 import type { DbExecutor } from '../data-access/types';
-import { addCredits, addCreditsWithExecutor, canAddCreditsByType } from '../credits';
 import type { PeriodicAddCreditsPayload } from '../services/credits-gateway';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 import type { CommandExecutionResult, CreditCommand } from './credit-command';
@@ -68,9 +72,13 @@ export class CreditDistributionService {
           amount: command.amount,
           type: command.type as PeriodicAddCreditsPayload['type'],
           description: command.description,
-          expireDays: command.expireDays,
-          paymentId: command.paymentId,
           periodKey,
+          ...(command.expireDays !== undefined
+            ? { expireDays: command.expireDays }
+            : {}),
+          ...(command.paymentId !== undefined
+            ? { paymentId: command.paymentId }
+            : {}),
         };
         await add(payload);
         result.processed += 1;
@@ -114,7 +122,9 @@ export class CreditDistributionService {
       type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
       amount: credits,
       description: `Free monthly credits: ${credits} for ${monthLabel}`,
-      expireDays: plan.credits?.expireDays,
+      ...(plan.credits?.expireDays !== undefined
+        ? { expireDays: plan.credits.expireDays }
+        : {}),
       periodKey,
     }));
   }
@@ -194,8 +204,10 @@ export class CreditDistributionService {
         type: creditType,
         amount: credits,
         description: `${descriptionPrefix}: ${credits} for ${monthLabel}`,
-        expireDays: plan.credits.expireDays,
-        periodKey,
+        ...(plan.credits.expireDays !== undefined
+          ? { expireDays: plan.credits.expireDays }
+          : {}),
+        ...(periodKey !== undefined ? { periodKey } : {}),
       });
     }
     return commands;

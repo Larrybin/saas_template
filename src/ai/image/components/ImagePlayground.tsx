@@ -11,7 +11,6 @@ import {
   type ProviderKey,
 } from '../lib/provider-config';
 import type { Suggestion } from '../lib/suggestions';
-import { ImageGeneratorHeader } from './ImageGeneratorHeader';
 import { ModelCardCarousel } from './ModelCardCarousel';
 import { ModelSelect } from './ModelSelect';
 import { PromptInput } from './PromptInput';

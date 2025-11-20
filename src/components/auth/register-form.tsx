@@ -26,7 +26,7 @@ import { clientEnv } from '@/env/client';
 import { authClient } from '@/lib/auth-client';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
-import { Captcha } from '../shared/captcha';
+import { Captcha, type CaptchaRef } from '../shared/captcha';
 import { SocialLoginButton } from './social-login-button';
 
 interface RegisterFormProps {
@@ -52,7 +52,7 @@ export const RegisterForm = ({
   const [success, setSuccess] = useState<string | undefined>('');
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const captchaRef = useRef<any>(null);
+  const captchaRef = useRef<CaptchaRef>(null);
 
   // Check if credential login is enabled
   const credentialLoginEnabled = websiteConfig.auth.enableCredentialLogin;
@@ -135,17 +135,17 @@ export const RegisterForm = ({
         callbackURL: callbackUrl,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: () => {
           // console.log('register, request:', ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
-        onResponse: (ctx) => {
+        onResponse: () => {
           // console.log('register, response:', ctx.response);
           setIsPending(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: () => {
           // sign up success, user information stored in ctx.data
           // console.log("register, success:", ctx.data);
           setSuccess(t('checkEmail'));
@@ -157,7 +157,7 @@ export const RegisterForm = ({
             window.Affonso.signup(values.email);
           }
         },
-        onError: (ctx) => {
+        onError: (ctx: { error: { status: number; message: string } }) => {
           // sign up fail, display the error message
           console.error('register, error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
@@ -286,7 +286,7 @@ export const RegisterForm = ({
       <div className="mt-4">
         <SocialLoginButton
           callbackUrl={callbackUrl}
-          showDivider={credentialLoginEnabled}
+          showDivider={Boolean(credentialLoginEnabled)}
         />
       </div>
     </AuthCard>

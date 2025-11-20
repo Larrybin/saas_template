@@ -58,12 +58,12 @@ export function useCurrentPlan(userId: string | undefined) {
   const {
     data: subscription,
     isLoading: isLoadingSubscription,
-    error: subscriptionError,
+    error: _subscriptionError,
   } = useActiveSubscription(userId);
   const {
     data: isLifetimeMember,
     isLoading: isLoadingLifetime,
-    error: lifetimeError,
+    error: _lifetimeError,
   } = useLifetimeStatus(userId);
 
   return useQuery({

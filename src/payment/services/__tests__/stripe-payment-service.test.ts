@@ -522,8 +522,7 @@ describe('StripePaymentService', () => {
 
     await service.handleWebhookEvent('payload', 'signature');
 
-    const subTxWrapper =
-      creditsGateway.addSubscriptionCredits.mock.calls[0][3];
+    const subTxWrapper = creditsGateway.addSubscriptionCredits.mock.calls[0][3];
     expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.withTransaction).toHaveBeenCalled();
     expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
@@ -600,8 +599,7 @@ describe('StripePaymentService', () => {
     await expect(
       service.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('sub grant fail');
-    const subTxWrapper =
-      creditsGateway.addSubscriptionCredits.mock.calls[0][3];
+    const subTxWrapper = creditsGateway.addSubscriptionCredits.mock.calls[0][3];
     expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.updateBySubscriptionId).toHaveBeenCalled();
     expect(paymentRepository.withTransaction).toHaveBeenCalled();

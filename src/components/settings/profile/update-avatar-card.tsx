@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { uploadFileFromBrowser } from '@/storage/client';
 
 interface UpdateAvatarCardProps {
-  className?: string;
+  className?: string | undefined;
 }
 
 /**
@@ -36,6 +36,10 @@ export function UpdateAvatarCard({ className }: UpdateAvatarCardProps) {
     return null;
   }
 
+  return <UpdateAvatarCardContent className={className} />;
+}
+
+function UpdateAvatarCardContent({ className }: UpdateAvatarCardProps) {
   const t = useTranslations('Dashboard.settings.profile');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | undefined>('');
@@ -105,7 +109,7 @@ export function UpdateAvatarCard({ className }: UpdateAvatarCardProps) {
             // Refetch the session to get the latest data
             refetch();
           },
-          onError: (ctx) => {
+          onError: (ctx: { error: { status: number; message: string } }) => {
             console.error('update avatar error:', ctx.error);
             setError(`${ctx.error.status}: ${ctx.error.message}`);
             // Restore the previous avatar on error

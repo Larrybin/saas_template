@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import type {
   AnalyzeContentHandlerDeps,
@@ -55,7 +55,7 @@ describe('handleAnalyzeContentRequest', () => {
         content: 'hello world',
         screenshot: 'screenshot-url',
       })),
-      analyzeContent: vi.fn(async (content, url, provider) => ({
+      analyzeContent: vi.fn(async (_content, url, _provider) => ({
         title: 'Test Title',
         description: 'Test Description',
         introduction: 'Intro',
@@ -77,7 +77,7 @@ describe('handleAnalyzeContentRequest', () => {
           modelProvider: 'openrouter',
         },
       },
-      deps,
+      deps
     );
 
     expect(result.status).toBe(200);
@@ -87,7 +87,7 @@ describe('handleAnalyzeContentRequest', () => {
     expect(deps.analyzeContent).toHaveBeenCalledWith(
       expect.any(String),
       'https://example.com',
-      'openrouter',
+      'openrouter'
     );
   });
 
@@ -100,7 +100,7 @@ describe('handleAnalyzeContentRequest', () => {
           modelProvider: 'openrouter',
         },
       },
-      deps,
+      deps
     );
 
     expect(result.status).toBe(400);
@@ -110,7 +110,8 @@ describe('handleAnalyzeContentRequest', () => {
   });
 
   it('returns 503 when Firecrawl config is invalid', async () => {
-    const validateFirecrawlConfigMock = validateFirecrawlConfig as unknown as Mock;
+    const validateFirecrawlConfigMock =
+      validateFirecrawlConfig as unknown as Mock;
     validateFirecrawlConfigMock.mockReturnValueOnce(false);
 
     const result = await handleAnalyzeContentRequest(
@@ -121,7 +122,7 @@ describe('handleAnalyzeContentRequest', () => {
           modelProvider: 'openrouter',
         },
       },
-      deps,
+      deps
     );
 
     expect(result.status).toBe(503);
@@ -137,7 +138,7 @@ describe('handleAnalyzeContentRequest', () => {
         'timeout',
         'Timed out',
         ErrorSeverity.MEDIUM,
-        true,
+        true
       );
     });
 
@@ -149,7 +150,7 @@ describe('handleAnalyzeContentRequest', () => {
           modelProvider: 'openrouter',
         },
       },
-      deps,
+      deps
     );
 
     expect(result.status).toBe(408);

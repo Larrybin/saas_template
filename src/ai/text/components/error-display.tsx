@@ -210,9 +210,9 @@ export function ErrorDisplay({
 
       <CardContent>
         <div className="flex flex-wrap gap-2">
-          {recoveryActions.map((action, index) => (
+          {recoveryActions.map((action) => (
             <Button
-              key={index}
+              key={action.action}
               variant={action.primary ? 'default' : 'outline'}
               size="sm"
               onClick={() => handleAction(action.action)}

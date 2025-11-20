@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import type { User as AppUser } from '@/lib/auth-types';
 import { isDemoWebsite } from '@/lib/demo';
 import { getSession } from '@/lib/server';
 
@@ -13,7 +14,8 @@ export default async function UsersLayout({ children }: UsersLayoutProps) {
   const isDemo = isDemoWebsite();
   // Check if user is admin
   const session = await getSession();
-  if (!session || (session.user.role !== 'admin' && !isDemo)) {
+  const user = session?.user as AppUser | undefined;
+  if (!user || (user.role !== 'admin' && !isDemo)) {
     notFound();
   }
 

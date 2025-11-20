@@ -6,11 +6,10 @@ import { Component } from 'react';
 import type { WebContentAnalyzerProps } from '@/ai/text/utils/web-content-analyzer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-import { useWebContentAnalyzer } from './use-web-content-analyzer';
 import { AnalysisResults as AnalysisResultsComponent } from './analysis-results';
 import { LoadingStates } from './loading-states';
 import { UrlInputForm } from './url-input-form';
+import { useWebContentAnalyzer } from './use-web-content-analyzer';
 
 class ErrorBoundary extends Component<
   {

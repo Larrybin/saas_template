@@ -31,7 +31,7 @@ interface PricingCardProps {
   plan: PricePlan;
   interval?: PlanInterval; // 'month' or 'year'
   paymentType?: PaymentType; // 'subscription' or 'one_time'
-  metadata?: Record<string, string>;
+  metadata?: Record<string, string> | undefined;
   className?: string;
   isCurrentPlan?: boolean;
 }

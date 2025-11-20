@@ -24,12 +24,10 @@ export default function PromotekitScript() {
   }
 
   return (
-    <>
-      <Script
-        src="https://cdn.promotekit.com/promotekit.js"
-        data-promotekit={promotekitKey}
-        strategy="afterInteractive"
-      />
-    </>
+    <Script
+      src="https://cdn.promotekit.com/promotekit.js"
+      data-promotekit={promotekitKey}
+      strategy="afterInteractive"
+    />
   );
 }

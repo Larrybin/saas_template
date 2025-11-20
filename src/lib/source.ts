@@ -1,7 +1,7 @@
 import { type InferPageType, loader } from 'fumadocs-core/source';
 import { createMDXSource } from 'fumadocs-mdx/runtime/next';
 import * as LucideIcons from 'lucide-react';
-import { createElement } from 'react';
+import { type ComponentType, createElement } from 'react';
 import type {
   BlogAuthorEntry,
   BlogCategoryEntry,
@@ -27,7 +27,9 @@ export const source = loader({
       return undefined;
     }
 
-    const IconComponent = (LucideIcons as Record<string, any>)[iconName];
+    const IconComponent = (
+      LucideIcons as unknown as Record<string, ComponentType<unknown>>
+    )[iconName];
     if (IconComponent) {
       return createElement(IconComponent);
     }

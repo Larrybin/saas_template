@@ -58,7 +58,11 @@ export const uploadFile = async (
   folder?: string
 ): Promise<UploadFileResult> => {
   const provider = getStorageProvider();
-  return provider.uploadFile({ file, filename, contentType, folder });
+  return provider.uploadFile(
+    folder
+      ? { file, filename, contentType, folder }
+      : { file, filename, contentType }
+  );
 };
 
 /**

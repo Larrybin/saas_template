@@ -28,12 +28,12 @@ import { authClient } from '@/lib/auth-client';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
 import { cn } from '@/lib/utils';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
-import { Captcha } from '../shared/captcha';
+import { Captcha, type CaptchaRef } from '../shared/captcha';
 import { SocialLoginButton } from './social-login-button';
 
 export interface LoginFormProps {
   className?: string;
-  callbackUrl?: string;
+  callbackUrl?: string | undefined;
 }
 
 export const LoginForm = ({
@@ -57,7 +57,7 @@ export const LoginForm = ({
   const [success, setSuccess] = useState<string | undefined>('');
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const captchaRef = useRef<any>(null);
+  const captchaRef = useRef<CaptchaRef>(null);
 
   // Check if credential login is enabled
   const credentialLoginEnabled = websiteConfig.auth.enableCredentialLogin;
@@ -134,22 +134,22 @@ export const LoginForm = ({
         callbackURL: callbackUrl,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: () => {
           // console.log("login, request:", ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
-        onResponse: (ctx) => {
+        onResponse: () => {
           // console.log("login, response:", ctx.response);
           setIsPending(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: () => {
           // console.log("login, success:", ctx.data);
           // setSuccess("Login successful");
           // router.push(callbackUrl || "/dashboard");
         },
-        onError: (ctx) => {
+        onError: (ctx: { error: { status: number; message: string } }) => {
           console.error('login, error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
           // Reset captcha on login error
@@ -276,7 +276,7 @@ export const LoginForm = ({
       <div className="mt-4">
         <SocialLoginButton
           callbackUrl={callbackUrl}
-          showDivider={credentialLoginEnabled}
+          showDivider={Boolean(credentialLoginEnabled)}
         />
       </div>
     </AuthCard>

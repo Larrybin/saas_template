@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import {
-  handleAnalyzeContentRequest,
   type AnalyzeContentHandlerInput,
+  handleAnalyzeContentRequest,
 } from '@/ai/text/utils/analyze-content-handler';
 import {
   ErrorSeverity,
   ErrorType,
-  WebContentAnalyzerError,
   logError,
+  WebContentAnalyzerError,
 } from '@/ai/text/utils/error-handling';
 import type { AnalyzeContentResponse } from '@/ai/text/utils/web-content-analyzer';
 import { ensureApiUser } from '@/lib/server/api-auth';
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       'Request body must be valid JSON.',
       ErrorSeverity.MEDIUM,
       false,
-      error instanceof Error ? error : undefined,
+      error instanceof Error ? error : undefined
     );
 
     logError(validationError, { requestId });
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         success: false,
         error: validationError.userMessage,
       } satisfies AnalyzeContentResponse,
-      { status: 400 },
+      { status: 400 }
     );
   }
 

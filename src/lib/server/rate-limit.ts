@@ -24,13 +24,17 @@ type RateLimitResult =
     };
 
 const redisConfig = serverEnv.rateLimit;
-const redisClient =
-  redisConfig?.redisRestUrl && redisConfig.redisRestToken
-    ? new Redis({
-        url: redisConfig.redisRestUrl,
-        token: redisConfig.redisRestToken,
-      })
-    : null;
+const redisRestUrl = redisConfig?.redisRestUrl;
+const redisRestToken = redisConfig?.redisRestToken;
+
+let redisClient: Redis | null = null;
+
+if (redisRestUrl && redisRestToken) {
+  redisClient = new Redis({
+    url: redisRestUrl,
+    token: redisRestToken,
+  });
+}
 
 const limiterCache = new Map<string, Ratelimit>();
 const memoryStore = new Map<string, { count: number; expiresAt: number }>();
@@ -130,7 +134,7 @@ function getForwardedIp(request: Request): string | undefined {
 }
 
 function windowToMs(window: RateLimitWindow): number {
-  const [amountStr, unit] = window.trim().split(/\s+/);
+  const [amountStr, unit] = window.trim().split(/\s+/) as [string, string];
   const amount = Number.parseInt(amountStr, 10);
 
   if (Number.isNaN(amount) || amount <= 0) {

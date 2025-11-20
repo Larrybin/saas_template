@@ -78,7 +78,7 @@ export function PromptInput({
               {suggestions.map((suggestion, index) => (
                 <button
                   type="button"
-                  key={index}
+                  key={suggestion.text}
                   onClick={() => handleSuggestionSelect(suggestion.prompt)}
                   className={cn(
                     'flex items-center justify-between cursor-pointer px-2 rounded-lg py-1 bg-background text-sm hover:opacity-70 group transition-opacity duration-200',

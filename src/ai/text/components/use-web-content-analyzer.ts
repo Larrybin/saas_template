@@ -1,11 +1,5 @@
 import { useCallback, useReducer, useState } from 'react';
 import { toast } from 'sonner';
-
-import type {
-  AnalysisState,
-  AnalyzeContentResponse,
-  ModelProvider,
-} from '@/ai/text/utils/web-content-analyzer';
 import {
   classifyError,
   ErrorSeverity,
@@ -14,6 +8,11 @@ import {
   WebContentAnalyzerError,
   withRetry,
 } from '@/ai/text/utils/error-handling';
+import type {
+  AnalysisState,
+  AnalyzeContentResponse,
+  ModelProvider,
+} from '@/ai/text/utils/web-content-analyzer';
 
 type AnalysisAction =
   | { type: 'START_ANALYSIS'; payload: { url: string } }
@@ -27,7 +26,7 @@ type AnalysisAction =
 
 function analysisReducer(
   state: AnalysisState,
-  action: AnalysisAction,
+  action: AnalysisAction
 ): AnalysisState {
   switch (action.type) {
     case 'START_ANALYSIS':
@@ -142,7 +141,7 @@ export function useWebContentAnalyzer() {
               data.error || `HTTP ${response.status}: ${response.statusText}`,
               data.error || 'Failed to analyze website. Please try again.',
               severity,
-              retryable,
+              retryable
             );
           }
 
@@ -153,7 +152,7 @@ export function useWebContentAnalyzer() {
               data.error ||
                 'Failed to analyze website content. Please try again.',
               ErrorSeverity.MEDIUM,
-              true,
+              true
             );
           }
 
@@ -166,14 +165,26 @@ export function useWebContentAnalyzer() {
         });
 
         await new Promise((resolve) =>
-          setTimeout(resolve, ANALYZE_STAGE_MIN_DELAY_MS),
+          setTimeout(resolve, ANALYZE_STAGE_MIN_DELAY_MS)
         );
+
+        if (!result.data) {
+          throw new WebContentAnalyzerError(
+            ErrorType.ANALYSIS,
+            'Missing analysis data in response',
+            'Failed to analyze website content. Please try again.',
+            ErrorSeverity.MEDIUM,
+            true
+          );
+        }
 
         dispatch({
           type: 'SET_RESULTS',
           payload: {
-            results: result.data!.analysis,
-            screenshot: result.data!.screenshot,
+            results: result.data.analysis,
+            ...(result.data.screenshot
+              ? { screenshot: result.data.screenshot }
+              : {}),
           },
         });
 
@@ -220,36 +231,32 @@ export function useWebContentAnalyzer() {
         }, 0);
       }
     },
-    [dispatch, setAnalyzedError],
+    []
   );
 
   const handleNewAnalysis = useCallback(() => {
     dispatch({ type: 'RESET' });
     setAnalyzedError(null);
-  }, [dispatch, setAnalyzedError]);
+  }, []);
 
-  const handleError = useCallback(
-    (error: Error) => {
-      // eslint-disable-next-line no-console
-      console.error('WebContentAnalyzer component error:', error);
+  const handleError = useCallback((error: Error) => {
+    // eslint-disable-next-line no-console
+    console.error('WebContentAnalyzer component error:', error);
 
-      dispatch({
-        type: 'SET_ERROR',
-        payload: {
-          error:
-            'An unexpected error occurred. Please refresh the page and try again.',
-        },
+    dispatch({
+      type: 'SET_ERROR',
+      payload: {
+        error:
+          'An unexpected error occurred. Please refresh the page and try again.',
+      },
+    });
+
+    setTimeout(() => {
+      toast.error('Component error', {
+        description: 'An unexpected error occurred. Please refresh the page.',
       });
-
-      setTimeout(() => {
-        toast.error('Component error', {
-          description:
-            'An unexpected error occurred. Please refresh the page.',
-        });
-      }, 0);
-    },
-    [dispatch],
-  );
+    }, 0);
+  }, []);
 
   return {
     state,

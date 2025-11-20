@@ -25,13 +25,6 @@ export const SocialLoginButton = ({
   callbackUrl: propCallbackUrl,
   showDivider = true,
 }: SocialLoginButtonProps) => {
-  if (
-    !websiteConfig.auth.enableGoogleLogin &&
-    !websiteConfig.auth.enableGithubLogin
-  ) {
-    return null;
-  }
-
   const t = useTranslations('AuthPage.login');
   const searchParams = useSearchParams();
   const paramCallbackUrl = searchParams.get('callbackUrl');
@@ -44,6 +37,14 @@ export const SocialLoginButton = ({
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
   const [isLoading, setIsLoading] = useState<'google' | 'github' | null>(null);
   console.log('social login button, callbackUrl', callbackUrl);
+
+  const hasSocialLogin =
+    websiteConfig.auth.enableGoogleLogin ||
+    websiteConfig.auth.enableGithubLogin;
+
+  if (!hasSocialLogin) {
+    return null;
+  }
 
   const onClick = async (provider: 'google' | 'github') => {
     await authClient.signIn.social(
@@ -73,19 +74,19 @@ export const SocialLoginButton = ({
         // disableRedirect: true,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: () => {
           // console.log("onRequest", ctx);
           setIsLoading(provider);
         },
-        onResponse: (ctx) => {
+        onResponse: () => {
           // console.log("onResponse", ctx.response);
           setIsLoading(null);
         },
-        onSuccess: (ctx) => {
+        onSuccess: () => {
           // console.log("onSuccess", ctx.data);
           setIsLoading(null);
         },
-        onError: (ctx) => {
+        onError: (ctx: { error: { message: string } }) => {
           console.log('social login error', ctx.error.message);
           setIsLoading(null);
         },

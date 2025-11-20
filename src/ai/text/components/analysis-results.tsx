@@ -7,13 +7,12 @@ import {
   ImageIcon,
   InfoIcon,
   ListIcon,
-  PlusIcon,
   RefreshCwIcon,
   SparklesIcon,
   TagIcon,
 } from 'lucide-react';
 import Image from 'next/image';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import type { AnalysisResultsProps } from '@/ai/text/utils/web-content-analyzer';
 import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
 import { Badge } from '@/components/ui/badge';
@@ -25,12 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import {
-  ImageOptimization,
-  useLazyLoading,
-  useStableCallback,
-} from '../utils/performance';
+import { useLazyLoading } from '../utils/performance';
 
 // Memoized screenshot component for better performance
 const LazyScreenshot = memo(
@@ -198,8 +192,8 @@ export const AnalysisResults = memo(function AnalysisResults({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {results.features.map((feature, index) => (
-                    <div key={index} className="flex items-start gap-3">
+                  {results.features.map((feature) => (
+                    <div key={feature} className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-2" />
                       <p className="text-sm leading-relaxed text-muted-foreground">
                         {feature}
@@ -222,8 +216,12 @@ export const AnalysisResults = memo(function AnalysisResults({
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {results.useCases.map((useCase, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
+                  {results.useCases.map((useCase) => (
+                    <Badge
+                      key={useCase}
+                      variant="secondary"
+                      className="text-xs"
+                    >
                       {useCase}
                     </Badge>
                   ))}

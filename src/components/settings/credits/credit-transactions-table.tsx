@@ -1,12 +1,8 @@
 'use client';
 
-import { CaretDownIcon, CaretUpIcon } from '@radix-ui/react-icons';
+import { IconCaretDownFilled, IconCaretUpFilled } from '@tabler/icons-react';
 import {
-  IconCaretDownFilled,
-  IconCaretUpFilled,
-  IconSortAscending2,
-} from '@tabler/icons-react';
-import {
+  type Column,
   type ColumnDef,
   type ColumnFiltersState,
   flexRender,
@@ -19,17 +15,12 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import {
-  ArrowDownIcon,
-  ArrowUpDownIcon,
-  ArrowUpIcon,
   BanknoteIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
-  ChevronsUpDownIcon,
-  ChevronUpIcon,
   ClockIcon,
   CoinsIcon,
   GemIcon,
@@ -96,7 +87,7 @@ export interface CreditTransaction {
 
 interface DataTableColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
-  column: any;
+  column: Column<TData, TValue>;
   title: string;
 }
 
@@ -201,7 +192,7 @@ export function CreditTransactionsTable({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   // show fake data in demo website
-  const isDemo = clientEnv.isDemoWebsite;
+  const _isDemo = clientEnv.isDemoWebsite;
 
   // Map column IDs to translation keys
   const columnIdToTranslationKey = {
@@ -363,7 +354,8 @@ export function CreditTransactionsTable({
                 variant="outline"
                 className="text-sm px-1.5 cursor-pointer hover:bg-accent max-w-[150px]"
                 onClick={() => {
-                  navigator.clipboard.writeText(transaction.paymentId!);
+                  if (!transaction.paymentId) return;
+                  navigator.clipboard.writeText(transaction.paymentId);
                   toast.success(t('paymentIdCopied'));
                 }}
               >

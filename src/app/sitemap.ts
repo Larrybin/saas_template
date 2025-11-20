@@ -165,7 +165,7 @@ function getUrl(href: Href, locale: Locale) {
  * https://next-intl.dev/docs/environments/actions-metadata-route-handlers#sitemap
  * https://github.com/amannn/next-intl/blob/main/examples/example-app-router/src/app/sitemap.ts
  */
-function getEntries(href: Href) {
+function _getEntries(href: Href) {
   return routing.locales.map((locale) => ({
     url: getUrl(href, locale),
     alternates: {

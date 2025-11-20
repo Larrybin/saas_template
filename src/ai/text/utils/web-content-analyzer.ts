@@ -63,7 +63,7 @@ export interface AnalysisState {
   loadingStage: 'scraping' | 'analyzing' | null;
   results: AnalysisResults | null;
   error: string | null;
-  screenshot?: string;
+  screenshot?: string | undefined;
 }
 
 // Component Props Interfaces
@@ -84,7 +84,7 @@ export interface UrlInputFormProps {
 
 export interface AnalysisResultsProps {
   results: AnalysisResults;
-  screenshot?: string;
+  screenshot?: string | undefined;
   onNewAnalysis: () => void;
 }
 

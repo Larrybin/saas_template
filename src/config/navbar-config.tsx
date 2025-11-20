@@ -1,36 +1,16 @@
 'use client';
 
 import {
-  AudioLinesIcon,
   BuildingIcon,
-  ChartNoAxesCombinedIcon,
-  CircleDollarSignIcon,
-  CircleHelpIcon,
-  ComponentIcon,
   CookieIcon,
   FileTextIcon,
-  FilmIcon,
-  FlameIcon,
-  FootprintsIcon,
   ImageIcon,
   ListChecksIcon,
-  LockKeyholeIcon,
-  LogInIcon,
   MailboxIcon,
   MailIcon,
   MessageCircleIcon,
-  NewspaperIcon,
-  RocketIcon,
+  PenSquareIcon,
   ShieldCheckIcon,
-  SnowflakeIcon,
-  SplitSquareVerticalIcon,
-  SquareCodeIcon,
-  SquareKanbanIcon,
-  SquarePenIcon,
-  ThumbsUpIcon,
-  UserPlusIcon,
-  UsersIcon,
-  WandSparklesIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Routes } from '@/routes';
@@ -85,7 +65,7 @@ export function getNavbarLinks(): NestedMenuItem[] {
         {
           title: t('ai.items.text.title'),
           description: t('ai.items.text.description'),
-          icon: <SquarePenIcon className="size-4 shrink-0" />,
+          icon: <PenSquareIcon className="size-4 shrink-0" />,
           href: Routes.AIText,
           external: false,
         },

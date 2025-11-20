@@ -80,10 +80,10 @@ export function ImageCarousel({
       {/* Dot Indicators */}
       <div className="absolute -bottom-6 left-0 right-0">
         <div className="flex justify-center gap-1">
-          {providers.map((_, index) => (
+          {providers.map((provider, index) => (
             <button
               type="button"
-              key={index}
+              key={provider}
               className={cn(
                 'h-1.5 rounded-full transition-all',
                 index === currentSlide

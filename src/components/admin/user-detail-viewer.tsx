@@ -69,13 +69,16 @@ export function UserDetailViewer({ user }: UserDetailViewerProps) {
 
     setError('');
 
+    const banExpiresIn =
+      banExpiresAt !== undefined
+        ? Math.floor((banExpiresAt.getTime() - Date.now()) / 1000)
+        : undefined;
+
     try {
       await banUserMutation.mutateAsync({
         userId: user.id,
         banReason,
-        banExpiresIn: banExpiresAt
-          ? Math.floor((banExpiresAt.getTime() - Date.now()) / 1000)
-          : undefined,
+        ...(banExpiresIn !== undefined ? { banExpiresIn } : {}),
       });
 
       toast.success(t('ban.success'));

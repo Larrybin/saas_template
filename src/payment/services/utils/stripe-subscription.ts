@@ -1,7 +1,6 @@
 import type Stripe from 'stripe';
 import {
   type PaymentStatus,
-  PaymentTypes,
   type PlanInterval,
   PlanIntervals,
 } from '../../types';

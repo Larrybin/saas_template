@@ -51,12 +51,14 @@ export function mapLocaleToStripeLocale(
   locale?: string
 ): Stripe.Checkout.SessionCreateParams.Locale {
   if (!locale) return 'auto';
-  if (SUPPORTED_LOCALES.includes(locale as any)) {
-    return locale as Stripe.Checkout.SessionCreateParams.Locale;
+  const localeCandidate = locale as Stripe.Checkout.SessionCreateParams.Locale;
+  if (SUPPORTED_LOCALES.includes(localeCandidate)) {
+    return localeCandidate;
   }
   const base = locale.split('-')[0];
-  if (SUPPORTED_LOCALES.includes(base as any)) {
-    return base as Stripe.Checkout.SessionCreateParams.Locale;
+  const baseCandidate = base as Stripe.Checkout.SessionCreateParams.Locale;
+  if (SUPPORTED_LOCALES.includes(baseCandidate)) {
+    return baseCandidate;
   }
   return 'auto';
 }

@@ -35,9 +35,14 @@ export async function ensureApiUser(request: Request): Promise<ApiAuthResult> {
     });
 
     if (session?.user) {
+      const user: User = {
+        ...(session.user as User),
+        role: (session.user as User).role ?? 'user',
+        banned: (session.user as User).banned ?? false,
+      };
       return {
         ok: true,
-        user: session.user,
+        user,
       };
     }
   } catch (error) {

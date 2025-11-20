@@ -17,7 +17,9 @@ export function generateStaticParams() {
       .getPages(locale)
       .filter((category) => category.locale === locale);
     for (const category of localeCategories) {
-      params.push({ locale, slug: category.slugs[0] });
+      const [firstSlug] = category.slugs;
+      if (!firstSlug) continue;
+      params.push({ locale, slug: firstSlug });
     }
   }
   return params;
@@ -33,9 +35,11 @@ export async function generateMetadata({ params }: BlogCategoryPageProps) {
   const t = await getTranslations({ locale, namespace: 'Metadata' });
   const canonicalPath = `/blog/category/${slug}`;
 
+  const description = category.data.description;
+
   return constructMetadata({
     title: `${category.data.name} | ${t('title')}`,
-    description: category.data.description,
+    ...(description ? { description } : {}),
     canonicalUrl: getUrlWithLocale(canonicalPath, locale),
   });
 }
@@ -58,8 +62,13 @@ export default async function BlogCategoryPage({
 
   const localePosts = blogSource.getPages(locale);
   const publishedPosts = localePosts.filter(isPublishedBlogPost);
+  const [firstSlug] = category.slugs;
+  if (!firstSlug) {
+    notFound();
+  }
+
   const filteredPosts = publishedPosts.filter((post) =>
-    getBlogData(post).categories.some((cat) => cat === category.slugs[0])
+    getBlogData(post).categories.some((cat) => cat === firstSlug)
   );
   const sortedPosts = filteredPosts.sort((a, b) => {
     return (

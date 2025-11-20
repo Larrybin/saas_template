@@ -15,7 +15,7 @@ interface LocaleState {
 export const useLocaleStore = create<LocaleState>((set) => ({
   currentLocale: '', // don't change, it will affect the language detection switch judgment
   setCurrentLocale: (locale) =>
-    set((state) => ({
+    set(() => ({
       currentLocale: locale,
     })),
 }));

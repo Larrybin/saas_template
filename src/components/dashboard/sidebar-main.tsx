@@ -20,7 +20,7 @@ export function SidebarMain({ items }: { items: NestedMenuItem[] }) {
   // Function to check if a path is active
   const isActive = (href: string | undefined): boolean => {
     if (!href) return false;
-    return pathname === href || pathname.startsWith(href + '/');
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (

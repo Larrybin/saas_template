@@ -136,5 +136,11 @@ export async function runExpirationJob(options?: {
     '<<< expiration job end'
   );
 
-  return { usersCount, processedCount, errorCount, totalExpiredCredits, batchCount };
+  return {
+    usersCount,
+    processedCount,
+    errorCount,
+    totalExpiredCredits,
+    batchCount,
+  };
 }

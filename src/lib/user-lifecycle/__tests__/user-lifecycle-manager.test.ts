@@ -31,7 +31,11 @@ describe('UserLifecycleManager', () => {
     await manager.emit(baseEvent as never);
 
     expect(calls.map((item) => item.label)).toEqual(['first', 'second']);
-    expect(calls[0].order).toBeLessThanOrEqual(calls[1].order);
+    const [firstCall, secondCall] = calls;
+    if (!firstCall || !secondCall) {
+      throw new Error('Expected two hook calls to be recorded');
+    }
+    expect(firstCall.order).toBeLessThanOrEqual(secondCall.order);
   });
 
   it('logs errors from failing hooks without throwing', async () => {

@@ -11,6 +11,10 @@ export function NewsletterCard() {
     return null;
   }
 
+  return <NewsletterCardContent />;
+}
+
+function NewsletterCardContent() {
   const t = useTranslations('Newsletter');
 
   return (

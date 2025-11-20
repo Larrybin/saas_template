@@ -15,14 +15,14 @@ export async function generateMetadata({
   const pt = await getTranslations({ locale, namespace: 'AIAudioPage' });
 
   return constructMetadata({
-    title: pt('title') + ' | ' + t('title'),
+    title: `${pt('title')} | ${t('title')}`,
     description: pt('description'),
     canonicalUrl: getUrlWithLocale('/ai/audio', locale),
   });
 }
 
 export default async function AIAudioPage() {
-  const t = await getTranslations('AIAudioPage');
+  const _t = await getTranslations('AIAudioPage');
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

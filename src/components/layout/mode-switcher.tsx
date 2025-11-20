@@ -20,6 +20,10 @@ export function ModeSwitcher() {
     return null;
   }
 
+  return <ModeSwitcherContent />;
+}
+
+function ModeSwitcherContent() {
   const { setTheme } = useTheme();
   const t = useTranslations('Common.mode');
 

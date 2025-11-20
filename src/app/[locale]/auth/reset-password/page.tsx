@@ -18,7 +18,7 @@ export async function generateMetadata({
   });
 
   return constructMetadata({
-    title: pt('title') + ' | ' + t('title'),
+    title: `${pt('title')} | ${t('title')}`,
     description: t('description'),
     canonicalUrl: getUrlWithLocale('/auth/reset-password', locale),
   });

@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { addDays } from 'date-fns';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
 import { getLogger } from '@/lib/server/logger';
@@ -56,7 +56,10 @@ export class CreditLedgerDomainService {
       type === CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY;
 
     if (isPeriodicType) {
-      if (!Number.isFinite(payload.periodKey) || (payload.periodKey ?? 0) <= 0) {
+      if (
+        !Number.isFinite(payload.periodKey) ||
+        (payload.periodKey ?? 0) <= 0
+      ) {
         throw new Error(
           'periodKey is required for periodic credit transactions'
         );
@@ -325,7 +328,9 @@ export class CreditLedgerDomainService {
   ): Promise<boolean> {
     const executor = await this.resolveExecutor(db);
     if (!Number.isFinite(periodKey) || periodKey <= 0) {
-      throw new Error('periodKey is required when checking canAddCreditsByType');
+      throw new Error(
+        'periodKey is required when checking canAddCreditsByType'
+      );
     }
     const existing = await executor
       .select()

@@ -20,7 +20,7 @@ export async function generateMetadata({
   const pt = await getTranslations({ locale, namespace: 'AboutPage' });
 
   return constructMetadata({
-    title: pt('title') + ' | ' + t('title'),
+    title: `${pt('title')} | ${t('title')}`,
     description: pt('description'),
     canonicalUrl: getUrlWithLocale('/about', locale),
   });

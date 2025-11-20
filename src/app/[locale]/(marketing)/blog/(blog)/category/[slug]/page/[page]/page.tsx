@@ -15,19 +15,19 @@ export function generateStaticParams() {
   for (const locale of LOCALES) {
     const localeCategories = categorySource.getPages(locale);
     for (const category of localeCategories) {
+      const [firstSlug] = category.slugs;
+      if (!firstSlug) continue;
       const totalPages = Math.ceil(
         blogSource
           .getPages(locale)
           .filter(
             (post) =>
               isPublishedBlogPost(post) &&
-              getBlogData(post).categories.some(
-                (cat) => cat === category.slugs[0]
-              )
+              getBlogData(post).categories.some((cat) => cat === firstSlug)
           ).length / websiteConfig.blog.paginationSize
       );
       for (let page = 2; page <= totalPages; page++) {
-        params.push({ locale, slug: category.slugs[0], page: String(page) });
+        params.push({ locale, slug: firstSlug, page: String(page) });
       }
     }
   }
@@ -44,9 +44,11 @@ export async function generateMetadata({ params }: BlogCategoryPageProps) {
   const t = await getTranslations({ locale, namespace: 'Metadata' });
   const canonicalPath = `/blog/category/${slug}/page/${page}`;
 
+  const description = category.data.description;
+
   return constructMetadata({
     title: `${category.data.name} | ${t('title')}`,
-    description: category.data.description,
+    ...(description ? { description } : {}),
     canonicalUrl: getUrlWithLocale(canonicalPath, locale),
   });
 }

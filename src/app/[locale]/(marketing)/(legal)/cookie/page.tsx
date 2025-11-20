@@ -24,10 +24,11 @@ export async function generateMetadata({
   }
 
   const t = await getTranslations({ locale, namespace: 'Metadata' });
+  const description = page.data.description;
 
   return constructMetadata({
-    title: page.data.title + ' | ' + t('title'),
-    description: page.data.description,
+    title: `${page.data.title} | ${t('title')}`,
+    ...(description ? { description } : {}),
     canonicalUrl: getUrlWithLocale('/cookie', locale),
   });
 }

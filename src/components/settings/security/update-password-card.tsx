@@ -84,23 +84,23 @@ export function UpdatePasswordCard({ className }: UpdatePasswordCardProps) {
         revokeOtherSessions: true,
       },
       {
-        onRequest: (ctx) => {
+        onRequest: () => {
           // console.log('update password, request:', ctx.url);
           setIsSaving(true);
           setError('');
         },
-        onResponse: (ctx) => {
+        onResponse: () => {
           // console.log('update password, response:', ctx.response);
           setIsSaving(false);
         },
-        onSuccess: (ctx) => {
+        onSuccess: () => {
           // update password success, user information stored in ctx.data
           // console.log("update password, success:", ctx.data);
           toast.success(t('success'));
           router.refresh();
           form.reset();
         },
-        onError: (ctx) => {
+        onError: (ctx: { error: { status: number; message: string } }) => {
           // update password fail, display the error message
           // { "message": "Invalid password", "code": "INVALID_PASSWORD", "status": 400, "statusText": "BAD_REQUEST" }
           console.error('update password error:', ctx.error);

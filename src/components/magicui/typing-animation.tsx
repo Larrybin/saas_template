@@ -1,90 +1,93 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { motion, MotionProps } from "motion/react";
+import { type MotionProps, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface TypingAnimationProps extends MotionProps {
-  children: string;
-  className?: string;
-  duration?: number;
-  delay?: number;
-  as?: React.ElementType;
-  startOnView?: boolean;
+	children: string;
+	className?: string;
+	duration?: number;
+	delay?: number;
+	as?: React.ElementType;
+	startOnView?: boolean;
 }
 
 export function TypingAnimation({
-  children,
-  className,
-  duration = 100,
-  delay = 0,
-  as: Component = "div",
-  startOnView = false,
-  ...props
+	children,
+	className,
+	duration = 100,
+	delay = 0,
+	as: Component = "div",
+	startOnView = false,
+	...props
 }: TypingAnimationProps) {
-  const MotionComponent = motion.create(Component, {
-    forwardMotionProps: true,
-  });
+	const MotionComponent = motion.create(Component, {
+		forwardMotionProps: true,
+	});
 
-  const [displayedText, setDisplayedText] = useState<string>("");
-  const [started, setStarted] = useState(false);
-  const elementRef = useRef<HTMLElement | null>(null);
+	const [displayedText, setDisplayedText] = useState<string>("");
+	const [started, setStarted] = useState(false);
+	const elementRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    if (!startOnView) {
-      const startTimeout = setTimeout(() => {
-        setStarted(true);
-      }, delay);
-      return () => clearTimeout(startTimeout);
-    }
+	useEffect(() => {
+		if (!startOnView) {
+			const startTimeout = setTimeout(() => {
+				setStarted(true);
+			}, delay);
+			return () => clearTimeout(startTimeout);
+		}
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => {
-            setStarted(true);
-          }, delay);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const [entry] = entries;
+				if (!entry || !entry.isIntersecting) {
+					return;
+				}
 
-    if (elementRef.current) {
-      observer.observe(elementRef.current);
-    }
+				setTimeout(() => {
+					setStarted(true);
+				}, delay);
+				observer.disconnect();
+			},
+			{ threshold: 0.1 },
+		);
 
-    return () => observer.disconnect();
-  }, [delay, startOnView]);
+		if (elementRef.current) {
+			observer.observe(elementRef.current);
+		}
 
-  useEffect(() => {
-    if (!started) return;
+		return () => observer.disconnect();
+	}, [delay, startOnView]);
 
-    let i = 0;
-    const typingEffect = setInterval(() => {
-      if (i < children.length) {
-        setDisplayedText(children.substring(0, i + 1));
-        i++;
-      } else {
-        clearInterval(typingEffect);
-      }
-    }, duration);
+	useEffect(() => {
+		if (!started) return;
 
-    return () => {
-      clearInterval(typingEffect);
-    };
-  }, [children, duration, started]);
+		let i = 0;
+		const typingEffect = setInterval(() => {
+			if (i < children.length) {
+				setDisplayedText(children.substring(0, i + 1));
+				i++;
+			} else {
+				clearInterval(typingEffect);
+			}
+		}, duration);
 
-  return (
-    <MotionComponent
-      ref={elementRef}
-      className={cn(
-        "text-4xl font-bold leading-[5rem] tracking-[-0.02em]",
-        className,
-      )}
-      {...props}
-    >
-      {displayedText}
-    </MotionComponent>
-  );
+		return () => {
+			clearInterval(typingEffect);
+		};
+	}, [children, duration, started]);
+
+	return (
+		<MotionComponent
+			ref={elementRef}
+			className={cn(
+				"text-4xl font-bold leading-[5rem] tracking-[-0.02em]",
+				className,
+			)}
+			{...props}
+		>
+			{displayedText}
+		</MotionComponent>
+	);
 }

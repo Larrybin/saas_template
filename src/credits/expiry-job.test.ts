@@ -47,7 +47,11 @@ describe('runExpirationJob', () => {
       selectDistinct: () => ({
         from: () => ({
           where: () =>
-            Promise.resolve([{ userId: 'user-1' }, { userId: 'user-2' }, { userId: 'user-3' }]),
+            Promise.resolve([
+              { userId: 'user-1' },
+              { userId: 'user-2' },
+              { userId: 'user-3' },
+            ]),
         }),
       }),
       transaction: async (fn: (executor: unknown) => Promise<void>) => {

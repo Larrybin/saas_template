@@ -28,6 +28,10 @@ export function CreditPackages() {
     return null;
   }
 
+  return <CreditPackagesContent />;
+}
+
+function CreditPackagesContent() {
   const t = useTranslations('Dashboard.settings.credits.packages');
 
   // Get current user and payment info

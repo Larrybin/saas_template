@@ -32,20 +32,30 @@ export function useDebounce<T>(value: T, delay: number): T {
  * @param delay - Delay in milliseconds
  * @returns The throttled function
  */
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number
 ): T {
   const lastRun = useRef(Date.now());
+  const callbackRef = useRef(callback);
+  const delayRef = useRef(delay);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    delayRef.current = delay;
+  }, [delay]);
 
   return useCallback(
     ((...args) => {
-      if (Date.now() - lastRun.current >= delay) {
-        callback(...args);
+      if (Date.now() - lastRun.current >= delayRef.current) {
+        callbackRef.current(...args);
         lastRun.current = Date.now();
       }
     }) as T,
-    [callback, delay]
+    []
   );
 }
 
@@ -64,8 +74,9 @@ export function useLazyLoading<T extends HTMLElement = HTMLDivElement>(
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
           setIsIntersecting(true);
           observer.disconnect();
         }
@@ -106,7 +117,7 @@ export function useMemoizedValue<T>(
       setValue(factory());
       depsRef.current = deps;
     }
-  }, deps);
+  }, [factory, deps]);
 
   return value;
 }
@@ -140,18 +151,16 @@ export function truncateAtWordBoundary(
 /**
  * Utility function to create a stable callback reference
  * @param callback - The callback function
- * @param deps - Dependencies array
  * @returns Stable callback reference
  */
-export function useStableCallback<T extends (...args: any[]) => any>(
-  callback: T,
-  deps: React.DependencyList
+export function useStableCallback<T extends (...args: unknown[]) => unknown>(
+  callback: T
 ): T {
   const callbackRef = useRef(callback);
 
   useEffect(() => {
     callbackRef.current = callback;
-  }, deps);
+  });
 
   return useCallback(((...args) => callbackRef.current(...args)) as T, []);
 }

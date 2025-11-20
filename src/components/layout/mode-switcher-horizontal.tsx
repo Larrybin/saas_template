@@ -16,6 +16,10 @@ export function ModeSwitcherHorizontal() {
     return null;
   }
 
+  return <ModeSwitcherHorizontalContent />;
+}
+
+function ModeSwitcherHorizontalContent() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const t = useTranslations('Common.mode');

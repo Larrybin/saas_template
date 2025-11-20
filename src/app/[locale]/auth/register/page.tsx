@@ -17,7 +17,7 @@ export async function generateMetadata({
   const pt = await getTranslations({ locale, namespace: 'AuthPage.register' });
 
   return constructMetadata({
-    title: pt('title') + ' | ' + t('title'),
+    title: `${pt('title')} | ${t('title')}`,
     description: t('description'),
     canonicalUrl: getUrlWithLocale('/auth/register', locale),
   });

@@ -1,5 +1,4 @@
 import type { SVGProps } from 'react';
-import React from 'react';
 
 /**
  * https://icon-sets.iconify.design/fa6-brands/instagram/
@@ -11,6 +10,8 @@ export function InstagramIcon(props: SVGProps<SVGSVGElement>) {
       width={42}
       height={48}
       viewBox="0 0 448 512"
+      aria-hidden="true"
+      focusable="false"
       {...props}
     >
       <path

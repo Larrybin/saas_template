@@ -54,8 +54,11 @@ export function ImageGenerator({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="space-y-2 mt-2">
-              {errors.map((err, index) => (
-                <Alert key={index} variant="destructive">
+              {errors.map((err) => (
+                <Alert
+                  key={`${err.provider}-${err.message}`}
+                  variant="destructive"
+                >
                   <AlertCircle className="h-4 w-4" />
                   <div className="ml-3">
                     <AlertTitle className="capitalize">

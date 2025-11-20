@@ -74,8 +74,7 @@ export async function canAddCreditsByType(
   periodKey?: number,
   executor?: DbExecutor
 ) {
-  const effectivePeriodKey =
-    periodKey ?? getCurrentPeriodKey();
+  const effectivePeriodKey = periodKey ?? getCurrentPeriodKey();
   return creditLedgerDomainService.canAddCreditsByType(
     userId,
     creditType,
@@ -94,13 +93,14 @@ export async function addRegisterGiftCredits(userId: string) {
   }
   const credits = websiteConfig.credits.registerGiftCredits.amount;
   const expireDays = websiteConfig.credits.registerGiftCredits.expireDays;
-  await addCredits({
+  const payload: AddCreditsPayload = {
     userId,
     amount: credits,
     type: CREDIT_TRANSACTION_TYPE.REGISTER_GIFT,
     description: `Register gift credits: ${credits}`,
-    expireDays,
-  });
+    ...(expireDays !== undefined ? { expireDays } : {}),
+  };
+  await addCredits(payload);
 }
 
 export async function addMonthlyFreeCredits(
@@ -126,14 +126,15 @@ export async function addMonthlyFreeCredits(
   if (!canAdd) return;
   const credits = pricePlan.credits.amount ?? 0;
   const expireDays = pricePlan.credits.expireDays;
-  await addCredits({
+  const payload: AddCreditsPayload = {
     userId,
     amount: credits,
     type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
     description: `Free monthly credits: ${credits}`,
-    expireDays,
     periodKey,
-  });
+    ...(expireDays !== undefined ? { expireDays } : {}),
+  };
+  await addCredits(payload);
 }
 
 export async function addSubscriptionCredits(
@@ -154,17 +155,17 @@ export async function addSubscriptionCredits(
     periodKey
   );
   if (!canAdd) return;
-  await addCredits(
-    {
-      userId,
-      amount: plan.credits.amount,
-      type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
-      description: `Subscription renewal credits: ${plan.credits.amount}`,
-      expireDays: plan.credits.expireDays,
-      periodKey,
-    },
-    transaction
-  );
+  const payload: AddCreditsPayload = {
+    userId,
+    amount: plan.credits.amount,
+    type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
+    description: `Subscription renewal credits: ${plan.credits.amount}`,
+    periodKey,
+    ...(plan.credits.expireDays !== undefined
+      ? { expireDays: plan.credits.expireDays }
+      : {}),
+  };
+  await addCredits(payload, transaction);
 }
 
 export async function addLifetimeMonthlyCredits(
@@ -185,17 +186,17 @@ export async function addLifetimeMonthlyCredits(
     periodKey
   );
   if (!canAdd) return;
-  await addCredits(
-    {
-      userId,
-      amount: plan.credits.amount,
-      type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
-      description: `Lifetime monthly credits: ${plan.credits.amount}`,
-      expireDays: plan.credits.expireDays,
-      periodKey,
-    },
-    transaction
-  );
+  const payload: AddCreditsPayload = {
+    userId,
+    amount: plan.credits.amount,
+    type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
+    description: `Lifetime monthly credits: ${plan.credits.amount}`,
+    periodKey,
+    ...(plan.credits.expireDays !== undefined
+      ? { expireDays: plan.credits.expireDays }
+      : {}),
+  };
+  await addCredits(payload, transaction);
 }
 
 export class CreditLedgerService implements CreditsGateway {

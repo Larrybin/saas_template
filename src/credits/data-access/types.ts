@@ -1,4 +1,4 @@
-import { getDb } from '@/db';
+import type { getDb } from '@/db';
 
 export type DrizzleDb = Awaited<ReturnType<typeof getDb>>;
 type TransactionCallback = Parameters<DrizzleDb['transaction']>[0];

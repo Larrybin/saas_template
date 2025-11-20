@@ -2,6 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SortingState } from '@tanstack/react-table';
 import { getUsersAction } from '@/actions/get-users';
 import { authClient } from '@/lib/auth-client';
+import type { User } from '@/lib/auth-types';
+
+type AdminClient = {
+  banUser: (params: {
+    userId: string;
+    banReason: string;
+    banExpiresIn?: number;
+  }) => Promise<unknown>;
+  unbanUser: (params: { userId: string }) => Promise<unknown>;
+};
 
 // Query keys
 export const usersKeys = {
@@ -22,7 +32,7 @@ export function useUsers(
   search: string,
   sorting: SortingState
 ) {
-  return useQuery({
+  return useQuery<{ items: User[]; total: number }>({
     queryKey: usersKeys.list({ pageIndex, pageSize, search, sorting }),
     queryFn: async () => {
       const result = await getUsersAction({
@@ -36,9 +46,12 @@ export function useUsers(
         throw new Error(result?.data?.error || 'Failed to fetch users');
       }
 
+      const items = (result.data.data?.items || []) as User[];
+      const total = result.data.data?.total ?? 0;
+
       return {
-        items: result.data.data?.items || [],
-        total: result.data.data?.total || 0,
+        items,
+        total,
       };
     },
   });
@@ -47,6 +60,7 @@ export function useUsers(
 // Hook to ban user
 export function useBanUser() {
   const queryClient = useQueryClient();
+  const adminClient = (authClient as unknown as { admin: AdminClient }).admin;
 
   return useMutation({
     mutationFn: async ({
@@ -58,11 +72,16 @@ export function useBanUser() {
       banReason: string;
       banExpiresIn?: number;
     }) => {
-      return authClient.admin.banUser({
-        userId,
-        banReason,
-        banExpiresIn,
-      });
+      const payload: {
+        userId: string;
+        banReason: string;
+        banExpiresIn?: number;
+      } =
+        banExpiresIn !== undefined
+          ? { userId, banReason, banExpiresIn }
+          : { userId, banReason };
+
+      return adminClient.banUser(payload);
     },
     onSuccess: () => {
       // Invalidate all users queries to refresh the data
@@ -76,13 +95,11 @@ export function useBanUser() {
 // Hook to unban user
 export function useUnbanUser() {
   const queryClient = useQueryClient();
+  const adminClient = (authClient as unknown as { admin: AdminClient }).admin;
 
   return useMutation({
-    mutationFn: async ({ userId }: { userId: string }) => {
-      return authClient.admin.unbanUser({
-        userId,
-      });
-    },
+    mutationFn: async ({ userId }: { userId: string }) =>
+      adminClient.unbanUser({ userId }),
     onSuccess: () => {
       // Invalidate all users queries to refresh the data
       queryClient.invalidateQueries({

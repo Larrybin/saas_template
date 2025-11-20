@@ -94,7 +94,6 @@ export class S3Provider implements StorageProvider {
     try {
       const { file, filename, contentType, folder } = params;
       const s3 = this.getS3Client();
-      const { bucketName } = this.config;
 
       const uniqueFilename = this.generateUniqueFilename(filename);
       const key = folder ? `${folder}/${uniqueFilename}` : uniqueFilename;

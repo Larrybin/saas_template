@@ -38,7 +38,8 @@ export const createPortalAction = userActionClient
         .where(eq(user.id, currentUser.id))
         .limit(1);
 
-      if (customerResult.length <= 0 || !customerResult[0].customerId) {
+      const customer = customerResult[0];
+      if (!customer || !customer.customerId) {
         console.error(`No customer found for user ${currentUser.id}`);
         return {
           success: false,
@@ -47,13 +48,24 @@ export const createPortalAction = userActionClient
       }
 
       // Get the current locale from the request
-      const locale = await getLocale();
+      const locale = (await getLocale()) ?? 'en';
 
       // Create the portal session with localized URL if no custom return URL is provided
       const returnUrlWithLocale =
         returnUrl || getUrlWithLocale('/settings/billing', locale);
+      const customerId = customer.customerId;
+      if (!customerId) {
+        console.error(
+          `No customer id found for user ${currentUser.id} after validation`
+        );
+        return {
+          success: false,
+          error: 'No customer id found for user',
+        };
+      }
+
       const params: CreatePortalParams = {
-        customerId: customerResult[0].customerId,
+        customerId,
         returnUrl: returnUrlWithLocale,
         locale,
       };

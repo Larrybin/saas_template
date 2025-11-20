@@ -6,9 +6,8 @@ import { getCreditPackageById } from '@/credits/server';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { createCreditsTransaction } from '@/credits/services/transaction-context';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
-import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
 import type { PaymentRepository } from '../data-access/payment-repository';
-import { type PaymentStatus, PaymentTypes } from '../types';
+import { PaymentTypes } from '../types';
 import type { NotificationGateway } from './gateways/notification-gateway';
 import {
   getSubscriptionPeriodBounds,
@@ -147,8 +146,7 @@ async function onUpdateSubscription(
       return false;
     }
     const isRenewal =
-      existing &&
-      existing.periodStart &&
+      existing?.periodStart &&
       periodStart &&
       existing.periodStart.getTime() !== periodStart.getTime() &&
       subscription.status === 'active';
@@ -193,42 +191,40 @@ async function onOnetimePayment(
   const userId = session.metadata?.userId;
   const priceId = session.metadata?.priceId;
   if (!userId || !priceId) return;
-  const processed = await deps.paymentRepository.withTransaction(
-    async (tx) => {
-      const existing = await deps.paymentRepository.findBySessionId(
-        session.id,
-        tx
-      );
-      if (existing) {
-        return false;
-      }
-      const now = new Date();
-      await deps.paymentRepository.insert(
-        {
-          id: randomUUID(),
-          priceId,
-          type: PaymentTypes.ONE_TIME,
-          userId,
-          customerId,
-          sessionId: session.id,
-          status: 'completed',
-          periodStart: now,
-          createdAt: now,
-          updatedAt: now,
-        },
-        tx
-      );
-      if (websiteConfig.credits?.enableCredits) {
-        await deps.creditsGateway.addLifetimeMonthlyCredits(
-          userId,
-          priceId,
-          now,
-          createCreditsTransaction(tx)
-        );
-      }
-      return true;
+  const processed = await deps.paymentRepository.withTransaction(async (tx) => {
+    const existing = await deps.paymentRepository.findBySessionId(
+      session.id,
+      tx
+    );
+    if (existing) {
+      return false;
     }
-  );
+    const now = new Date();
+    await deps.paymentRepository.insert(
+      {
+        id: randomUUID(),
+        priceId,
+        type: PaymentTypes.ONE_TIME,
+        userId,
+        customerId,
+        sessionId: session.id,
+        status: 'completed',
+        periodStart: now,
+        createdAt: now,
+        updatedAt: now,
+      },
+      tx
+    );
+    if (websiteConfig.credits?.enableCredits) {
+      await deps.creditsGateway.addLifetimeMonthlyCredits(
+        userId,
+        priceId,
+        now,
+        createCreditsTransaction(tx)
+      );
+    }
+    return true;
+  });
   if (!processed) {
     return;
   }
@@ -249,6 +245,11 @@ async function onCreditPurchase(
   const packageId = session.metadata?.packageId;
   const credits = session.metadata?.credits;
   if (!userId || !packageId || !credits) {
+    return;
+  }
+  const creditPackage = getCreditPackageById(packageId);
+  if (!creditPackage) {
+    deps.logger.warn({ packageId }, 'Credit package not found for purchase');
     return;
   }
   await deps.paymentRepository.withTransaction(async (tx) => {
@@ -282,7 +283,9 @@ async function onCreditPurchase(
         type: CREDIT_TRANSACTION_TYPE.PURCHASE_PACKAGE,
         description: `+${credits} credits for package ${packageId}`,
         paymentId: session.id,
-        expireDays: getCreditPackageById(packageId)?.expireDays,
+        ...(creditPackage.expireDays !== undefined
+          ? { expireDays: creditPackage.expireDays }
+          : {}),
       },
       createCreditsTransaction(tx)
     );

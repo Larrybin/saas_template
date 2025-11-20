@@ -1,4 +1,6 @@
 import { randomUUID } from 'crypto';
+import { desc, eq } from 'drizzle-orm';
+import { Stripe } from 'stripe';
 import { websiteConfig } from '@/config/website';
 import {
   addCredits,
@@ -9,19 +11,15 @@ import { getCreditPackageById } from '@/credits/server';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { getDb } from '@/db';
 import { payment, user } from '@/db/schema';
-import {
-  findPlanByPlanId,
-  findPlanByPriceId,
-  findPriceInPlan,
-} from '@/lib/price-plan';
+import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import { sendNotification } from '@/notification/notification';
-import { desc, eq } from 'drizzle-orm';
-import { Stripe } from 'stripe';
+import { getSubscriptionPeriodBounds } from '../services/utils/stripe-subscription';
 import {
   type CheckoutResult,
   type CreateCheckoutParams,
   type CreateCreditCheckoutParams,
   type CreatePortalParams,
+  type getSubscriptionsParams,
   type PaymentProvider,
   type PaymentStatus,
   PaymentTypes,
@@ -29,9 +27,7 @@ import {
   PlanIntervals,
   type PortalResult,
   type Subscription,
-  type getSubscriptionsParams,
 } from '../types';
-import { getSubscriptionPeriodBounds } from '../services/utils/stripe-subscription';
 
 /**
  * Stripe payment provider implementation
@@ -80,8 +76,9 @@ export class StripeProvider implements PaymentProvider {
       });
 
       // Find existing customer
-      if (customers.data && customers.data.length > 0) {
-        const customerId = customers.data[0].id;
+      const firstCustomer = customers.data?.[0];
+      if (firstCustomer) {
+        const customerId = firstCustomer.id;
 
         // Find user id by customer id
         const userId = await this.findUserIdByCustomerId(customerId);
@@ -95,10 +92,11 @@ export class StripeProvider implements PaymentProvider {
       }
 
       // Create new customer
-      const customer = await this.stripe.customers.create({
+      const customerParams: Stripe.CustomerCreateParams = {
         email,
-        name: name || undefined,
-      });
+        ...(name ? { name } : {}),
+      };
+      const customer = await this.stripe.customers.create(customerParams);
 
       // Update user record in database with the new customer ID
       await this.updateUserWithCustomerId(customer.id, email);
@@ -160,8 +158,9 @@ export class StripeProvider implements PaymentProvider {
         .where(eq(user.customerId, customerId))
         .limit(1);
 
-      if (result.length > 0) {
-        return result[0].id;
+      const first = result[0];
+      if (first?.id) {
+        return first.id;
       }
       console.warn('No user found with given customerId');
 
@@ -277,8 +276,12 @@ export class StripeProvider implements PaymentProvider {
       const session =
         await this.stripe.checkout.sessions.create(checkoutParams);
 
+      if (!session.url) {
+        throw new Error('Checkout session URL is missing');
+      }
+
       return {
-        url: session.url!,
+        url: session.url,
         id: session.id,
       };
     } catch (error) {
@@ -297,7 +300,6 @@ export class StripeProvider implements PaymentProvider {
   ): Promise<CheckoutResult> {
     const {
       packageId,
-      priceId,
       customerEmail,
       successUrl,
       cancelUrl,
@@ -375,8 +377,12 @@ export class StripeProvider implements PaymentProvider {
       const session =
         await this.stripe.checkout.sessions.create(checkoutParams);
 
+      if (!session.url) {
+        throw new Error('Credit checkout session URL is missing');
+      }
+
       return {
-        url: session.url!,
+        url: session.url,
         id: session.id,
       };
     } catch (error) {
@@ -396,15 +402,20 @@ export class StripeProvider implements PaymentProvider {
     const { customerId, returnUrl, locale } = params;
 
     try {
-      const session = await this.stripe.billingPortal.sessions.create({
+      const sessionParams: Stripe.BillingPortal.SessionCreateParams = {
         customer: customerId,
         return_url: returnUrl ?? '',
-        locale: locale
-          ? (this.mapLocaleToStripeLocale(
-              locale
-            ) as Stripe.BillingPortal.SessionCreateParams.Locale)
-          : undefined,
-      });
+        ...(locale
+          ? {
+              locale: this.mapLocaleToStripeLocale(
+                locale
+              ) as Stripe.BillingPortal.SessionCreateParams.Locale,
+            }
+          : {}),
+      };
+
+      const session =
+        await this.stripe.billingPortal.sessions.create(sessionParams);
 
       return {
         url: session.url,
@@ -435,20 +446,27 @@ export class StripeProvider implements PaymentProvider {
         .orderBy(desc(payment.createdAt)); // Sort by creation date, newest first
 
       // Map database records to our subscription model
-      return subscriptions.map((subscription) => ({
-        id: subscription.subscriptionId || '',
-        customerId: subscription.customerId,
-        priceId: subscription.priceId,
-        status: subscription.status as PaymentStatus,
-        type: subscription.type as PaymentTypes,
-        interval: subscription.interval as PlanInterval,
-        currentPeriodStart: subscription.periodStart || undefined,
-        currentPeriodEnd: subscription.periodEnd || undefined,
-        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
-        trialStartDate: subscription.trialStart || undefined,
-        trialEndDate: subscription.trialEnd || undefined,
-        createdAt: subscription.createdAt,
-      }));
+      return subscriptions.map((subscription) => {
+        const currentPeriodStart = subscription.periodStart ?? undefined;
+        const currentPeriodEnd = subscription.periodEnd ?? undefined;
+        const trialStartDate = subscription.trialStart ?? undefined;
+        const trialEndDate = subscription.trialEnd ?? undefined;
+
+        return {
+          id: subscription.subscriptionId || '',
+          customerId: subscription.customerId,
+          priceId: subscription.priceId,
+          status: subscription.status as PaymentStatus,
+          type: subscription.type as PaymentTypes,
+          interval: subscription.interval as PlanInterval,
+          ...(currentPeriodStart ? { currentPeriodStart } : {}),
+          ...(currentPeriodEnd ? { currentPeriodEnd } : {}),
+          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
+          ...(trialStartDate ? { trialStartDate } : {}),
+          ...(trialEndDate ? { trialEndDate } : {}),
+          createdAt: subscription.createdAt,
+        };
+      });
     } catch (error) {
       console.error('List customer subscriptions error:', error);
       return [];
@@ -542,35 +560,32 @@ export class StripeProvider implements PaymentProvider {
       getSubscriptionPeriodBounds(stripeSubscription);
     const effectivePeriodStart = periodStart ?? new Date();
 
-    // create fields
-    const createFields: any = {
-      id: randomUUID(),
-      priceId: priceId,
-      type: PaymentTypes.SUBSCRIPTION,
-      userId: userId,
-      customerId: customerId,
-      subscriptionId: stripeSubscription.id,
-      interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
-      status: this.mapSubscriptionStatusToPaymentStatus(
-        stripeSubscription.status
-      ),
-      periodStart: effectivePeriodStart,
-      periodEnd: periodEnd,
-      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-      trialStart: stripeSubscription.trial_start
-        ? new Date(stripeSubscription.trial_start * 1000)
-        : null,
-      trialEnd: stripeSubscription.trial_end
-        ? new Date(stripeSubscription.trial_end * 1000)
-        : null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
     const db = await getDb();
     const result = await db
       .insert(payment)
-      .values(createFields)
+      .values({
+        id: randomUUID(),
+        priceId: priceId,
+        type: PaymentTypes.SUBSCRIPTION,
+        userId: userId,
+        customerId: customerId,
+        subscriptionId: stripeSubscription.id,
+        interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
+        status: this.mapSubscriptionStatusToPaymentStatus(
+          stripeSubscription.status
+        ),
+        periodStart: effectivePeriodStart,
+        periodEnd: periodEnd,
+        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+        trialStart: stripeSubscription.trial_start
+          ? new Date(stripeSubscription.trial_start * 1000)
+          : null,
+        trialEnd: stripeSubscription.trial_end
+          ? new Date(stripeSubscription.trial_end * 1000)
+          : null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .returning({ id: payment.id });
 
     if (result.length > 0) {
@@ -581,11 +596,7 @@ export class StripeProvider implements PaymentProvider {
 
     // Conditionally handle credits after subscription creation if enables credits
     if (websiteConfig.credits?.enableCredits) {
-      await addSubscriptionCredits(
-        userId,
-        priceId,
-        effectivePeriodStart
-      );
+      await addSubscriptionCredits(userId, priceId, effectivePeriodStart);
       console.log('<< Added subscription monthly credits for user');
     }
   }
@@ -619,49 +630,45 @@ export class StripeProvider implements PaymentProvider {
       .limit(1);
 
     // get new period start and end
-    const {
-      periodStart: newPeriodStart,
-      periodEnd: newPeriodEnd,
-    } = getSubscriptionPeriodBounds(stripeSubscription);
+    const { periodStart: newPeriodStart, periodEnd: newPeriodEnd } =
+      getSubscriptionPeriodBounds(stripeSubscription);
+
+    const [currentPayment] = payments;
 
     // Check if this is a renewal (period has changed and subscription is active)
     const isRenewal =
-      payments.length > 0 &&
+      !!currentPayment &&
       stripeSubscription.status === 'active' &&
-      payments[0].periodStart &&
+      currentPayment.periodStart &&
       newPeriodStart &&
-      payments[0].periodStart.getTime() !== newPeriodStart.getTime();
-
-    // update fields
-    const updateFields: any = {
-      priceId: priceId,
-      interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
-      status: this.mapSubscriptionStatusToPaymentStatus(
-        stripeSubscription.status
-      ),
-      periodStart: newPeriodStart,
-      periodEnd: newPeriodEnd,
-      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-      trialStart: stripeSubscription.trial_start
-        ? new Date(stripeSubscription.trial_start * 1000)
-        : undefined,
-      trialEnd: stripeSubscription.trial_end
-        ? new Date(stripeSubscription.trial_end * 1000)
-        : undefined,
-      updatedAt: new Date(),
-    };
+      currentPayment.periodStart.getTime() !== newPeriodStart.getTime();
 
     const result = await db
       .update(payment)
-      .set(updateFields)
+      .set({
+        priceId: priceId,
+        interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
+        status: this.mapSubscriptionStatusToPaymentStatus(
+          stripeSubscription.status
+        ),
+        periodStart: newPeriodStart,
+        periodEnd: newPeriodEnd,
+        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+        trialStart: stripeSubscription.trial_start
+          ? new Date(stripeSubscription.trial_start * 1000)
+          : undefined,
+        trialEnd: stripeSubscription.trial_end
+          ? new Date(stripeSubscription.trial_end * 1000)
+          : undefined,
+        updatedAt: new Date(),
+      })
       .where(eq(payment.subscriptionId, stripeSubscription.id))
       .returning({ id: payment.id });
 
-    if (result.length > 0) {
+    if (result.length > 0 && currentPayment) {
       console.log('<< Updated payment record for Stripe subscription');
 
       // Add credits for subscription renewal
-      const currentPayment = payments[0];
       const userId = currentPayment.userId;
       // Add subscription renewal credits if plan config enables credits
       if (isRenewal && userId && websiteConfig.credits?.enableCredits) {
@@ -675,7 +682,7 @@ export class StripeProvider implements PaymentProvider {
         console.log('<< Added subscription renewal credits for user');
       } else {
         console.log(
-          '<< No renewal credits added for user, isRenewal: ' + isRenewal
+          `<< No renewal credits added for user, isRenewal: ${isRenewal}`
         );
       }
     } else {
@@ -749,7 +756,7 @@ export class StripeProvider implements PaymentProvider {
 
       if (existingPayment.length > 0) {
         console.log(
-          'One-time payment session already processed: ' + session.id
+          `One-time payment session already processed: ${session.id}`
         );
         return;
       }
@@ -789,7 +796,7 @@ export class StripeProvider implements PaymentProvider {
       const amount = session.amount_total ? session.amount_total / 100 : 0;
       await sendNotification(session.id, customerId, userId, amount);
     } catch (error) {
-      console.error('onOnetimePayment error for session: ' + session.id, error);
+      console.error(`onOnetimePayment error for session: ${session.id}`, error);
       throw error;
     }
   }
@@ -828,7 +835,7 @@ export class StripeProvider implements PaymentProvider {
     // get credit package
     const creditPackage = getCreditPackageById(packageId);
     if (!creditPackage) {
-      console.warn('Credit package ' + packageId + ' not found');
+      console.warn(`Credit package ${packageId} not found`);
       return;
     }
 
@@ -842,7 +849,7 @@ export class StripeProvider implements PaymentProvider {
         .limit(1);
 
       if (existingPayment.length > 0) {
-        console.log('Credit purchase session already processed: ' + session.id);
+        console.log(`Credit purchase session already processed: ${session.id}`);
         return;
       }
 
@@ -865,16 +872,18 @@ export class StripeProvider implements PaymentProvider {
       const amount = session.amount_total ? session.amount_total / 100 : 0;
       await addCredits({
         userId,
-        amount: Number.parseInt(credits),
+        amount: Number.parseInt(credits, 10),
         type: CREDIT_TRANSACTION_TYPE.PURCHASE_PACKAGE,
         description: `+${credits} credits for package ${packageId} ($${amount.toLocaleString()})`,
         paymentId: session.id,
-        expireDays: creditPackage.expireDays,
+        ...(creditPackage.expireDays !== undefined
+          ? { expireDays: creditPackage.expireDays }
+          : {}),
       });
 
-      console.log('Added ' + credits + ' credits to user');
+      console.log(`Added ${credits} credits to user`);
     } catch (error) {
-      console.error('onCreditPurchase error for session: ' + session.id, error);
+      console.error(`onCreditPurchase error for session: ${session.id}`, error);
       throw error;
     }
   }
@@ -971,7 +980,8 @@ export class StripeProvider implements PaymentProvider {
     }
 
     // If not, try to get the base language
-    const baseLocale = locale.split('-')[0];
+    const parts = locale.split('-');
+    const baseLocale = parts[0] ?? locale;
     if (stripeLocales.includes(baseLocale)) {
       return baseLocale;
     }

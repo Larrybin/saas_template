@@ -8,7 +8,7 @@ import {
 import { notFound } from 'next/navigation';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
-import type { ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ComponentType, ReactNode } from 'react';
 import * as Preview from '@/components/docs';
 import { getMDXComponents } from '@/components/docs/mdx-components';
 import {
@@ -48,21 +48,30 @@ export async function generateMetadata({ params }: DocPageProps) {
   }
 
   const t = await getTranslations({ locale, namespace: 'Metadata' });
+  const description = page.data.description;
 
   return constructMetadata({
     title: `${page.data.title} | ${t('title')}`,
-    description: page.data.description,
+    ...(description ? { description } : {}),
     canonicalUrl: getUrlWithLocale(`/docs/${page.slugs.join('/')}`, locale),
   });
 }
 
+const previewComponents: Record<string, ComponentType | undefined> = {
+  ...Preview,
+};
+
 function PreviewRenderer({ preview }: { preview: string }): ReactNode {
-  if (preview && preview in Preview) {
-    const Comp = Preview[preview as keyof typeof Preview];
-    return <Comp />;
+  if (!preview) {
+    return null;
   }
 
-  return null;
+  const Comp = previewComponents[preview];
+  if (!Comp) {
+    return null;
+  }
+
+  return <Comp />;
 }
 
 export const revalidate = false;
@@ -92,13 +101,13 @@ export default async function DocPage({ params }: DocPageProps) {
 
   const preview = page.data.preview;
 
-  const MDX = page.data.body;
+  const MDX = page.data.body ?? (() => null);
   const pageDir = getVirtualDir(page.path);
 
   return (
     <DocsPage
       toc={page.data.toc}
-      full={page.data.full}
+      full={page.data.full ?? false}
       tableOfContent={{
         style: 'clerk',
       }}
@@ -112,7 +121,7 @@ export default async function DocPage({ params }: DocPageProps) {
         {/* MDX Content */}
         <MDX
           components={getMDXComponents({
-            a: ({ href, ...props }: { href?: string; [key: string]: any }) => {
+            a: ({ href, ...props }: ComponentPropsWithoutRef<'a'>) => {
               const found = source.getPageByHref(
                 href ?? '',
                 pageDir ? { dir: pageDir } : undefined

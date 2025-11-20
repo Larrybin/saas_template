@@ -16,7 +16,7 @@ import { useCreditTransactions } from '@/hooks/use-credits';
  * Credit transactions component
  */
 export function CreditTransactions() {
-  const t = useTranslations('Dashboard.settings.credits.transactions');
+  const _t = useTranslations('Dashboard.settings.credits.transactions');
 
   const [{ page, pageSize, search, sortId, sortDesc }, setQueryStates] =
     useQueryStates({
@@ -54,10 +54,11 @@ export function CreditTransactions() {
         setQueryStates({ pageSize: newPageSize, page: 0 })
       }
       onSortingChange={(newSorting) => {
-        if (newSorting.length > 0) {
+        const [first] = newSorting;
+        if (first) {
           setQueryStates({
-            sortId: newSorting[0].id,
-            sortDesc: newSorting[0].desc ? 1 : 0,
+            sortId: first.id,
+            sortDesc: first.desc ? 1 : 0,
           });
         }
       }}

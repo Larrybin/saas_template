@@ -27,7 +27,7 @@ export function ConsumeCreditsCard() {
         description: `Test credit consumption (${CONSUME_CREDITS} credits)`,
       });
       toast.success(`${CONSUME_CREDITS} credits consumed successfully!`);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to consume credits');
     } finally {
       setLoading(false);

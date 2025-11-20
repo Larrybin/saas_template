@@ -1,5 +1,4 @@
 import type { SVGProps } from 'react';
-import React from 'react';
 
 /**
  * https://icon-sets.iconify.design/fa6-brands/discord/
@@ -11,6 +10,8 @@ export function DiscordIcon(props: SVGProps<SVGSVGElement>) {
       width={640}
       height={512}
       viewBox="0 0 640 512"
+      aria-hidden="true"
+      focusable="false"
       {...props}
     >
       <path

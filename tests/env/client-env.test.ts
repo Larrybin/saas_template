@@ -12,7 +12,7 @@ const applyClientEnv = (
   overrides: Partial<Record<ClientEnvKeys, string | undefined>> = {}
 ) => {
   (Object.keys(BASE_ENV) as ClientEnvKeys[]).forEach((key) => {
-    const hasOverride = Object.prototype.hasOwnProperty.call(overrides, key);
+    const hasOverride = Object.hasOwn(overrides, key);
     const nextValue = hasOverride ? overrides[key] : BASE_ENV[key];
     if (nextValue === undefined) {
       delete process.env[key];

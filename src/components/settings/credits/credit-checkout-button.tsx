@@ -109,9 +109,11 @@ export function CreditCheckoutButton({
           Object.keys(mergedMetadata).length > 0 ? mergedMetadata : undefined,
       });
 
+      const payload = result?.data;
+
       // Redirect to checkout page
-      if (result?.data?.success) {
-        const rawRedirectUrl = result?.data?.data?.url;
+      if (payload?.success) {
+        const rawRedirectUrl = payload?.data?.url;
         if (typeof rawRedirectUrl === 'string') {
           redirectTo(rawRedirectUrl as string);
         } else {
@@ -123,7 +125,17 @@ export function CreditCheckoutButton({
         }
       } else {
         console.error('Create credit checkout session error, result:', result);
-        toast.error(t('checkoutFailed'));
+        const code =
+          payload && 'code' in payload
+            ? (payload as { code?: string }).code
+            : undefined;
+
+        if (code === 'PAYMENT_SECURITY_VIOLATION') {
+          // Security-related failure (e.g. price mismatch), treat as purchase failure
+          toast.error(t('purchaseFailed'));
+        } else {
+          toast.error(t('checkoutFailed'));
+        }
       }
     } catch (error) {
       console.error('Create credit checkout session error:', error);

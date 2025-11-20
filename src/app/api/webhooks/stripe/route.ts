@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { DomainError } from '@/lib/domain-errors';
 import { handleWebhookEvent } from '@/payment';
 
 /**
@@ -39,7 +40,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error('Error in webhook route:', error);
 
-    // Return error
+    if (error instanceof DomainError) {
+      const status =
+        error.code === 'PAYMENT_SECURITY_VIOLATION'
+          ? 400
+          : error.retryable
+            ? 500
+            : 400;
+
+      return NextResponse.json(
+        { error: error.message, code: error.code, retryable: error.retryable },
+        { status }
+      );
+    }
+
+    // Return generic error
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 400 }

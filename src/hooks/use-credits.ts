@@ -69,10 +69,31 @@ export function useConsumeCredits() {
         amount,
         description,
       });
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to consume credits');
+      const data = result?.data as
+        | {
+            success?: boolean;
+            error?: string;
+            code?: string;
+            retryable?: boolean;
+          }
+        | undefined;
+      if (!data?.success) {
+        const errorMessage = data?.error || 'Failed to consume credits';
+        type DomainErrorShape = {
+          code?: string;
+          retryable?: boolean;
+        };
+        const error = new Error(errorMessage) as Error & DomainErrorShape;
+        const domainInfo = data as DomainErrorShape;
+        if (typeof domainInfo.code === 'string') {
+          error.code = domainInfo.code;
+        }
+        if (typeof domainInfo.retryable === 'boolean') {
+          error.retryable = domainInfo.retryable;
+        }
+        throw error;
       }
-      return result.data;
+      return data;
     },
     onSuccess: () => {
       // Invalidate credit balance and stats after consuming credits

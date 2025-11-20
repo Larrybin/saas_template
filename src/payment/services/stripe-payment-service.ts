@@ -1,35 +1,26 @@
 import { Stripe } from 'stripe';
-import { getCreditPackageById } from '@/credits/server';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { serverEnv } from '@/env/server';
-import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
 import { PaymentRepository } from '../data-access/payment-repository';
 import { StripeEventRepository } from '../data-access/stripe-event-repository';
 import { UserRepository } from '../data-access/user-repository';
-import {
-  type CheckoutResult,
-  type CreateCheckoutParams,
-  type CreateCreditCheckoutParams,
-  type CreatePortalParams,
-  type getSubscriptionsParams,
-  type PaymentProvider,
-  type PaymentStatus,
-  PaymentTypes,
-  type PlanInterval,
-  type PortalResult,
-  type Subscription,
+import type {
+  CheckoutResult,
+  CreateCheckoutParams,
+  CreateCreditCheckoutParams,
+  CreatePortalParams,
+  getSubscriptionsParams,
+  PaymentProvider,
+  PortalResult,
+  Subscription,
 } from '../types';
-import { PaymentSecurityError } from './errors';
+import { CustomerPortalService } from './customer-portal-service';
 import { DefaultNotificationGateway } from './gateways/default-notification-gateway';
 import type { NotificationGateway } from './gateways/notification-gateway';
-import { recordPriceMismatchEvent } from './utils/payment-security-monitor';
-import {
-  createIdempotencyKey,
-  mapLocaleToStripeLocale,
-  sanitizeMetadata,
-} from './utils/stripe-metadata';
+import { StripeCheckoutService } from './stripe-checkout-service';
+import { SubscriptionQueryService } from './subscription-query-service';
 import { handleStripeWebhookEvent } from './webhook-handler';
 
 type StripePaymentServiceDeps = {
@@ -54,6 +45,9 @@ export class StripePaymentService implements PaymentProvider {
   private readonly userRepository: UserRepository;
   private readonly paymentRepository: PaymentRepository;
   private readonly stripeEventRepository: StripeEventRepository;
+  private readonly checkoutService: StripeCheckoutService;
+  private readonly customerPortalService: CustomerPortalService;
+  private readonly subscriptionQueryService: SubscriptionQueryService;
 
   constructor(deps: StripePaymentServiceDeps = {}) {
     const webhookSecret = deps.webhookSecret ?? serverEnv.stripeWebhookSecret;
@@ -77,198 +71,40 @@ export class StripePaymentService implements PaymentProvider {
     this.paymentRepository = deps.paymentRepository ?? new PaymentRepository();
     this.stripeEventRepository =
       deps.stripeEventRepository ?? new StripeEventRepository();
-  }
-
-  private async createOrGetCustomer(email: string, name?: string) {
-    const customers = await this.stripe.customers.list({ email, limit: 1 });
-    const firstCustomer = customers.data[0];
-    if (firstCustomer) {
-      const customerId = firstCustomer.id;
-      const userId =
-        await this.userRepository.findUserIdByCustomerId(customerId);
-      if (!userId) {
-        await this.userRepository.linkCustomerIdToUser(customerId, email);
-      }
-      return customerId;
-    }
-    const customerParams: Stripe.CustomerCreateParams = {
-      email,
-      ...(name ? { name } : {}),
-    };
-    const customer = await this.stripe.customers.create(customerParams, {
-      idempotencyKey: createIdempotencyKey('stripe.customers.create', {
-        email,
-      }),
+    this.checkoutService = new StripeCheckoutService({
+      stripeClient: this.stripe,
+      userRepository: this.userRepository,
     });
-    await this.userRepository.linkCustomerIdToUser(customer.id, email);
-    return customer.id;
+    this.customerPortalService = new CustomerPortalService({
+      stripeClient: this.stripe,
+    });
+    this.subscriptionQueryService = new SubscriptionQueryService({
+      paymentRepository: this.paymentRepository,
+    });
   }
 
   public async createCheckout(
     params: CreateCheckoutParams
   ): Promise<CheckoutResult> {
-    const {
-      planId,
-      priceId,
-      customerEmail,
-      successUrl,
-      cancelUrl,
-      metadata,
-      locale,
-    } = params;
-    const plan = findPlanByPlanId(planId);
-    if (!plan) {
-      throw new Error(`Plan with ID ${planId} not found`);
-    }
-    const price = findPriceInPlan(planId, priceId);
-    if (!price) {
-      throw new Error(`Price ID ${priceId} not found in plan ${planId}`);
-    }
-    const customerId = await this.createOrGetCustomer(
-      customerEmail,
-      metadata?.userName
-    );
-    const customMetadata = {
-      ...sanitizeMetadata(metadata),
-      planId,
-      priceId,
-    };
-    const checkoutParams: Stripe.Checkout.SessionCreateParams = {
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode:
-        price.type === PaymentTypes.SUBSCRIPTION ? 'subscription' : 'payment',
-      success_url: successUrl ?? '',
-      cancel_url: cancelUrl ?? '',
-      metadata: customMetadata,
-      allow_promotion_codes: price.allowPromotionCode ?? false,
-      customer: customerId,
-      locale: mapLocaleToStripeLocale(locale),
-    };
-    if (price.type === PaymentTypes.ONE_TIME) {
-      checkoutParams.payment_intent_data = { metadata: customMetadata };
-      checkoutParams.invoice_creation = { enabled: true };
-    } else {
-      checkoutParams.subscription_data = { metadata: customMetadata };
-      if (price.trialPeriodDays) {
-        checkoutParams.subscription_data.trial_period_days =
-          price.trialPeriodDays;
-      }
-    }
-    const session = await this.stripe.checkout.sessions.create(checkoutParams, {
-      idempotencyKey: createIdempotencyKey('stripe.checkout.sessions.create', {
-        customerId,
-        planId,
-        priceId,
-        mode: checkoutParams.mode,
-      }),
-    });
-    return { url: session.url ?? '', id: session.id };
+    return await this.checkoutService.createCheckout(params);
   }
 
   public async createCreditCheckout(
     params: CreateCreditCheckoutParams
   ): Promise<CheckoutResult> {
-    const {
-      packageId,
-      priceId,
-      customerEmail,
-      successUrl,
-      cancelUrl,
-      metadata,
-      locale,
-    } = params;
-    const creditPackage = getCreditPackageById(packageId);
-    if (!creditPackage) {
-      throw new Error(`Credit package with ID ${packageId} not found`);
-    }
-    const canonicalPriceId = creditPackage.price.priceId;
-    if (priceId && priceId !== canonicalPriceId) {
-      recordPriceMismatchEvent({
-        packageId,
-        providedPriceId: priceId,
-        expectedPriceId: canonicalPriceId,
-        customerEmail,
-      });
-      throw new PaymentSecurityError(
-        'Price mismatch detected for credit package'
-      );
-    }
-    const stripePriceId = canonicalPriceId;
-    const customerId = await this.createOrGetCustomer(
-      customerEmail,
-      metadata?.userName
-    );
-    const customMetadata = {
-      ...sanitizeMetadata(metadata),
-      packageId,
-      priceId: stripePriceId,
-      type: 'credit_purchase',
-    };
-    const session = await this.stripe.checkout.sessions.create(
-      {
-        line_items: [{ price: stripePriceId, quantity: 1 }],
-        mode: 'payment',
-        success_url: successUrl ?? '',
-        cancel_url: cancelUrl ?? '',
-        metadata: customMetadata,
-        customer: customerId,
-        locale: mapLocaleToStripeLocale(locale),
-      },
-      {
-        idempotencyKey: createIdempotencyKey('stripe.checkout.credit', {
-          customerId,
-          packageId,
-          priceId: stripePriceId,
-        }),
-      }
-    );
-    return { url: session.url ?? '', id: session.id };
+    return await this.checkoutService.createCreditCheckout(params);
   }
 
   public async createCustomerPortal(
     params: CreatePortalParams
   ): Promise<PortalResult> {
-    const session = await this.stripe.billingPortal.sessions.create(
-      {
-        customer: params.customerId,
-        return_url: params.returnUrl ?? '',
-        locale: mapLocaleToStripeLocale(params.locale),
-      },
-      {
-        idempotencyKey: createIdempotencyKey(
-          'stripe.billingPortal.sessions.create',
-          { customerId: params.customerId }
-        ),
-      }
-    );
-    return { url: session.url ?? '' };
+    return await this.customerPortalService.createCustomerPortal(params);
   }
 
   public async getSubscriptions(
     params: getSubscriptionsParams
   ): Promise<Subscription[]> {
-    const records = await this.paymentRepository.listByUser(params.userId);
-    return records.map((record) => {
-      const currentPeriodStart = record.periodStart ?? undefined;
-      const currentPeriodEnd = record.periodEnd ?? undefined;
-      const trialStartDate = record.trialStart ?? undefined;
-      const trialEndDate = record.trialEnd ?? undefined;
-
-      return {
-        id: record.subscriptionId ?? '',
-        customerId: record.customerId,
-        priceId: record.priceId,
-        status: record.status as PaymentStatus,
-        type: record.type as PaymentTypes,
-        interval: record.interval as PlanInterval,
-        ...(currentPeriodStart ? { currentPeriodStart } : {}),
-        ...(currentPeriodEnd ? { currentPeriodEnd } : {}),
-        cancelAtPeriodEnd: record.cancelAtPeriodEnd ?? false,
-        ...(trialStartDate ? { trialStartDate } : {}),
-        ...(trialEndDate ? { trialEndDate } : {}),
-        createdAt: record.createdAt,
-      };
-    });
+    return await this.subscriptionQueryService.getSubscriptions(params);
   }
 
   public async handleWebhookEvent(

@@ -156,4 +156,42 @@ export class CreditLedgerRepository implements ICreditLedgerRepository {
       })
       .where(eq(creditTransaction.id, id));
   }
+
+  async findTransactionByTypeAndPeriodKey(
+    userId: string,
+    creditType: string,
+    periodKey: number,
+    db: DbExecutor
+  ): Promise<CreditTransactionRecord | undefined> {
+    const result = await db
+      .select()
+      .from(creditTransaction)
+      .where(
+        and(
+          eq(creditTransaction.userId, userId),
+          eq(creditTransaction.type, creditType),
+          eq(creditTransaction.periodKey, periodKey)
+        )
+      )
+      .limit(1);
+    return result[0];
+  }
+
+  async findFirstTransactionOfType(
+    userId: string,
+    creditType: string,
+    db: DbExecutor
+  ): Promise<CreditTransactionRecord | undefined> {
+    const result = await db
+      .select()
+      .from(creditTransaction)
+      .where(
+        and(
+          eq(creditTransaction.userId, userId),
+          eq(creditTransaction.type, creditType)
+        )
+      )
+      .limit(1);
+    return result[0];
+  }
 }

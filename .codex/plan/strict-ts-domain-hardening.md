@@ -75,3 +75,11 @@
 - 业务模型优先：宁可在边界集中使用断言，也不在核心类型上随意引入 `| undefined`。
 - 完成本阶段后，再单独为 UI/动效层制定类似分阶段计划。
 
+## 当前进展（2025-11，节选）
+- Credits / Payment 域：
+  - `CreditsTransaction` 已在 `src/credits/services/transaction-context.ts` 中收紧为强类型的 `DbExecutor` 包装，移除 `unknown` + 泛型解包方式；`resolveExecutor` 返回值类型明确为 `DbExecutor | undefined`，避免上层误用。
+  - `CreditLedgerDomainService` 中对 repository 结果的使用均通过明确的可选链与默认值处理（如 `record?.currentCredits ?? 0`），并配合 repository 接口抽象消除直接使用 Drizzle schema 的地方。
+  - `StripeCheckoutService`/`SubscriptionQueryService`/`CustomerPortalService` 中与 Stripe SDK 的交互使用条件展开构造请求对象，并在类型上对 `currentPeriodStart`/`trialEndDate` 等字段建模为可选，保持映射与使用方式一致。
+- Domain Error & Actions：
+  - 新增 `DomainError` 基类（`code` + `retryable`），`PaymentSecurityError`、Credits 域的 `InvalidCreditPayloadError`/`InsufficientCreditsError` 等全部继承自该类，消除散落的裸 `Error` 字符串常量。
+  - `safe-action` 的 `handleServerError` 针对 `DomainError` 提供统一返回结构（`{ success: false, error, code, retryable }`），前端 hooks/组件可以在严格 TS 下安全读取错误信息而不依赖 `any`。

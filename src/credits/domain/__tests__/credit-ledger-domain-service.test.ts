@@ -32,6 +32,8 @@ describe('CreditLedgerDomainService (period key)', () => {
     insertUsageRecord: vi.fn().mockResolvedValue(undefined),
     findExpirableTransactions: vi.fn().mockResolvedValue([]),
     markTransactionExpired: vi.fn().mockResolvedValue(undefined),
+    findTransactionByTypeAndPeriodKey: vi.fn().mockResolvedValue(undefined),
+    findFirstTransactionOfType: vi.fn().mockResolvedValue(undefined),
   });
 
   let repository: ICreditLedgerRepository;

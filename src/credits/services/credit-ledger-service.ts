@@ -35,7 +35,7 @@ export async function addCredits(
   payload: AddCreditsPayload,
   transaction?: CreditsTransaction
 ) {
-  const executor = resolveExecutor<DbExecutor>(transaction);
+  const executor = resolveExecutor(transaction);
   await creditLedgerDomainService.addCredits(payload, executor);
 }
 

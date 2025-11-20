@@ -1,6 +1,7 @@
 import { createSafeActionClient } from 'next-safe-action';
 import type { User } from './auth-types';
 import { isDemoWebsite } from './demo';
+import { DomainError } from './domain-errors';
 import { getSession } from './server';
 
 // -----------------------------------------------------------------------------
@@ -8,6 +9,15 @@ import { getSession } from './server';
 // -----------------------------------------------------------------------------
 export const actionClient = createSafeActionClient({
   handleServerError: (e) => {
+    if (e instanceof DomainError) {
+      return {
+        success: false,
+        error: e.message,
+        code: e.code,
+        retryable: e.retryable,
+      };
+    }
+
     if (e instanceof Error) {
       return {
         success: false,

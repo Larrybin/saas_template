@@ -4,6 +4,7 @@ import {
   handleAuthFromEnvelope,
   useAuthErrorHandler,
 } from '@/hooks/use-auth-error-handler';
+import { useAiErrorUi } from '@/hooks/use-ai-error-ui';
 import { getDomainErrorMessage } from '@/lib/domain-error-utils';
 import type { GenerateImageResponse } from '../lib/api-types';
 import type {
@@ -42,6 +43,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
   const [activePrompt, setActivePrompt] = useState('');
   const t = useTranslations();
   const handleAuthError = useAuthErrorHandler();
+  const { handleAiError } = useAiErrorUi();
 
   const resetState = () => {
     setImages([]);
@@ -166,6 +168,14 @@ export function useImageGeneration(): UseImageGenerationReturn {
             errorObject instanceof Error && errorObject.message
               ? errorObject.message
               : 'Failed to generate image. Please try again.'
+          );
+
+          handleAiError(
+            {
+              ...(errorObject.code ? { code: errorObject.code } : {}),
+              message: resolvedMessage,
+            },
+            { source: 'image' }
           );
 
           setFailedProviders((prev) => [...prev, provider]);

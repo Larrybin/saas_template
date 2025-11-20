@@ -104,6 +104,29 @@ try {
 - 领域服务 / 批处理：`credits.*`, `payment.*`, `mail.*` 等（已在对应模块中使用）。
 - 基础设施：`infra.*`，例如 `infra.api-auth`、`safe-action` 等。
 
+常用 span 汇总表（便于日志筛选）：
+
+| span 值                                 | 描述                                   |
+| --------------------------------------- | -------------------------------------- |
+| `api.ai.chat`                           | Chat 接口 `/api/chat`                  |
+| `api.ai.text.analyze`                  | 文本分析接口 `/api/analyze-content`    |
+| `api.ai.image.generate`                | 图片生成接口 `/api/generate-images`    |
+| `api.docs.search`                      | 文档搜索接口 `/api/search`             |
+| `api.credits.distribute`              | 积分分发接口 `/api/distribute-credits` |
+| `api.storage.upload`                  | 文件上传接口 `/api/storage/upload`     |
+| `api.webhooks.stripe`                 | Stripe Webhook 路由                     |
+| `usecase.ai.chat-with-billing`        | Chat + 积分扣费用例                     |
+| `usecase.ai.text.analyze-with-credits`| 文本分析 + 积分扣费用例                 |
+| `usecase.ai.image.generate-with-credits`| 图片生成 + 积分扣费用例               |
+| `credits.ledger.domain`               | Credits 账本领域服务                    |
+| `credits.distribute`                  | 积分分发任务                            |
+| `credits.expiry.job`                  | 积分过期处理任务                        |
+| `payment.stripe`                      | Stripe 支付服务                         |
+| `payment.security`                    | 支付安全监控                            |
+| `ai.web-content-analyzer`             | Web 内容分析（服务端）                  |
+| `infra.api-auth`                      | API 鉴权逻辑                            |
+| `safe-action`                         | safe-action 全局错误处理                |
+
 约定：
 
 - `safe-action` 与关键 API routes 应通过 `withLogContext` 或 `createLoggerFromHeaders` 设置 `requestId`、`userId`、`span` 等，便于错误定位。

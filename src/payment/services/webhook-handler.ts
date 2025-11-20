@@ -247,6 +247,11 @@ async function onCreditPurchase(
   if (!userId || !packageId || !credits) {
     return;
   }
+  const creditPackage = getCreditPackageById(packageId);
+  if (!creditPackage) {
+    deps.logger.warn({ packageId }, 'Credit package not found for purchase');
+    return;
+  }
   await deps.paymentRepository.withTransaction(async (tx) => {
     const existing = await deps.paymentRepository.findBySessionId(
       session.id,
@@ -278,7 +283,9 @@ async function onCreditPurchase(
         type: CREDIT_TRANSACTION_TYPE.PURCHASE_PACKAGE,
         description: `+${credits} credits for package ${packageId}`,
         paymentId: session.id,
-        expireDays: getCreditPackageById(packageId)?.expireDays,
+        ...(creditPackage.expireDays !== undefined
+          ? { expireDays: creditPackage.expireDays }
+          : {}),
       },
       createCreditsTransaction(tx)
     );

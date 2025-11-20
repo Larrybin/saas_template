@@ -63,9 +63,11 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'Metadata' });
   const blogData = getBlogData(post);
 
+  const description = blogData.description;
+
   return constructMetadata({
     title: `${blogData.title} | ${t('title')}`,
-    description: blogData.description,
+    ...(description ? { description } : {}),
     canonicalUrl: getUrlWithLocale(`/blog/${slug}`, locale),
     image: blogData.image,
   });
@@ -181,19 +183,22 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
             <div className="bg-muted/50 rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">{t('categories')}</h2>
               <ul className="flex flex-wrap gap-4">
-                {blogCategories.map(
-                  (category) =>
-                    category && (
-                      <li key={category.slugs[0]}>
-                        <LocaleLink
-                          href={`/blog/category/${category.slugs[0]}`}
-                          className="text-sm font-medium text-muted-foreground hover:text-primary"
-                        >
-                          {category.data.name}
-                        </LocaleLink>
-                      </li>
-                    )
-                )}
+                {blogCategories.map((category) => {
+                  const [categorySlug] = category.slugs;
+                  if (!categorySlug) {
+                    return null;
+                  }
+                  return (
+                    <li key={categorySlug}>
+                      <LocaleLink
+                        href={`/blog/category/${categorySlug}`}
+                        className="text-sm font-medium text-muted-foreground hover:text-primary"
+                      >
+                        {category.data.name}
+                      </LocaleLink>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 

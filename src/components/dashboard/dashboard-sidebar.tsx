@@ -18,6 +18,7 @@ import {
 import { getSidebarLinks } from '@/config/sidebar-config';
 import { LocaleLink } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import type { User as AppUser } from '@/lib/auth-types';
 import { Routes } from '@/routes';
 import { Logo } from '../layout/logo';
 import { UpgradeCard } from './upgrade-card';
@@ -31,7 +32,7 @@ export function DashboardSidebar({
   const t = useTranslations();
   const [mounted, setMounted] = useState(false);
   const { data: session, isPending } = authClient.useSession();
-  const currentUser = session?.user;
+  const currentUser = session?.user as AppUser | undefined;
   const { state } = useSidebar();
   // console.log('sidebar currentUser:', currentUser);
 

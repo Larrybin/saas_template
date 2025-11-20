@@ -48,10 +48,11 @@ export async function generateMetadata({ params }: DocPageProps) {
   }
 
   const t = await getTranslations({ locale, namespace: 'Metadata' });
+  const description = page.data.description;
 
   return constructMetadata({
     title: `${page.data.title} | ${t('title')}`,
-    description: page.data.description,
+    ...(description ? { description } : {}),
     canonicalUrl: getUrlWithLocale(`/docs/${page.slugs.join('/')}`, locale),
   });
 }
@@ -102,7 +103,7 @@ export default async function DocPage({ params }: DocPageProps) {
   return (
     <DocsPage
       toc={page.data.toc}
-      full={page.data.full}
+      full={page.data.full ?? false}
       tableOfContent={{
         style: 'clerk',
       }}

@@ -32,7 +32,7 @@ export class WebContentAnalyzerError extends Error {
   public readonly severity: ErrorSeverity;
   public readonly retryable: boolean;
   public readonly userMessage: string;
-  public readonly originalError?: Error;
+  public readonly originalError: Error | undefined;
 
   constructor(
     type: ErrorType,

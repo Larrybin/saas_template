@@ -143,7 +143,7 @@ export function ModelSelect({
           modelId={modelId}
           provider={providerKey}
           image={image}
-          timing={timing}
+          {...(timing ? { timing } : {})}
           failed={failed}
         />
       </CardContent>

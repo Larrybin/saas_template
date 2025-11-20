@@ -8,6 +8,7 @@ import type {
   SendEmailResult,
   SendRawEmailParams,
   SendTemplateParams,
+  TemplateContextMap,
 } from '@/mail/types';
 
 /**
@@ -61,8 +62,9 @@ export class ResendProvider implements MailProvider {
       // Get rendered template
       const mailTemplate = await getTemplate({
         template,
-        context,
-        locale,
+        // Context shape is validated at the boundary; we narrow here.
+        context: context as TemplateContextMap[keyof TemplateContextMap],
+        ...(locale ? { locale } : {}),
       });
 
       // Send using raw email
@@ -109,7 +111,7 @@ export class ResendProvider implements MailProvider {
         to,
         subject,
         html,
-        text,
+        ...(text ? { text } : {}),
       });
 
       if (error) {

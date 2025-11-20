@@ -81,8 +81,9 @@ export class StripePaymentService implements PaymentProvider {
 
   private async createOrGetCustomer(email: string, name?: string) {
     const customers = await this.stripe.customers.list({ email, limit: 1 });
-    if (customers.data.length > 0) {
-      const customerId = customers.data[0].id;
+    const firstCustomer = customers.data[0];
+    if (firstCustomer) {
+      const customerId = firstCustomer.id;
       const userId =
         await this.userRepository.findUserIdByCustomerId(customerId);
       if (!userId) {
@@ -90,14 +91,15 @@ export class StripePaymentService implements PaymentProvider {
       }
       return customerId;
     }
-    const customer = await this.stripe.customers.create(
-      { email, name },
-      {
-        idempotencyKey: createIdempotencyKey('stripe.customers.create', {
-          email,
-        }),
-      }
-    );
+    const customerParams: Stripe.CustomerCreateParams = {
+      email,
+      ...(name ? { name } : {}),
+    };
+    const customer = await this.stripe.customers.create(customerParams, {
+      idempotencyKey: createIdempotencyKey('stripe.customers.create', {
+        email,
+      }),
+    });
     await this.userRepository.linkCustomerIdToUser(customer.id, email);
     return customer.id;
   }
@@ -246,20 +248,27 @@ export class StripePaymentService implements PaymentProvider {
     params: getSubscriptionsParams
   ): Promise<Subscription[]> {
     const records = await this.paymentRepository.listByUser(params.userId);
-    return records.map((record) => ({
-      id: record.subscriptionId ?? '',
-      customerId: record.customerId,
-      priceId: record.priceId,
-      status: record.status as PaymentStatus,
-      type: record.type as PaymentTypes,
-      interval: record.interval as PlanInterval,
-      currentPeriodStart: record.periodStart ?? undefined,
-      currentPeriodEnd: record.periodEnd ?? undefined,
-      cancelAtPeriodEnd: record.cancelAtPeriodEnd ?? false,
-      trialStartDate: record.trialStart ?? undefined,
-      trialEndDate: record.trialEnd ?? undefined,
-      createdAt: record.createdAt,
-    }));
+    return records.map((record) => {
+      const currentPeriodStart = record.periodStart ?? undefined;
+      const currentPeriodEnd = record.periodEnd ?? undefined;
+      const trialStartDate = record.trialStart ?? undefined;
+      const trialEndDate = record.trialEnd ?? undefined;
+
+      return {
+        id: record.subscriptionId ?? '',
+        customerId: record.customerId,
+        priceId: record.priceId,
+        status: record.status as PaymentStatus,
+        type: record.type as PaymentTypes,
+        interval: record.interval as PlanInterval,
+        ...(currentPeriodStart ? { currentPeriodStart } : {}),
+        ...(currentPeriodEnd ? { currentPeriodEnd } : {}),
+        cancelAtPeriodEnd: record.cancelAtPeriodEnd ?? false,
+        ...(trialStartDate ? { trialStartDate } : {}),
+        ...(trialEndDate ? { trialEndDate } : {}),
+        createdAt: record.createdAt,
+      };
+    });
   }
 
   public async handleWebhookEvent(

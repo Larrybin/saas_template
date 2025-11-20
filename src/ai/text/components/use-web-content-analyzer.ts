@@ -182,7 +182,9 @@ export function useWebContentAnalyzer() {
           type: 'SET_RESULTS',
           payload: {
             results: result.data.analysis,
-            screenshot: result.data.screenshot,
+            ...(result.data.screenshot
+              ? { screenshot: result.data.screenshot }
+              : {}),
           },
         });
 

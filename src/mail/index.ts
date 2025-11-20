@@ -1,5 +1,6 @@
 import { render } from '@react-email/render';
 import type { Locale, Messages } from 'next-intl';
+import type { ReactElement } from 'react';
 import { websiteConfig } from '@/config/website';
 import { getMessagesForLocale } from '@/i18n/messages';
 import { routing } from '@/i18n/routing';
@@ -95,7 +96,7 @@ export async function getTemplate<T extends EmailTemplate>({
   const email = (
     mainTemplate as (
       p: TemplateContextMap[T] & { locale: Locale; messages: Messages }
-    ) => unknown
+    ) => ReactElement
   )(props);
 
   // Get the subject from the messages

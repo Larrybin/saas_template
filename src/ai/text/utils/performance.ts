@@ -74,8 +74,9 @@ export function useLazyLoading<T extends HTMLElement = HTMLDivElement>(
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
           setIsIntersecting(true);
           observer.disconnect();
         }

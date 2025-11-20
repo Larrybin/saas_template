@@ -187,7 +187,7 @@ async function scrapeWebpage(
 
       return {
         content: truncateContent(content, MAX_CONTENT_LENGTH),
-        screenshot,
+        ...(screenshot ? { screenshot } : {}),
       };
     } catch (error) {
       if (error instanceof WebContentAnalyzerError) {
@@ -443,7 +443,10 @@ export async function handleAnalyzeContentRequest(
         const { content, screenshot } = await deps.scrapeWebpage(url);
         const analysis = await deps.analyzeContent(content, url, modelProvider);
 
-        return { analysis, screenshot };
+        return {
+          analysis,
+          ...(screenshot ? { screenshot } : {}),
+        };
       } catch (error) {
         if (error instanceof WebContentAnalyzerError) {
           throw error;

@@ -1,3 +1,4 @@
+import type { BetterAuthPlugin } from 'better-auth';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin } from 'better-auth/plugins';
@@ -137,10 +138,9 @@ export const auth = betterAuth({
     admin({
       // https://www.better-auth.com/docs/plugins/admin#default-ban-reason
       // defaultBanReason: 'Spamming',
-      defaultBanExpiresIn: undefined,
       bannedUserMessage:
         'You have been banned from this application. Please contact support if you believe this is an error.',
-    }),
+    }) as unknown as BetterAuthPlugin,
   ],
   onAPIError: {
     // https://www.better-auth.com/docs/reference/options#onapierror

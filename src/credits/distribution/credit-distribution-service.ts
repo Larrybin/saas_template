@@ -207,7 +207,7 @@ export class CreditDistributionService {
         ...(plan.credits.expireDays !== undefined
           ? { expireDays: plan.credits.expireDays }
           : {}),
-        periodKey,
+        ...(periodKey !== undefined ? { periodKey } : {}),
       });
     }
     return commands;

@@ -17,11 +17,23 @@ export default async function BlogListLayout({
 
   // Filter categories by locale
   const language = locale as string;
-  const categoryList = categorySource.getPages(language).map((category) => ({
-    slug: category.slugs[0],
-    name: category.data.name,
-    description: category.data.description || '',
-  }));
+  const categoryList = categorySource
+    .getPages(language)
+    .map((category) => {
+      const [slug] = category.slugs;
+      if (!slug) return null;
+      return {
+        slug,
+        name: category.data.name,
+        description: category.data.description || '',
+      };
+    })
+    .filter(
+      (
+        category
+      ): category is { slug: string; name: string; description: string } =>
+        category !== null
+    );
   // console.log('categoryList', categoryList);
 
   return (

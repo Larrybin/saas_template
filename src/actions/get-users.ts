@@ -69,11 +69,7 @@ export const getUsersAction = adminActionClient
           .orderBy(sortDirection(sortField))
           .limit(pageSize)
           .offset(offset),
-        db
-          .select({ count: sql`count(*)` })
-          .from(user)
-          .where(where)
-          .limit(1),
+        db.select({ count: sql`count(*)` }).from(user).where(where).limit(1),
       ]);
       const totalCount = countRows[0]?.count ?? 0;
 

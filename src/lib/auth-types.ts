@@ -7,9 +7,9 @@ type InferUser = typeof auth.$Infer.Session.user;
 
 // 应用级 User 类型，补充 admin / billing 相关字段
 export type User = InferUser & {
-  role: string;
-  banned: boolean;
-  banReason?: string | null;
-  banExpires?: Date | null;
-  customerId?: string | null;
+  role: string | null;
+  banned: boolean | null;
+  banReason: string | null;
+  banExpires: Date | null;
+  customerId: string | null;
 };

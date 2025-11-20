@@ -26,13 +26,15 @@ type RateLimitResult =
 const redisConfig = serverEnv.rateLimit;
 const redisRestUrl = redisConfig?.redisRestUrl;
 const redisRestToken = redisConfig?.redisRestToken;
-const redisClient =
-  redisRestUrl && redisRestToken
-    ? new Redis({
-        url: redisRestUrl,
-        token: redisRestToken,
-      })
-    : null;
+
+let redisClient: Redis | null = null;
+
+if (redisRestUrl && redisRestToken) {
+  redisClient = new Redis({
+    url: redisRestUrl,
+    token: redisRestToken,
+  });
+}
 
 const limiterCache = new Map<string, Ratelimit>();
 const memoryStore = new Map<string, { count: number; expiresAt: number }>();

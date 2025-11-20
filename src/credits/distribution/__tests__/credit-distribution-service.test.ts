@@ -196,6 +196,12 @@ describe('CreditDistributionService', () => {
       monthLabel: '2025-04',
     });
     expect(commands).toHaveLength(1);
-    expect(commands[0].type).toBe(CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL);
+    const [firstCommand] = commands;
+    if (!firstCommand) {
+      throw new Error('Expected at least one command to be generated');
+    }
+    expect(firstCommand.type).toBe(
+      CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL
+    );
   });
 });

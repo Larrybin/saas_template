@@ -29,6 +29,6 @@ export async function handleAuthUserCreated(
   await userLifecycleManager.emit({
     type: 'user.created',
     user,
-    locale: options.locale,
+    ...(options.locale ? { locale: options.locale } : {}),
   });
 }

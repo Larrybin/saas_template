@@ -49,7 +49,8 @@ const models = [
 
 export default function ChatBot() {
   const [input, setInput] = useState('');
-  const [model, setModel] = useState<string>(models[0].value);
+  const defaultModel = models[0]?.value ?? 'openai/gpt-4o';
+  const [model, setModel] = useState<string>(defaultModel);
   const [webSearch, setWebSearch] = useState(false);
   const { messages, sendMessage, status } = useChat();
 

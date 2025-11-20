@@ -8,6 +8,7 @@
     "login": "Log in",
     "logout": "Log out",
     "signUp": "Sign up",
+    "unauthorized": "You must be logged in to perform this action.",
     "language": "Switch language",
     "mode": {
       "label": "Toggle mode",
@@ -1025,6 +1026,12 @@
         "invalidUrl": "Please enter a valid URL starting with http:// or https://",
         "analysisError": "Failed to analyze website. Please try again.",
         "networkError": "Network error. Please check your connection and try again.",
+        "timeout": "The analysis request timed out. Please try again with a simpler page or later.",
+        "rateLimit": "Too many analysis requests. Please wait a moment and try again.",
+        "authError": "Authentication failed while analyzing the website. Please refresh and try again.",
+        "serviceUnavailable": "The analysis service is temporarily unavailable. Please try again later.",
+        "scrapingError": "Unable to access or scrape the target webpage. Please check the URL and try again.",
+        "unknownError": "An unexpected error occurred during analysis. Please try again.",
         "insufficientCredits": "Insufficient credits. Please purchase more credits to continue."
       }
     },
@@ -1045,7 +1052,13 @@
   },
   "AIImagePage": {
     "title": "AI Image",
-    "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly"
+    "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly",
+    "errors": {
+      "invalidRequest": "Invalid request. Please refresh the page and try again.",
+      "invalidParams": "Invalid image parameters. Please check the prompt and selected model.",
+      "providerError": "Image generation service encountered an error. Please try again or choose another provider.",
+      "timeout": "Image generation timed out. Please simplify your prompt or try again later."
+    }
   },
   "AIChatPage": {
     "title": "AI Chat",

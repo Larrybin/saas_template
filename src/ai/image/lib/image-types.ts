@@ -15,6 +15,8 @@ export interface ImageResult {
 export interface ImageError {
   provider: ProviderKey;
   message: string;
+  code?: string;
+  retryable?: boolean;
 }
 
 export interface ProviderTiming {

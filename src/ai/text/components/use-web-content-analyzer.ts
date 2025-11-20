@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { useCallback, useReducer, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -13,6 +14,11 @@ import type {
   AnalyzeContentResponse,
   ModelProvider,
 } from '@/ai/text/utils/web-content-analyzer';
+import {
+  handleAuthFromEnvelope,
+  useAuthErrorHandler,
+} from '@/hooks/use-auth-error-handler';
+import { getDomainErrorMessage } from '@/lib/domain-error-utils';
 
 type AnalysisAction =
   | { type: 'START_ANALYSIS'; payload: { url: string } }
@@ -91,6 +97,12 @@ export function useWebContentAnalyzer() {
     useState<ModelProvider>('openrouter');
   const [analyzedError, setAnalyzedError] =
     useState<WebContentAnalyzerError | null>(null);
+  const t = useTranslations();
+  const translate = useCallback(
+    (key: string) => t(key as Parameters<typeof t>[0]),
+    [t]
+  );
+  const handleAuthError = useAuthErrorHandler();
 
   const handleAnalyzeUrl = useCallback(
     async (url: string, provider: ModelProvider) => {
@@ -108,6 +120,13 @@ export function useWebContentAnalyzer() {
           });
 
           const data: AnalyzeContentResponse = await response.json();
+
+          if (response.status === 401) {
+            handleAuthFromEnvelope(handleAuthError, {
+              code: data.code,
+              error: data.error,
+            });
+          }
 
           if (!response.ok) {
             let errorType = ErrorType.UNKNOWN;
@@ -204,15 +223,21 @@ export function useWebContentAnalyzer() {
           component: 'WebContentAnalyzer',
         });
 
+        const message = getDomainErrorMessage(
+          analyzedErrorInstance.code,
+          translate,
+          analyzedErrorInstance.userMessage
+        );
+
         dispatch({
           type: 'SET_ERROR',
-          payload: { error: analyzedErrorInstance.userMessage },
+          payload: { error: message },
         });
 
         setAnalyzedError(analyzedErrorInstance);
 
         const toastOptions = {
-          description: analyzedErrorInstance.userMessage,
+          description: message,
         };
 
         setTimeout(() => {
@@ -231,7 +256,7 @@ export function useWebContentAnalyzer() {
         }, 0);
       }
     },
-    []
+    [translate, handleAuthError]
   );
 
   const handleNewAnalysis = useCallback(() => {

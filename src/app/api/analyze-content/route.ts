@@ -54,6 +54,8 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: validationError.userMessage,
+        code: validationError.code,
+        retryable: validationError.retryable,
       } satisfies AnalyzeContentResponse,
       { status: 400 }
     );

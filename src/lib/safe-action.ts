@@ -3,17 +3,16 @@ import type { User } from './auth-types';
 import { isDemoWebsite } from './demo';
 import { DomainError } from './domain-errors';
 import { getSession } from './server';
-import { getLogger } from './server/logger';
-
-const safeActionLogger = getLogger({ span: 'safe-action' });
+import { getLogger, withLogContext } from './server/logger';
 
 // -----------------------------------------------------------------------------
 // 1. Base action client – put global error handling / metadata here if needed
 // -----------------------------------------------------------------------------
 export const actionClient = createSafeActionClient({
   handleServerError: (e) => {
+    const logger = getLogger({ span: 'safe-action' });
     if (e instanceof DomainError) {
-      safeActionLogger.error('Domain error in safe-action', {
+      logger.error('Domain error in safe-action', {
         code: e.code,
         retryable: e.retryable,
         error: e,
@@ -27,7 +26,7 @@ export const actionClient = createSafeActionClient({
     }
 
     if (e instanceof Error) {
-      safeActionLogger.error('Unhandled error in safe-action', { error: e });
+      logger.error('Unhandled error in safe-action', { error: e });
       return {
         success: false,
         error: e.message,
@@ -50,10 +49,16 @@ export const userActionClient = actionClient.use(async ({ next }) => {
     return {
       success: false,
       error: 'Unauthorized',
+      code: 'AUTH_UNAUTHORIZED',
+      retryable: false,
     };
   }
 
-  return next({ ctx: { user: session.user } });
+  const user = session.user;
+
+  return await withLogContext({ userId: user.id }, () =>
+    next({ ctx: { user } })
+  );
 });
 
 // -----------------------------------------------------------------------------
@@ -69,6 +74,8 @@ export const adminActionClient = userActionClient.use(async ({ next, ctx }) => {
     return {
       success: false,
       error: 'Unauthorized',
+      code: 'AUTH_UNAUTHORIZED',
+      retryable: false,
     };
   }
 

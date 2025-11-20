@@ -386,6 +386,8 @@ export async function handleAnalyzeContentRequest(
         response: {
           success: false,
           error: validationError.userMessage,
+          code: validationError.code,
+          retryable: validationError.retryable,
         },
       };
     }
@@ -414,6 +416,8 @@ export async function handleAnalyzeContentRequest(
         response: {
           success: false,
           error: urlError.userMessage,
+          code: urlError.code,
+          retryable: urlError.retryable,
         },
       };
     }
@@ -434,6 +438,8 @@ export async function handleAnalyzeContentRequest(
         response: {
           success: false,
           error: configError.userMessage,
+          code: configError.code,
+          retryable: configError.retryable,
         },
       };
     }
@@ -512,6 +518,8 @@ export async function handleAnalyzeContentRequest(
       response: {
         success: false,
         error: analyzedError.userMessage,
+        code: analyzedError.code,
+        retryable: analyzedError.retryable,
       },
     };
   }

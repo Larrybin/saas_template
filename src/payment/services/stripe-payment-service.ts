@@ -56,7 +56,7 @@ export class StripePaymentService implements PaymentProvider {
   private readonly stripeEventRepository: StripeEventRepository;
 
   constructor(deps: StripePaymentServiceDeps = {}) {
-    const apiKey = deps.stripeClient ? undefined : serverEnv.stripeSecretKey;
+    const apiKey = deps.stripeClient ? null : serverEnv.stripeSecretKey;
     if (!deps.stripeClient && !apiKey) {
       throw new Error('STRIPE_SECRET_KEY environment variable is not set');
     }

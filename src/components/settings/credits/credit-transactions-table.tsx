@@ -85,13 +85,13 @@ export interface CreditTransaction {
   updatedAt: Date;
 }
 
-interface DataTableColumnHeaderProps<TValue>
+interface DataTableColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
-  column: Column<CreditTransaction, TValue>;
+  column: Column<TData, TValue>;
   title: string;
 }
 
-function DataTableColumnHeader<TValue>({
+function DataTableColumnHeader<TData, TValue>({
   column,
   title,
   className,

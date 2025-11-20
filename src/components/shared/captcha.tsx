@@ -15,9 +15,15 @@ const Turnstile = dynamic(
   }
 );
 
-export type CaptchaRef = {
-  reset?: () => void;
-} | null;
+export type CaptchaRef =
+  | ({
+      reset?: () => void;
+    } & {
+      // underlying instance shape is not exposed in types; keep it opaque
+      // but allow compatibility with TurnstileInstance | null | undefined
+    })
+  | null
+  | undefined;
 
 type Props = Omit<ComponentProps<typeof Turnstile>, 'siteKey'> & {
   validationError?: string;
@@ -38,7 +44,8 @@ const CaptchaInner = forwardRef<CaptchaRef, CaptchaInnerProps>(
     return (
       <>
         <Turnstile
-          ref={ref}
+          // biome-ignore lint/suspicious/noExplicitAny: align ref types with underlying Turnstile instance
+          ref={ref as any}
           options={{
             size: 'flexible',
             language: locale,

@@ -9,6 +9,7 @@ import {
   MailboxIcon,
   MailIcon,
   MessageCircleIcon,
+  PenSquareIcon,
   ShieldCheckIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -64,7 +65,7 @@ export function getNavbarLinks(): NestedMenuItem[] {
         {
           title: t('ai.items.text.title'),
           description: t('ai.items.text.description'),
-          icon: <SquarePenIcon className="size-4 shrink-0" />,
+          icon: <PenSquareIcon className="size-4 shrink-0" />,
           href: Routes.AIText,
           external: false,
         },

@@ -545,35 +545,32 @@ export class StripeProvider implements PaymentProvider {
       getSubscriptionPeriodBounds(stripeSubscription);
     const effectivePeriodStart = periodStart ?? new Date();
 
-    // create fields
-    const createFields: Record<string, unknown> = {
-      id: randomUUID(),
-      priceId: priceId,
-      type: PaymentTypes.SUBSCRIPTION,
-      userId: userId,
-      customerId: customerId,
-      subscriptionId: stripeSubscription.id,
-      interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
-      status: this.mapSubscriptionStatusToPaymentStatus(
-        stripeSubscription.status
-      ),
-      periodStart: effectivePeriodStart,
-      periodEnd: periodEnd,
-      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-      trialStart: stripeSubscription.trial_start
-        ? new Date(stripeSubscription.trial_start * 1000)
-        : null,
-      trialEnd: stripeSubscription.trial_end
-        ? new Date(stripeSubscription.trial_end * 1000)
-        : null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
     const db = await getDb();
     const result = await db
       .insert(payment)
-      .values(createFields)
+      .values({
+        id: randomUUID(),
+        priceId: priceId,
+        type: PaymentTypes.SUBSCRIPTION,
+        userId: userId,
+        customerId: customerId,
+        subscriptionId: stripeSubscription.id,
+        interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
+        status: this.mapSubscriptionStatusToPaymentStatus(
+          stripeSubscription.status
+        ),
+        periodStart: effectivePeriodStart,
+        periodEnd: periodEnd,
+        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+        trialStart: stripeSubscription.trial_start
+          ? new Date(stripeSubscription.trial_start * 1000)
+          : null,
+        trialEnd: stripeSubscription.trial_end
+          ? new Date(stripeSubscription.trial_end * 1000)
+          : null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .returning({ id: payment.id });
 
     if (result.length > 0) {
@@ -629,28 +626,25 @@ export class StripeProvider implements PaymentProvider {
       newPeriodStart &&
       payments[0].periodStart.getTime() !== newPeriodStart.getTime();
 
-    // update fields
-    const updateFields: Record<string, unknown> = {
-      priceId: priceId,
-      interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
-      status: this.mapSubscriptionStatusToPaymentStatus(
-        stripeSubscription.status
-      ),
-      periodStart: newPeriodStart,
-      periodEnd: newPeriodEnd,
-      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-      trialStart: stripeSubscription.trial_start
-        ? new Date(stripeSubscription.trial_start * 1000)
-        : undefined,
-      trialEnd: stripeSubscription.trial_end
-        ? new Date(stripeSubscription.trial_end * 1000)
-        : undefined,
-      updatedAt: new Date(),
-    };
-
     const result = await db
       .update(payment)
-      .set(updateFields)
+      .set({
+        priceId: priceId,
+        interval: this.mapStripeIntervalToPlanInterval(stripeSubscription),
+        status: this.mapSubscriptionStatusToPaymentStatus(
+          stripeSubscription.status
+        ),
+        periodStart: newPeriodStart,
+        periodEnd: newPeriodEnd,
+        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+        trialStart: stripeSubscription.trial_start
+          ? new Date(stripeSubscription.trial_start * 1000)
+          : undefined,
+        trialEnd: stripeSubscription.trial_end
+          ? new Date(stripeSubscription.trial_end * 1000)
+          : undefined,
+        updatedAt: new Date(),
+      })
       .where(eq(payment.subscriptionId, stripeSubscription.id))
       .returning({ id: payment.id });
 

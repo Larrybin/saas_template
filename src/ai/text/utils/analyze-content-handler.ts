@@ -131,8 +131,8 @@ const truncateContent = (content: string, maxLength: number): string => {
   if (paragraphs.length > 1) {
     let paragraphLength = 0;
 
-    for (let i = 0; i < paragraphs.length; i++) {
-      const nextLength = paragraphLength + paragraphs[i].length + 2;
+    for (const [index, paragraph] of paragraphs.entries()) {
+      const nextLength = paragraphLength + paragraph.length + 2;
 
       if (nextLength > maxLength) {
         break;
@@ -141,7 +141,7 @@ const truncateContent = (content: string, maxLength: number): string => {
       paragraphLength = nextLength;
 
       if (paragraphLength > preferredLength) {
-        return paragraphs.slice(0, i + 1).join('\n\n');
+        return paragraphs.slice(0, index + 1).join('\n\n');
       }
     }
   }
@@ -396,9 +396,12 @@ export async function handleAnalyzeContentRequest(
 
     const urlValidation = validateUrl(url);
     if (!urlValidation.success) {
+      const firstIssue = urlValidation.error?.issues[0];
+      const urlMessage = firstIssue?.message ?? 'Invalid URL';
+
       const urlError = new WebContentAnalyzerError(
         ErrorType.VALIDATION,
-        urlValidation.error.issues[0]?.message ?? 'Invalid URL',
+        urlMessage,
         'Please enter a valid URL starting with http:// or https://',
         ErrorSeverity.MEDIUM,
         false

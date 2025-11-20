@@ -42,9 +42,10 @@ export default async function DocsRootLayout({
 
   // Docs layout configurations
   const showLocaleSwitch = Object.keys(websiteConfig.i18n.locales).length > 1;
+  const githubUrl = websiteConfig.metadata.social?.github;
   const docsOptions: BaseLayoutProps = {
     i18n: showLocaleSwitch ? docsI18nConfig : false,
-    githubUrl: websiteConfig.metadata.social?.github ?? undefined,
+    ...(githubUrl ? { githubUrl } : {}),
     nav: {
       url: getUrlWithLocale('/docs', locale),
       title: (

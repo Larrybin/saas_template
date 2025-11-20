@@ -134,7 +134,7 @@ function getForwardedIp(request: Request): string | undefined {
 }
 
 function windowToMs(window: RateLimitWindow): number {
-  const [amountStr, unit] = window.trim().split(/\s+/);
+  const [amountStr, unit] = window.trim().split(/\s+/) as [string, string];
   const amount = Number.parseInt(amountStr, 10);
 
   if (Number.isNaN(amount) || amount <= 0) {

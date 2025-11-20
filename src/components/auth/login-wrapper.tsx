@@ -51,7 +51,9 @@ export const LoginWrapper = ({
   if (mode === 'modal') {
     return (
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogTrigger asChild={asChild}>{children}</DialogTrigger>
+        <DialogTrigger {...(asChild ? { asChild: true } : {})}>
+          {children}
+        </DialogTrigger>
         <DialogContent className="sm:max-w-[400px] p-0">
           <DialogHeader className="hidden">
             <DialogTitle />

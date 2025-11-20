@@ -71,23 +71,23 @@ function LocaleSelectorContent() {
         <SelectValue
           placeholder={
             <div className="flex items-center gap-2">
-              {websiteConfig.i18n.locales[DEFAULT_LOCALE].flag && (
+              {websiteConfig.i18n.locales[DEFAULT_LOCALE]?.flag && (
                 <span className="text-lg">
-                  {websiteConfig.i18n.locales[DEFAULT_LOCALE].flag}
+                  {websiteConfig.i18n.locales[DEFAULT_LOCALE]?.flag}
                 </span>
               )}
-              <span>{websiteConfig.i18n.locales[DEFAULT_LOCALE].name}</span>
+              <span>{websiteConfig.i18n.locales[DEFAULT_LOCALE]?.name}</span>
             </div>
           }
         >
-          {currentLocale && (
+          {currentLocale && websiteConfig.i18n.locales[currentLocale] && (
             <div className="flex items-center gap-2">
-              {websiteConfig.i18n.locales[currentLocale].flag && (
+              {websiteConfig.i18n.locales[currentLocale]?.flag && (
                 <span className="text-lg">
-                  {websiteConfig.i18n.locales[currentLocale].flag}
+                  {websiteConfig.i18n.locales[currentLocale]?.flag}
                 </span>
               )}
-              <span>{websiteConfig.i18n.locales[currentLocale].name}</span>
+              <span>{websiteConfig.i18n.locales[currentLocale]?.name}</span>
             </div>
           )}
         </SelectValue>

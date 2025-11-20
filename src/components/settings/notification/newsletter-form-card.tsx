@@ -34,7 +34,7 @@ import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 
 interface NewsletterFormCardProps {
-  className?: string;
+  className?: string | undefined;
 }
 
 /**

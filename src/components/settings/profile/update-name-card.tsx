@@ -81,23 +81,23 @@ export function UpdateNameCard({ className }: UpdateNameCardProps) {
         name: values.name,
       },
       {
-        onRequest: (_ctx) => {
+        onRequest: () => {
           // console.log('update name, request:', ctx.url);
           setIsSaving(true);
           setError('');
         },
-        onResponse: (_ctx) => {
+        onResponse: () => {
           // console.log('update name, response:', ctx.response);
           setIsSaving(false);
         },
-        onSuccess: (_ctx) => {
+        onSuccess: () => {
           // update name success, user information stored in ctx.data
           // console.log("update name, success:", ctx.data);
           toast.success(t('name.success'));
           refetch();
           form.reset();
         },
-        onError: (ctx) => {
+        onError: (ctx: { error: { status: number; message: string } }) => {
           // update name fail, display the error message
           console.error('update name error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);

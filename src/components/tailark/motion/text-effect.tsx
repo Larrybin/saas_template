@@ -2,6 +2,8 @@
 import {
 	AnimatePresence,
 	motion,
+	type MotionStyle,
+	type MotionProps,
 	type TargetAndTransition,
 	type Transition,
 	type Variant,
@@ -30,10 +32,10 @@ export type TextEffectProps = {
 	trigger?: boolean;
 	onAnimationComplete?: () => void;
 	onAnimationStart?: () => void;
-	segmentWrapperClassName?: string;
+	segmentWrapperClassName?: string | undefined;
 	containerTransition?: Transition;
 	segmentTransition?: Transition;
-	style?: React.CSSProperties;
+	style?: MotionStyle | undefined;
 };
 
 const defaultStaggerTimes: Record<PerType, number> = {
@@ -113,7 +115,7 @@ const AnimationComponent: React.FC<{
 	segment: string;
 	variants: Variants;
 	per: "line" | "word" | "char";
-	segmentWrapperClassName?: string;
+	segmentWrapperClassName?: string | undefined;
 }> = React.memo(({ segment, variants, per, segmentWrapperClassName }) => {
 	const content =
 		per === "line" ? (
@@ -164,7 +166,7 @@ const splitText = (text: string, per: "line" | "word" | "char") => {
 };
 
 const hasTransition = (
-	variant: Variant,
+	variant: Variant | undefined,
 ): variant is TargetAndTransition & { transition?: Transition } => {
 	return (
 		typeof variant === "object" && variant !== null && "transition" in variant
@@ -244,7 +246,7 @@ export function TextEffect({
 
 	const computedVariants = {
 		container: createVariantsWithTransition(
-			variants?.container || baseVariants.container,
+			variants?.container ?? baseVariants.container,
 			{
 				staggerChildren: customStagger ?? stagger,
 				delayChildren: customDelay ?? delay,
@@ -255,10 +257,18 @@ export function TextEffect({
 				},
 			},
 		),
-		item: createVariantsWithTransition(variants?.item || baseVariants.item, {
+		item: createVariantsWithTransition(variants?.item ?? baseVariants.item, {
 			duration: baseDuration,
 			...segmentTransition,
 		}),
+	};
+
+	const handleComplete: MotionProps["onAnimationComplete"] = () => {
+		onAnimationComplete?.();
+	};
+
+	const handleStart: MotionProps["onAnimationStart"] = () => {
+		onAnimationStart?.();
 	};
 
 	return (
@@ -270,9 +280,9 @@ export function TextEffect({
 					exit="exit"
 					variants={computedVariants.container}
 					className={className}
-					onAnimationComplete={onAnimationComplete}
-					onAnimationStart={onAnimationStart}
-					style={style}
+					onAnimationComplete={handleComplete}
+					onAnimationStart={handleStart}
+					{...(style ? { style } : {})}
 				>
 					{per !== "line" ? <span className="sr-only">{children}</span> : null}
 					{segments.map((segment, index) => (

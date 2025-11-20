@@ -144,7 +144,7 @@ export function ModelSelect({
           provider={providerKey}
           image={image}
           {...(timing ? { timing } : {})}
-          failed={failed}
+          {...(failed !== undefined ? { failed } : {})}
         />
       </CardContent>
     </Card>

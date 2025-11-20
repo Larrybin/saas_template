@@ -144,7 +144,11 @@ function TypingText({
 	return (
 		<span ref={localRef} data-slot="typing-text" {...props}>
 			<motion.span>{displayedText}</motion.span>
-			{cursor && <CursorBlinker className={cursorClassName} />}
+			{cursor && (
+				<CursorBlinker
+					{...(cursorClassName ? { className: cursorClassName } : {})}
+				/>
+			)}
 		</span>
 	);
 }

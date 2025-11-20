@@ -39,13 +39,16 @@ export function TypingAnimation({
 		}
 
 		const observer = new IntersectionObserver(
-			([entry]) => {
-				if (entry.isIntersecting) {
-					setTimeout(() => {
-						setStarted(true);
-					}, delay);
-					observer.disconnect();
+			(entries) => {
+				const [entry] = entries;
+				if (!entry || !entry.isIntersecting) {
+					return;
 				}
+
+				setTimeout(() => {
+					setStarted(true);
+				}, delay);
+				observer.disconnect();
 			},
 			{ threshold: 0.1 },
 		);

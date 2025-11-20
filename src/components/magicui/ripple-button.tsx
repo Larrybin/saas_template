@@ -45,15 +45,18 @@ export const RippleButton = React.forwardRef<
 		};
 
 		useEffect(() => {
-			if (buttonRipples.length > 0) {
-				const lastRipple = buttonRipples[buttonRipples.length - 1];
-				const timeout = setTimeout(() => {
-					setButtonRipples((prevRipples) =>
-						prevRipples.filter((ripple) => ripple.key !== lastRipple.key),
-					);
-				}, parseInt(duration));
-				return () => clearTimeout(timeout);
-			}
+			if (buttonRipples.length === 0) return;
+
+			const lastRipple = buttonRipples[buttonRipples.length - 1];
+			if (!lastRipple) return;
+
+			const timeout = setTimeout(() => {
+				setButtonRipples((prevRipples) =>
+					prevRipples.filter((ripple) => ripple.key !== lastRipple.key),
+				);
+			}, parseInt(duration));
+
+			return () => clearTimeout(timeout);
 		}, [buttonRipples, duration]);
 
 		return (

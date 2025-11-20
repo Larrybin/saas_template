@@ -50,7 +50,7 @@ function PlayfulTodolist() {
 				<div key={item.id} className="space-y-6">
 					<div className="flex items-center space-x-2">
 						<Checkbox
-							checked={checked[idx]}
+							checked={checked[idx] ?? false}
 							onCheckedChange={(val) => {
 								const updated = [...checked];
 								updated[idx] = val === true;

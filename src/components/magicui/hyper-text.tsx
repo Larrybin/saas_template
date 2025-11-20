@@ -70,13 +70,16 @@ export function HyperText({
 		}
 
 		const observer = new IntersectionObserver(
-			([entry]) => {
-				if (entry.isIntersecting) {
-					setTimeout(() => {
-						setIsAnimating(true);
-					}, delay);
-					observer.disconnect();
+			(entries) => {
+				const [entry] = entries;
+				if (!entry || !entry.isIntersecting) {
+					return;
 				}
+
+				setTimeout(() => {
+					setIsAnimating(true);
+				}, delay);
+				observer.disconnect();
 			},
 			{ threshold: 0.1, rootMargin: "-30% 0px -30% 0px" },
 		);
@@ -103,13 +106,18 @@ export function HyperText({
 			iterationCount.current = progress * maxIterations;
 
 			setDisplayText((currentText) =>
-				currentText.map((letter, index) =>
-					letter === " "
-						? letter
-						: index <= iterationCount.current
-							? children[index]
-							: characterSet[getRandomInt(characterSet.length)],
-				),
+				currentText.map((letter, index) => {
+					if (letter === " ") return letter;
+
+					if (index <= iterationCount.current) {
+						return children[index] ?? letter;
+					}
+
+					const randomChar =
+						characterSet[getRandomInt(characterSet.length)] ?? letter;
+
+					return randomChar;
+				}),
 			);
 
 			if (progress < 1) {

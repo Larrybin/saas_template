@@ -74,19 +74,19 @@ export const SocialLoginButton = ({
         // disableRedirect: true,
       },
       {
-        onRequest: (_ctx) => {
+        onRequest: () => {
           // console.log("onRequest", ctx);
           setIsLoading(provider);
         },
-        onResponse: (_ctx) => {
+        onResponse: () => {
           // console.log("onResponse", ctx.response);
           setIsLoading(null);
         },
-        onSuccess: (_ctx) => {
+        onSuccess: () => {
           // console.log("onSuccess", ctx.data);
           setIsLoading(null);
         },
-        onError: (ctx) => {
+        onError: (ctx: { error: { message: string } }) => {
           console.log('social login error', ctx.error.message);
           setIsLoading(null);
         },

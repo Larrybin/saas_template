@@ -57,17 +57,21 @@ export async function generateMetadata({ params }: DocPageProps) {
   });
 }
 
-const previewComponents: Record<string, ComponentType> = {
+const previewComponents: Record<string, ComponentType | undefined> = {
   ...Preview,
 };
 
 function PreviewRenderer({ preview }: { preview: string }): ReactNode {
-  if (preview && preview in Preview) {
-    const Comp = previewComponents[preview];
-    return <Comp />;
+  if (!preview) {
+    return null;
   }
 
-  return null;
+  const Comp = previewComponents[preview];
+  if (!Comp) {
+    return null;
+  }
+
+  return <Comp />;
 }
 
 export const revalidate = false;
@@ -97,7 +101,7 @@ export default async function DocPage({ params }: DocPageProps) {
 
   const preview = page.data.preview;
 
-  const MDX = page.data.body;
+  const MDX = page.data.body ?? (() => null);
   const pageDir = getVirtualDir(page.path);
 
   return (

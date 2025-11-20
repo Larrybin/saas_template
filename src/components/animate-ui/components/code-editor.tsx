@@ -190,7 +190,7 @@ function CodeEditor({
 							size="sm"
 							variant="ghost"
 							className="-me-2 bg-transparent hover:bg-black/5 dark:hover:bg-white/10"
-							onCopy={onCopy}
+							{...(onCopy ? { onCopy } : {})}
 						/>
 					) : null}
 				</div>
@@ -201,7 +201,7 @@ function CodeEditor({
 						size="sm"
 						variant="ghost"
 						className="absolute right-2 top-2 z-[2] backdrop-blur-md bg-transparent hover:bg-black/5 dark:hover:bg-white/10"
-						onCopy={onCopy}
+						{...(onCopy ? { onCopy } : {})}
 					/>
 				)
 			)}

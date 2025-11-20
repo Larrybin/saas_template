@@ -1,6 +1,8 @@
 'use client';
 import {
   AnimatePresence,
+  type MotionProps,
+  type MotionStyle,
   motion,
   type TargetAndTransition,
   type Transition,
@@ -30,10 +32,10 @@ export type TextEffectProps = {
   trigger?: boolean;
   onAnimationComplete?: () => void;
   onAnimationStart?: () => void;
-  segmentWrapperClassName?: string;
+  segmentWrapperClassName?: string | undefined;
   containerTransition?: Transition;
   segmentTransition?: Transition;
-  style?: React.CSSProperties;
+  style?: MotionStyle | undefined;
 };
 
 const defaultStaggerTimes: Record<PerType, number> = {
@@ -113,7 +115,7 @@ const AnimationComponent: React.FC<{
   segment: string | React.ReactNode;
   variants: Variants;
   per: 'line' | 'word' | 'char';
-  segmentWrapperClassName?: string;
+  segmentWrapperClassName?: string | undefined;
   children?: React.ReactNode;
 }> = React.memo(
   ({ segment, variants, per, segmentWrapperClassName, children }) => {
@@ -179,7 +181,7 @@ const splitText = (
 };
 
 const hasTransition = (
-  variant: Variant
+  variant: Variant | undefined
 ): variant is TargetAndTransition & { transition?: Transition } => {
   return (
     typeof variant === 'object' && variant !== null && 'transition' in variant
@@ -259,7 +261,7 @@ export function CustomTextEffect({
 
   const computedVariants = {
     container: createVariantsWithTransition(
-      variants?.container || baseVariants.container,
+      variants?.container ?? baseVariants.container,
       {
         staggerChildren: customStagger ?? stagger,
         delayChildren: customDelay ?? delay,
@@ -270,10 +272,18 @@ export function CustomTextEffect({
         },
       }
     ),
-    item: createVariantsWithTransition(variants?.item || baseVariants.item, {
+    item: createVariantsWithTransition(variants?.item ?? baseVariants.item, {
       duration: baseDuration,
       ...segmentTransition,
     }),
+  };
+
+  const handleComplete: MotionProps['onAnimationComplete'] = () => {
+    onAnimationComplete?.();
+  };
+
+  const handleStart: MotionProps['onAnimationStart'] = () => {
+    onAnimationStart?.();
   };
 
   return (
@@ -285,9 +295,9 @@ export function CustomTextEffect({
           exit="exit"
           variants={computedVariants.container}
           className={className}
-          onAnimationComplete={onAnimationComplete}
-          onAnimationStart={onAnimationStart}
-          style={style}
+          onAnimationComplete={handleComplete}
+          onAnimationStart={handleStart}
+          {...(style ? { style } : {})}
         >
           {per !== 'line' && typeof children === 'string' ? (
             <span className="sr-only">{children}</span>

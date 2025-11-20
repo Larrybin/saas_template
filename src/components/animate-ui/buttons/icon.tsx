@@ -3,10 +3,10 @@
 import {
 	AnimatePresence,
 	type HTMLMotionProps,
+	type MotionStyle,
 	motion,
 	type Transition,
 } from "motion/react";
-import type * as React from "react";
 import { defineTransition } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +87,7 @@ function IconButton({
 			style={
 				{
 					"--icon-button-color": `rgb(${color[0]}, ${color[1]}, ${color[2]})`,
-				} as React.CSSProperties
+				} as MotionStyle
 			}
 			{...props}
 		>
@@ -124,14 +124,14 @@ function IconButton({
 							className="absolute inset-0 z-10 rounded-full "
 							style={{
 								background: `radial-gradient(circle, rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.4) 0%, rgba(${color[0]}, ${color[1]}, ${color[2]}, 0) 70%)`,
-							}}
+							} as MotionStyle}
 							{...animations.pulse}
 						/>
 						<motion.div
 							className="absolute inset-0 z-10 rounded-full"
 							style={{
 								boxShadow: `0 0 10px 2px rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.6)`,
-							}}
+							} as MotionStyle}
 							{...animations.glow}
 						/>
 						{[...Array(6)].map((_, i) => (

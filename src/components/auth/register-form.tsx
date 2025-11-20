@@ -135,17 +135,17 @@ export const RegisterForm = ({
         callbackURL: callbackUrl,
       },
       {
-        onRequest: (_ctx) => {
+        onRequest: () => {
           // console.log('register, request:', ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
-        onResponse: (_ctx) => {
+        onResponse: () => {
           // console.log('register, response:', ctx.response);
           setIsPending(false);
         },
-        onSuccess: (_ctx) => {
+        onSuccess: () => {
           // sign up success, user information stored in ctx.data
           // console.log("register, success:", ctx.data);
           setSuccess(t('checkEmail'));
@@ -157,7 +157,7 @@ export const RegisterForm = ({
             window.Affonso.signup(values.email);
           }
         },
-        onError: (ctx) => {
+        onError: (ctx: { error: { status: number; message: string } }) => {
           // sign up fail, display the error message
           console.error('register, error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
@@ -286,7 +286,7 @@ export const RegisterForm = ({
       <div className="mt-4">
         <SocialLoginButton
           callbackUrl={callbackUrl}
-          showDivider={credentialLoginEnabled}
+          showDivider={Boolean(credentialLoginEnabled)}
         />
       </div>
     </AuthCard>

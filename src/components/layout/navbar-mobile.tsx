@@ -206,7 +206,7 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
               <li key={item.title} className="py-1">
                 {item.items ? (
                   <Collapsible
-                    open={expanded[item.title.toLowerCase()]}
+                    open={expanded[item.title.toLowerCase()] ?? false}
                     onOpenChange={(isOpen) =>
                       setExpanded((prev) => ({
                         ...prev,

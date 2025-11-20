@@ -46,7 +46,7 @@ function WritingText({
 					className="inline-block will-change-transform will-change-opacity"
 					style={{ marginRight: spacing }}
 					initial={{ opacity: 0, y: 10 }}
-					animate={isInView ? { opacity: 1, y: 0 } : undefined}
+					{...(isInView ? { animate: { opacity: 1, y: 0 } } : {})}
 					transition={{
 						...transition,
 						delay: index * (transition?.delay ?? 0),

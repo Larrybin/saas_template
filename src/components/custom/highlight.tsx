@@ -44,7 +44,7 @@ function CustomHighlightText({
       initial={{
         backgroundSize: '0% 100%',
       }}
-      animate={isInView ? { backgroundSize: '100% 100%' } : undefined}
+      {...(isInView ? { animate: { backgroundSize: '100% 100%' } } : {})}
       transition={transition}
       style={{
         backgroundRepeat: 'no-repeat',

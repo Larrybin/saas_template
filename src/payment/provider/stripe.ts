@@ -158,8 +158,9 @@ export class StripeProvider implements PaymentProvider {
         .where(eq(user.customerId, customerId))
         .limit(1);
 
-      if (result.length > 0) {
-        return result[0].id;
+      const first = result[0];
+      if (first?.id) {
+        return first.id;
       }
       console.warn('No user found with given customerId');
 
@@ -979,7 +980,8 @@ export class StripeProvider implements PaymentProvider {
     }
 
     // If not, try to get the base language
-    const baseLocale = locale.split('-')[0];
+    const parts = locale.split('-');
+    const baseLocale = parts[0] ?? locale;
     if (stripeLocales.includes(baseLocale)) {
       return baseLocale;
     }

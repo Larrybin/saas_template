@@ -176,22 +176,29 @@ export function SidebarUser({ user }: SidebarUserProps) {
                     <span>{t('Common.language')}</span>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    {routing.locales.map((localeOption) => (
-                      <DropdownMenuItem
-                        key={localeOption}
-                        onClick={() => setLocale(localeOption)}
-                        className="cursor-pointer"
-                      >
-                        {websiteConfig.i18n.locales[localeOption].flag && (
-                          <span className="mr-2 text-md">
-                            {websiteConfig.i18n.locales[localeOption].flag}
-                          </span>
-                        )}
-                        <span className="text-sm">
-                          {websiteConfig.i18n.locales[localeOption].name}
-                        </span>
-                      </DropdownMenuItem>
-                    ))}
+                    {routing.locales.map((localeOption) => {
+                      const localeConfig =
+                        websiteConfig.i18n.locales[localeOption];
+
+                      if (!localeConfig) {
+                        return null;
+                      }
+
+                      return (
+                        <DropdownMenuItem
+                          key={localeOption}
+                          onClick={() => setLocale(localeOption)}
+                          className="cursor-pointer"
+                        >
+                          {localeConfig.flag && (
+                            <span className="mr-2 text-md">
+                              {localeConfig.flag}
+                            </span>
+                          )}
+                          <span className="text-sm">{localeConfig.name}</span>
+                        </DropdownMenuItem>
+                      );
+                    })}
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
               </DropdownMenuGroup>

@@ -26,7 +26,7 @@ export type CaptchaRef =
   | undefined;
 
 type Props = Omit<ComponentProps<typeof Turnstile>, 'siteKey'> & {
-  validationError?: string;
+  validationError?: string | undefined;
 };
 
 /**

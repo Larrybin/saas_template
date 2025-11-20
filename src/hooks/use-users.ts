@@ -72,11 +72,16 @@ export function useBanUser() {
       banReason: string;
       banExpiresIn?: number;
     }) => {
-      return adminClient.banUser({
-        userId,
-        banReason,
-        banExpiresIn,
-      });
+      const payload: {
+        userId: string;
+        banReason: string;
+        banExpiresIn?: number;
+      } =
+        banExpiresIn !== undefined
+          ? { userId, banReason, banExpiresIn }
+          : { userId, banReason };
+
+      return adminClient.banUser(payload);
     },
     onSuccess: () => {
       // Invalidate all users queries to refresh the data

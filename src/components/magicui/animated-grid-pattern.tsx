@@ -24,6 +24,11 @@ export interface AnimatedGridPatternProps
 	repeatDelay?: number;
 }
 
+type Square = {
+	id: number;
+	pos: [number, number];
+};
+
 export function AnimatedGridPattern({
 	width = 40,
 	height = 40,
@@ -38,11 +43,13 @@ export function AnimatedGridPattern({
 	...props
 }: AnimatedGridPatternProps) {
 	const id = useId();
-	const containerRef = useRef(null);
+	const containerRef = useRef<SVGSVGElement | null>(null);
 	const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-	const [squares, setSquares] = useState(() => generateSquares(numSquares));
+	const [squares, setSquares] = useState<Square[]>(() =>
+		generateSquares(numSquares),
+	);
 
-	function getPos() {
+	function getPos(): [number, number] {
 		return [
 			Math.floor((Math.random() * dimensions.width) / width),
 			Math.floor((Math.random() * dimensions.height) / height),
@@ -50,7 +57,7 @@ export function AnimatedGridPattern({
 	}
 
 	// Adjust the generateSquares function to return objects with an id, x, and y
-	function generateSquares(count: number) {
+	function generateSquares(count: number): Square[] {
 		return Array.from({ length: count }, (_, i) => ({
 			id: i,
 			pos: getPos(),

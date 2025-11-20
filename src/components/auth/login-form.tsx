@@ -33,7 +33,7 @@ import { SocialLoginButton } from './social-login-button';
 
 export interface LoginFormProps {
   className?: string;
-  callbackUrl?: string;
+  callbackUrl?: string | undefined;
 }
 
 export const LoginForm = ({
@@ -134,22 +134,22 @@ export const LoginForm = ({
         callbackURL: callbackUrl,
       },
       {
-        onRequest: (_ctx) => {
+        onRequest: () => {
           // console.log("login, request:", ctx.url);
           setIsPending(true);
           setError('');
           setSuccess('');
         },
-        onResponse: (_ctx) => {
+        onResponse: () => {
           // console.log("login, response:", ctx.response);
           setIsPending(false);
         },
-        onSuccess: (_ctx) => {
+        onSuccess: () => {
           // console.log("login, success:", ctx.data);
           // setSuccess("Login successful");
           // router.push(callbackUrl || "/dashboard");
         },
-        onError: (ctx) => {
+        onError: (ctx: { error: { status: number; message: string } }) => {
           console.error('login, error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
           // Reset captcha on login error
@@ -276,7 +276,7 @@ export const LoginForm = ({
       <div className="mt-4">
         <SocialLoginButton
           callbackUrl={callbackUrl}
-          showDivider={credentialLoginEnabled}
+          showDivider={Boolean(credentialLoginEnabled)}
         />
       </div>
     </AuthCard>

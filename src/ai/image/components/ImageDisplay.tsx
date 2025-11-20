@@ -19,7 +19,7 @@ interface ImageDisplayProps {
   provider: string;
   image: string | null | undefined;
   timing?: ProviderTiming;
-  failed?: boolean;
+  failed?: boolean | undefined;
   fallbackIcon?: React.ReactNode;
   enabled?: boolean;
   modelId: string;

@@ -271,12 +271,35 @@ function MotionHighlight<T extends string>({
 		],
 	);
 
-	return (
-		<MotionHighlightContext.Provider
-			value={{
+		const contextValue = React.useMemo(
+			() => {
+				const parentProps = props as ParentModeMotionHighlightProps;
+				const forceUpdate = parentProps?.forceUpdateBounds;
+
+				return {
+					mode,
+					activeValue,
+					setActiveValue: safeSetActiveValue,
+					id,
+					hover,
+					...(className ? { className } : {}),
+					transition,
+					disabled,
+					enabled,
+					exitDelay,
+					setBounds: safeSetBounds,
+					clearBounds,
+					activeClassName: activeClassNameState,
+					setActiveClassName: setActiveClassNameState,
+					...(forceUpdate !== undefined
+						? { forceUpdateBounds: forceUpdate }
+						: {}),
+				};
+			},
+			[
 				mode,
 				activeValue,
-				setActiveValue: safeSetActiveValue,
+				safeSetActiveValue,
 				id,
 				hover,
 				className,
@@ -284,28 +307,32 @@ function MotionHighlight<T extends string>({
 				disabled,
 				enabled,
 				exitDelay,
-				setBounds: safeSetBounds,
+				safeSetBounds,
 				clearBounds,
-				activeClassName: activeClassNameState,
-				setActiveClassName: setActiveClassNameState,
-				forceUpdateBounds: (props as ParentModeMotionHighlightProps)
-					?.forceUpdateBounds,
-			}}
-		>
-			{enabled
-				? controlledItems
-					? render(children)
-					: render(
-							React.Children.map(children, (child, index) => (
-								<MotionHighlightItem
-									key={index}
-									className={props?.itemsClassName}
-								>
-									{child}
-								</MotionHighlightItem>
-							)),
-						)
-				: children}
+				activeClassNameState,
+				setActiveClassNameState,
+				props,
+			],
+		);
+
+	return (
+		<MotionHighlightContext.Provider value={contextValue}>
+				{enabled
+					? controlledItems
+						? render(children)
+						: render(
+								React.Children.map(children, (child, index) => (
+									<MotionHighlightItem
+										key={index}
+										{...(props?.itemsClassName
+											? { className: props.itemsClassName }
+											: {})}
+									>
+										{child}
+									</MotionHighlightItem>
+								)),
+							)
+					: children}
 		</MotionHighlightContext.Provider>
 	);
 }
@@ -483,17 +510,19 @@ function MotionHighlightItem({
 					...props,
 				},
 				<>
-					<AnimatePresence initial={false}>
-						{isActive && !isDisabled && (
-							<motion.div
+						<AnimatePresence initial={false}>
+							{isActive && !isDisabled && (
+								<motion.div
 								layoutId={`transition-background-${contextId}`}
 								data-slot="motion-highlight"
-								className={cn(
-									"absolute inset-0 bg-muted z-0",
-									contextClassName,
-									activeClassName,
-								)}
-								transition={itemTransition}
+									className={cn(
+										"absolute inset-0 bg-muted z-0",
+										contextClassName,
+										activeClassName,
+									)}
+									{...(itemTransition
+										? { transition: itemTransition }
+										: {})}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								exit={{
@@ -543,16 +572,18 @@ function MotionHighlightItem({
 		>
 			{mode === "children" && (
 				<AnimatePresence initial={false}>
-					{isActive && !isDisabled && (
-						<motion.div
+						{isActive && !isDisabled && (
+							<motion.div
 							layoutId={`transition-background-${contextId}`}
 							data-slot="motion-highlight"
-							className={cn(
-								"absolute inset-0 bg-muted z-0",
-								contextClassName,
-								activeClassName,
-							)}
-							transition={itemTransition}
+								className={cn(
+									"absolute inset-0 bg-muted z-0",
+									contextClassName,
+									activeClassName,
+								)}
+								{...(itemTransition
+									? { transition: itemTransition }
+									: {})}
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{

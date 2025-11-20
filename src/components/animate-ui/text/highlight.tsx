@@ -36,6 +36,9 @@ function HighlightText({
 		margin: inViewMargin,
 	});
 	const isInView = !inView || inViewResult;
+	const animateProps = isInView
+		? { backgroundSize: "100% 100%" }
+		: undefined;
 
 	return (
 		<motion.span
@@ -44,7 +47,7 @@ function HighlightText({
 			initial={{
 				backgroundSize: "0% 100%",
 			}}
-			animate={isInView ? { backgroundSize: "100% 100%" } : undefined}
+			{...(animateProps ? { animate: animateProps } : {})}
 			transition={transition}
 			style={{
 				backgroundRepeat: "no-repeat",

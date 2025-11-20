@@ -605,7 +605,8 @@
           "creditsAdded": "Credits have been added to your account",
           "viewTransactions": "View Credit Transactions",
           "retry": "Retry",
-          "expiringCredits": "{credits} credits expiring in the next {days} days"
+          "expiringCredits": "{credits} credits expiring in the next {days} days",
+          "insufficientCredits": "Insufficient credits. Please purchase more credits to continue."
         },
         "packages": {
           "title": "Credit Packages",

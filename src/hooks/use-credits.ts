@@ -4,6 +4,10 @@ import { consumeCreditsAction } from '@/actions/consume-credits';
 import { getCreditBalanceAction } from '@/actions/get-credit-balance';
 import { getCreditStatsAction } from '@/actions/get-credit-stats';
 import { getCreditTransactionsAction } from '@/actions/get-credit-transactions';
+import {
+  type DomainErrorLike,
+  getDomainErrorMessage,
+} from '@/lib/domain-error-utils';
 
 // Query keys
 export const creditsKeys = {
@@ -70,26 +74,17 @@ export function useConsumeCredits() {
         description,
       });
       const data = result?.data as
-        | {
-            success?: boolean;
-            error?: string;
-            code?: string;
-            retryable?: boolean;
-          }
+        | ({ success?: boolean; error?: string } & DomainErrorLike)
         | undefined;
       if (!data?.success) {
-        const errorMessage = data?.error || 'Failed to consume credits';
-        type DomainErrorShape = {
-          code?: string;
-          retryable?: boolean;
-        };
-        const error = new Error(errorMessage) as Error & DomainErrorShape;
-        const domainInfo = data as DomainErrorShape;
-        if (typeof domainInfo.code === 'string') {
-          error.code = domainInfo.code;
+        const resolvedMessage =
+          data?.error ?? getDomainErrorMessage(data?.code);
+        const error = new Error(resolvedMessage) as Error & DomainErrorLike;
+        if (typeof data?.code === 'string') {
+          error.code = data.code;
         }
-        if (typeof domainInfo.retryable === 'boolean') {
-          error.retryable = domainInfo.retryable;
+        if (typeof data?.retryable === 'boolean') {
+          error.retryable = data.retryable;
         }
         throw error;
       }

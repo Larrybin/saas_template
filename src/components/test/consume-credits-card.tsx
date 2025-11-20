@@ -2,6 +2,7 @@
 
 import { CoinsIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -15,13 +16,14 @@ export function ConsumeCreditsCard() {
   const consumeCreditsMutation = useConsumeCredits();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const t = useTranslations('Dashboard.settings.credits.balance');
 
   const hasEnoughCredits = (amount: number) => balance >= amount;
 
   const handleConsume = async () => {
     // 乐观前置检查，避免明显无效请求
     if (!hasEnoughCredits(CONSUME_CREDITS)) {
-      toast.error('Insufficient credits, please buy more credits.');
+      toast.error(t('insufficientCredits'));
       router.push(Routes.SettingsCredits);
       return;
     }
@@ -38,7 +40,7 @@ export function ConsumeCreditsCard() {
 
       if (err.code === 'CREDITS_INSUFFICIENT_BALANCE') {
         // 后端兜底判定：积分不足，引导到积分页面
-        toast.error('Insufficient credits, please buy more credits.');
+        toast.error(t('insufficientCredits'));
         router.push(Routes.SettingsCredits);
       } else {
         toast.error(err.message || 'Failed to consume credits');

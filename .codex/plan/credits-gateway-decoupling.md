@@ -18,3 +18,7 @@
   - 严格 TS（`npx tsc --noEmit`）与现有 Vitest 测试通过。
 - 待办（后续阶段）：
   - 如需进一步与 Drizzle 解耦，可在 `CreditsGateway` 之上引入回调式事务 API（`runInCreditsTransaction(handler)`），由上层控制事务边界，当前版本保持 wrapper 方案已满足大部分使用场景。
+
+## 状态
+- Phase A：完成（2025-11，Owner：Platform）
+- Stage B：暂未排期；需回调式事务时再启新计划

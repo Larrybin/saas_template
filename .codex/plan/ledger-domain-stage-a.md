@@ -19,3 +19,7 @@
   - 对应 Vitest 已更新/通过，`npx tsc --noEmit` 在严格 TS 配置下编译通过。
 - 待办：
   - 长期目标仍然是进一步减少 Domain 层对 `getDb` 默认 provider 的依赖（当前以构造函数参数形式存在），将连接/事务控制完全上移到 orchestrator 层。
+
+## 状态
+- Phase A：完成（2025-11，Owner：Platform）
+- Stage B：未排期，若需继续推进请新开 plan 并指定 owner

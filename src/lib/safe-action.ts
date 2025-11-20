@@ -3,6 +3,9 @@ import type { User } from './auth-types';
 import { isDemoWebsite } from './demo';
 import { DomainError } from './domain-errors';
 import { getSession } from './server';
+import { getLogger } from './server/logger';
+
+const safeActionLogger = getLogger({ span: 'safe-action' });
 
 // -----------------------------------------------------------------------------
 // 1. Base action client – put global error handling / metadata here if needed
@@ -10,6 +13,11 @@ import { getSession } from './server';
 export const actionClient = createSafeActionClient({
   handleServerError: (e) => {
     if (e instanceof DomainError) {
+      safeActionLogger.error('Domain error in safe-action', {
+        code: e.code,
+        retryable: e.retryable,
+        error: e,
+      });
       return {
         success: false,
         error: e.message,
@@ -19,6 +27,7 @@ export const actionClient = createSafeActionClient({
     }
 
     if (e instanceof Error) {
+      safeActionLogger.error('Unhandled error in safe-action', { error: e });
       return {
         success: false,
         error: e.message,

@@ -83,3 +83,7 @@
 - Domain Error & Actions：
   - 新增 `DomainError` 基类（`code` + `retryable`），`PaymentSecurityError`、Credits 域的 `InvalidCreditPayloadError`/`InsufficientCreditsError` 等全部继承自该类，消除散落的裸 `Error` 字符串常量。
   - `safe-action` 的 `handleServerError` 针对 `DomainError` 提供统一返回结构（`{ success: false, error, code, retryable }`），前端 hooks/组件可以在严格 TS 下安全读取错误信息而不依赖 `any`。
+
+## 状态
+- Phase 1（核心 Domain）：进行中（2025-11，Owner：Platform），Credits/Payment 域已达成；其余阶段按计划推进。
+- 阶段 B 及以后：请根据对应模块准备单独子任务。

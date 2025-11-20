@@ -262,60 +262,6 @@ export async function withRetry<T>(
   throw lastError;
 }
 
-// Error recovery suggestions
-export function getRecoveryActions(error: WebContentAnalyzerError): Array<{
-  label: string;
-  action: string;
-  primary?: boolean;
-}> {
-  switch (error.type) {
-    case ErrorType.NETWORK:
-      return [
-        { label: 'Try Again', action: 'retry', primary: true },
-        { label: 'Check Connection', action: 'check_connection' },
-      ];
-
-    case ErrorType.TIMEOUT:
-      return [
-        { label: 'Try Again', action: 'retry', primary: true },
-        { label: 'Try Simpler URL', action: 'simplify_url' },
-      ];
-
-    case ErrorType.SCRAPING:
-      return [
-        { label: 'Try Again', action: 'retry', primary: true },
-        { label: 'Check URL', action: 'check_url' },
-      ];
-
-    case ErrorType.ANALYSIS:
-      return [
-        { label: 'Try Again', action: 'retry', primary: true },
-        { label: 'Report Issue', action: 'report_issue' },
-      ];
-
-    case ErrorType.RATE_LIMIT:
-      return [{ label: 'Wait and Retry', action: 'wait_retry', primary: true }];
-
-    case ErrorType.AUTHENTICATION:
-      return [
-        { label: 'Refresh Page', action: 'refresh', primary: true },
-        { label: 'Sign In Again', action: 'sign_in' },
-      ];
-
-    case ErrorType.SERVICE_UNAVAILABLE:
-      return [
-        { label: 'Try Later', action: 'try_later', primary: true },
-        { label: 'Check Status', action: 'check_status' },
-      ];
-
-    default:
-      return [
-        { label: 'Try Again', action: 'retry', primary: true },
-        { label: 'Refresh Page', action: 'refresh' },
-      ];
-  }
-}
-
 // Error logging utility
 export function logError(
   error: WebContentAnalyzerError,

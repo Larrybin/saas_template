@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { DomainError } from '@/lib/domain-errors';
+import { createLoggerFromHeaders } from '@/lib/server/logger';
 import { handleWebhookEvent } from '@/payment';
 
 /**
@@ -10,6 +11,12 @@ import { handleWebhookEvent } from '@/payment';
  * @returns NextResponse
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const logger = createLoggerFromHeaders(req.headers, {
+    span: 'api.webhooks.stripe',
+    route: '/api/webhooks/stripe',
+    provider: 'stripe',
+  });
+
   // Get the request body as text
   const payload = await req.text();
 
@@ -38,9 +45,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Return success
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (error) {
-    console.error('Error in webhook route:', error);
-
     if (error instanceof DomainError) {
+      logger.error(
+        { error, code: error.code, retryable: error.retryable },
+        'Stripe webhook domain error'
+      );
+
       const status =
         error.code === 'PAYMENT_SECURITY_VIOLATION'
           ? 400
@@ -53,6 +63,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { status }
       );
     }
+
+    logger.error({ error }, 'Stripe webhook unexpected error');
 
     // Return generic error
     return NextResponse.json(

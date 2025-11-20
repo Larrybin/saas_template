@@ -90,11 +90,53 @@ try {
 
 - `getLogger(bindings)`: 从 `AsyncLocalStorage` 获取上下文（`requestId`, `userId`, `span` 等），返回带有这些字段的 logger。
 - `withLogContext(bindings, fn)`: 在调用栈中附加日志上下文。
+- `createLoggerFromHeaders(headers, metadata)`: 从请求头解析 `x-request-id` / `x-requestid` 并创建带有 `requestId` 的 logger，适用于 API routes / 中间层。
+
+建议的 `span` 命名规范（便于日志聚合）：
+
+- HTTP API：`api.<域>.<子域>`，例如：
+  - `api.ai.chat`（聊天流式接口）
+  - `api.ai.text.analyze`（网页内容分析接口）
+  - `api.ai.image.generate`（图片生成接口）
+  - `api.credits.distribute`（积分分发 API）
+  - `api.storage.upload`（文件上传 API）
+  - `api.docs.search`（文档搜索 API）
+- 领域服务 / 批处理：`credits.*`, `payment.*`, `mail.*` 等（已在对应模块中使用）。
+- 基础设施：`infra.*`，例如 `infra.api-auth`、`safe-action` 等。
 
 约定：
 
-- `safe-action` 与关键 API routes 应通过 `withLogContext` 设置 `userId`、`span` 等，便于错误定位。
+- `safe-action` 与关键 API routes 应通过 `withLogContext` 或 `createLoggerFromHeaders` 设置 `requestId`、`userId`、`span` 等，便于错误定位。
 - Domain 层只需抛出 `DomainError`，不直接关心日志实现。
+
+示例：在 API route 中创建 request logger 并记录 DomainError：
+
+```ts
+import { createLoggerFromHeaders } from '@/lib/server/logger';
+import { DomainError } from '@/lib/domain-errors';
+
+export async function POST(request: Request) {
+  const logger = createLoggerFromHeaders(request.headers, {
+    span: 'api.example.feature',
+    route: '/api/example',
+  });
+
+  try {
+    // ...
+  } catch (error) {
+    if (error instanceof DomainError) {
+      logger.error(
+        { error, code: error.code, retryable: error.retryable },
+        'Domain error in route'
+      );
+      // 返回带 code/retryable 的 JSON
+    } else {
+      logger.error({ error }, 'Unhandled error in route');
+      // 返回 500
+    }
+  }
+}
+```
 
 ## 5. 前端消费与文案
 
@@ -222,6 +264,7 @@ toast.error(message);
     - 结算按钮（如 `CreditCheckoutButton`）：
       - `PAYMENT_SECURITY_VIOLATION`：在 toast 中提示「支付失败，请稍后再试或联系支持」，并可选记录埋点。
   - 建议将这类行为封装为小的 UI helper（例如 `useCreditsErrorUi`），由页面/卡片组件调用。
+  - 积分额度与过期策略由 `src/credits/config.ts` 适配器从 `websiteConfig` / price plan 中抽取，对错误模型和前端消费透明，未来若改为从数据库或后台配置读取，只需调整适配器即可。
 
 以上 UI 级行为在编码前，应先统一约定：
 

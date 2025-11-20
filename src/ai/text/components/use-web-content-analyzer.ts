@@ -9,6 +9,7 @@ import {
   WebContentAnalyzerError,
   withRetry,
 } from '@/ai/text/utils/error-handling';
+import { logAnalyzerComponentError } from '@/ai/text/utils/error-logging.client';
 import type {
   AnalysisState,
   AnalyzeContentResponse,
@@ -265,8 +266,7 @@ export function useWebContentAnalyzer() {
   }, []);
 
   const handleError = useCallback((error: Error) => {
-    // eslint-disable-next-line no-console
-    console.error('WebContentAnalyzer component error:', error);
+    logAnalyzerComponentError(error);
 
     dispatch({
       type: 'SET_ERROR',

@@ -36,7 +36,7 @@ const unauthorizedResponse = NextResponse.json(
  * Returns the resolved user when successful or a standardized 401 response on failure.
  */
 export async function ensureApiUser(request: Request): Promise<ApiAuthResult> {
-  const logger = getLogger({ span: 'api-auth' });
+  const logger = getLogger({ span: 'infra.api-auth' });
   try {
     const session = await auth.api.getSession({
       headers: request.headers,

@@ -41,7 +41,7 @@ function validateBasicAuth(request: Request, logger: Logger): boolean {
 export async function GET(request: Request) {
   const log = createLoggerFromHeaders(request.headers, {
     route: '/api/distribute-credits',
-    span: 'distributeCredits',
+    span: 'api.credits.distribute',
   });
   // Validate basic authentication
   if (!validateBasicAuth(request, log)) {

@@ -1,22 +1,29 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import {
-  type AnalyzeContentHandlerInput,
-  handleAnalyzeContentRequest,
-} from '@/ai/text/utils/analyze-content-handler';
-import {
   ErrorSeverity,
   ErrorType,
-  logError,
   WebContentAnalyzerError,
 } from '@/ai/text/utils/error-handling';
+import { logAnalyzerErrorServer } from '@/ai/text/utils/error-logging.server';
 import type { AnalyzeContentResponse } from '@/ai/text/utils/web-content-analyzer';
+import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
+import { createLoggerFromHeaders, withLogContext } from '@/lib/server/logger';
 import { enforceRateLimit } from '@/lib/server/rate-limit';
+import { analyzeWebContentWithCredits } from '@/lib/server/usecases/analyze-web-content-with-credits';
 
 export async function POST(req: NextRequest) {
+  const requestId = Math.random().toString(36).substring(7);
+  const logger = createLoggerFromHeaders(req.headers, {
+    span: 'api.ai.text.analyze',
+    route: '/api/analyze-content',
+    requestId,
+  });
+
   const authResult = await ensureApiUser(req);
   if (!authResult.ok) {
+    logger.warn('Unauthorized analyze-content request');
     return authResult.response;
   }
 
@@ -29,11 +36,12 @@ export async function POST(req: NextRequest) {
   });
 
   if (!rateLimitResult.ok) {
+    logger.warn(
+      { userId: authResult.user.id },
+      'Analyze-content rate limit exceeded'
+    );
     return rateLimitResult.response;
   }
-
-  const requestId = Math.random().toString(36).substring(7);
-  const startTime = performance.now();
 
   let body: unknown;
   try {
@@ -48,7 +56,12 @@ export async function POST(req: NextRequest) {
       error instanceof Error ? error : undefined
     );
 
-    logError(validationError, { requestId });
+    logAnalyzerErrorServer(validationError, { requestId });
+
+    logger.warn(
+      { error, requestId },
+      'Invalid JSON body for analyze-content request'
+    );
 
     return NextResponse.json(
       {
@@ -61,14 +74,49 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const handlerInput: AnalyzeContentHandlerInput = {
-    body,
-    requestId,
-    requestUrl: req.url,
-    startTime,
-  };
+  try {
+    const result = await withLogContext(
+      { requestId, userId: authResult.user.id },
+      () =>
+        analyzeWebContentWithCredits({
+          userId: authResult.user.id,
+          body,
+          requestId,
+          requestUrl: req.url,
+        })
+    );
 
-  const result = await handleAnalyzeContentRequest(handlerInput);
+    return NextResponse.json(result.response, { status: result.status });
+  } catch (error) {
+    if (error instanceof DomainError) {
+      logger.error(
+        { error, code: error.code, retryable: error.retryable, requestId },
+        'Domain error in analyze-content route'
+      );
 
-  return NextResponse.json(result.response, { status: result.status });
+      const status = error.retryable ? 500 : 400;
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+          code: error.code,
+          retryable: error.retryable,
+        } satisfies AnalyzeContentResponse,
+        { status }
+      );
+    }
+
+    logger.error({ error, requestId }, 'Unexpected error in analyze-content');
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+        code: 'UNEXPECTED_ERROR',
+        retryable: true,
+      } satisfies AnalyzeContentResponse,
+      { status: 500 }
+    );
+  }
 }

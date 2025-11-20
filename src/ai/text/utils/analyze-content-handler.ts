@@ -10,10 +10,10 @@ import {
   classifyError,
   ErrorSeverity,
   ErrorType,
-  logError,
   WebContentAnalyzerError,
   withRetry,
 } from '@/ai/text/utils/error-handling';
+import { logAnalyzerErrorServer } from '@/ai/text/utils/error-logging.server';
 import {
   type AnalysisResults,
   type AnalyzeContentResponse,
@@ -376,7 +376,7 @@ export async function handleAnalyzeContentRequest(
         false
       );
 
-      logError(validationError, {
+      logAnalyzerErrorServer(validationError, {
         requestId,
         validationErrors: validationResult.error,
       });
@@ -409,7 +409,7 @@ export async function handleAnalyzeContentRequest(
         false
       );
 
-      logError(urlError, { requestId, url });
+      logAnalyzerErrorServer(urlError, { requestId, url });
 
       return {
         status: 400,
@@ -431,7 +431,7 @@ export async function handleAnalyzeContentRequest(
         false
       );
 
-      logError(configError, { requestId });
+      logAnalyzerErrorServer(configError, { requestId });
 
       return {
         status: 503,
@@ -486,7 +486,7 @@ export async function handleAnalyzeContentRequest(
     const analyzedError =
       error instanceof WebContentAnalyzerError ? error : classifyError(error);
 
-    logError(analyzedError, {
+    logAnalyzerErrorServer(analyzedError, {
       requestId,
       elapsed: `${elapsed}s`,
       url: requestUrl,

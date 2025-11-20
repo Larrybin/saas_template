@@ -1,11 +1,11 @@
+import { ConsumeCreditsCard } from '@/components/devtools/consume-credits-card';
 import Container from '@/components/layout/container';
-import { ConsumeCreditsCard } from '@/components/test/consume-credits-card';
 
 export default async function TestPage() {
   return (
-    <Container className="py-16 px-4">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* credits test */}
+    <Container className="px-4 py-16">
+      <div className="mx-auto max-w-4xl space-y-8">
+        {/* credits test (devtools only) */}
         <ConsumeCreditsCard />
       </div>
     </Container>

@@ -1,30 +1,31 @@
 'use client';
 
 import { CoinsIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useConsumeCredits, useCreditBalance } from '@/hooks/use-credits';
-import { Routes } from '@/routes';
+import { useCreditsErrorUi } from '@/hooks/use-credits-error-ui';
 
 const CONSUME_CREDITS = 10;
 
+/**
+ * Credits Devtools Card
+ *
+ * 调试 / 内部使用组件，用于在开发环境中快速验证积分消费链路。
+ * 请勿在生产环境挂载或暴露给真实用户。
+ */
 export function ConsumeCreditsCard() {
   const { data: balance = 0, isLoading: isLoadingBalance } = useCreditBalance();
   const consumeCreditsMutation = useConsumeCredits();
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const t = useTranslations('Dashboard.settings.credits.balance');
+  const { handleCreditsError } = useCreditsErrorUi();
 
   const hasEnoughCredits = (amount: number) => balance >= amount;
 
   const handleConsume = async () => {
     // 乐观前置检查，避免明显无效请求
     if (!hasEnoughCredits(CONSUME_CREDITS)) {
-      toast.error(t('insufficientCredits'));
-      router.push(Routes.SettingsCredits);
+      handleCreditsError({ code: 'CREDITS_INSUFFICIENT_BALANCE' });
       return;
     }
 
@@ -34,29 +35,27 @@ export function ConsumeCreditsCard() {
         amount: CONSUME_CREDITS,
         description: `Test credit consumption (${CONSUME_CREDITS} credits)`,
       });
-      toast.success(`${CONSUME_CREDITS} credits consumed successfully!`);
     } catch (error) {
-      const err = error as Error & { code?: string };
-
-      if (err.code === 'CREDITS_INSUFFICIENT_BALANCE') {
-        // 后端兜底判定：积分不足，引导到积分页面
-        toast.error(t('insufficientCredits'));
-        router.push(Routes.SettingsCredits);
-      } else {
-        toast.error(err.message || 'Failed to consume credits');
-      }
+      handleCreditsError(error as Error);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 border rounded-lg space-y-4">
-      <h3 className="text-lg font-semibold">Credits Store Test</h3>
+    <div className="space-y-4 rounded-lg border bg-card p-4">
+      <div>
+        <h3 className="text-lg font-semibold text-destructive">
+          Credits Devtools（调试用途，仅限内部使用）
+        </h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          此卡片仅用于开发/测试环境快速验证积分消费链路，请勿在真实用户可见的页面中使用。
+        </p>
+      </div>
 
       <div className="space-y-2">
-        <p>
-          <strong>Store Balance:</strong> {balance}
+        <p className="text-sm">
+          <strong>Test Balance:</strong> {balance}
         </p>
       </div>
 
@@ -67,13 +66,18 @@ export function ConsumeCreditsCard() {
             loading || consumeCreditsMutation.isPending || isLoadingBalance
           }
           size="sm"
+          variant="outline"
         >
-          <CoinsIcon className="w-4 h-4 mr-2" />
-          Consume {CONSUME_CREDITS} Credits
+          <CoinsIcon className="mr-2 h-4 w-4" />
+          Consume {CONSUME_CREDITS} Credits (Test)
         </Button>
       </div>
 
-      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+      {loading && (
+        <p className="text-sm text-muted-foreground">
+          Processing test request…
+        </p>
+      )}
     </div>
   );
 }

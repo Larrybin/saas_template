@@ -59,4 +59,3 @@ export async function incrementAiUsageAndCheckWithinFreeQuota(input: {
 
   return (row?.usedCalls ?? 0) <= freeCallsPerPeriod;
 }
-

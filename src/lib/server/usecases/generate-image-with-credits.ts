@@ -98,6 +98,27 @@ export async function generateImageWithCredits(
   const { userId, request, requiredCredits } = input;
   const { prompt, provider, modelId } = request;
 
+  // Validate request parameters before touching free quota / credits
+  if (!prompt || !provider || !modelId || !(provider in providerConfig)) {
+    const logger = getLogger({
+      span: 'usecase.ai.image.generate-with-credits',
+      userId,
+    });
+
+    logger.warn('Invalid image generation request parameters', {
+      provider,
+      modelId,
+      promptLength: typeof prompt === 'string' ? prompt.length : undefined,
+    });
+
+    return {
+      success: false,
+      error: 'Invalid request parameters',
+      code: 'AI_IMAGE_INVALID_PARAMS',
+      retryable: false,
+    };
+  }
+
   const billingRule = getImageGenerateBillingRule();
   const creditsToConsume =
     typeof requiredCredits === 'number'
@@ -139,22 +160,8 @@ export async function generateImageWithCredits(
 
   logger.info(
     { userId, provider, modelId },
-    'Credits deducted, invoking image generation provider'
+    'Credits check completed, invoking image generation provider'
   );
-
-  if (!prompt || !provider || !modelId || !(provider in providerConfig)) {
-    logger.warn('Invalid image generation request parameters', {
-      provider,
-      modelId,
-      promptLength: typeof prompt === 'string' ? prompt.length : undefined,
-    });
-    return {
-      success: false,
-      error: 'Invalid request parameters',
-      code: 'AI_IMAGE_INVALID_PARAMS',
-      retryable: false,
-    };
-  }
 
   try {
     const config = providerConfig[provider as ProviderKey];

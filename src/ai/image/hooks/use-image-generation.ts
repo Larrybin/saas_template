@@ -1,10 +1,10 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { useAiErrorUi } from '@/hooks/use-ai-error-ui';
 import {
   handleAuthFromEnvelope,
   useAuthErrorHandler,
 } from '@/hooks/use-auth-error-handler';
-import { useAiErrorUi } from '@/hooks/use-ai-error-ui';
 import { getDomainErrorMessage } from '@/lib/domain-error-utils';
 import type { GenerateImageResponse } from '../lib/api-types';
 import type {

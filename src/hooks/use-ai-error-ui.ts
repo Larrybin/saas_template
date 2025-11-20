@@ -47,8 +47,7 @@ export function useAiErrorUi() {
           : (error as { message?: string })?.message;
 
       const fallback =
-        rawMessage ??
-        'Failed to process AI request. Please try again later.';
+        rawMessage ?? 'Failed to process AI request. Please try again later.';
 
       const message = getDomainErrorMessage(code, translate, fallback);
 
@@ -86,7 +85,9 @@ export function useAiErrorUi() {
 
       // 默认降级为 error
       toast.error(
-        context.source === 'image' ? 'Image generation failed' : 'AI request failed',
+        context.source === 'image'
+          ? 'Image generation failed'
+          : 'AI request failed',
         toastOptions
       );
     },

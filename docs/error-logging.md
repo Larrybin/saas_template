@@ -293,3 +293,34 @@ toast.error(message);
 
 - 每个 `code` 对应的 UX 目标（仅提示 / 引导跳转 / 提供重试入口）；
 - 行为应集中在少量 hooks 或 UI helper 中实现，组件层尽量只做调用，避免逻辑分散。
+
+### 8.1 AI 错误 UI 统一处理（useAiErrorUi）
+
+为避免在多个特性模块中重复编写 `if (code === ...) toast.*` 分支，前端针对 AI 相关错误约定使用统一的 UI helper：
+
+- Hook 入口：
+  - `src/hooks/use-ai-error-ui.ts`
+  - 导出 `handleAiError(error, context)`，其中：
+    - `error`：实现 `DomainErrorLike` 的错误对象或 `{ code?: string; message?: string }`；
+    - `context`：目前仅使用 `source?: 'text' | 'image' | 'unknown'`，用于区分文本/图片来源。
+- 职责：
+  - 通过 `getDomainErrorMessage(code, translate, fallback)` 将 `code` 映射为 i18n 文案；
+  - 根据错误类型选择 toast 级别：
+    - `AI_CONTENT_TIMEOUT` / `AI_IMAGE_TIMEOUT` / `AI_CONTENT_RATE_LIMIT` → `toast.warning`；
+    - `AI_CONTENT_SERVICE_UNAVAILABLE` / `AI_IMAGE_PROVIDER_ERROR` / `AI_CONTENT_NETWORK_ERROR` → `toast.error`；
+    - `AI_CONTENT_VALIDATION_ERROR` / `AI_IMAGE_INVALID_PARAMS` / `AI_IMAGE_INVALID_JSON` → `toast.info`；
+    - 其他 `code` 或无 `code` → 默认 `toast.error`，标题根据 `source` 区分文本 / 图片。
+- 当前接入点：
+  - 图片生成：
+    - `src/ai/image/hooks/use-image-generation.ts` 中，在 provider 请求失败时调用：
+      - `handleAiError({ code?, message }, { source: 'image' })`；
+    - Hook 自身仍维护 `errors` 状态，用于在 UI 中展示每个 provider 的错误详情。
+  - 文本分析：
+    - `src/ai/text/components/use-web-content-analyzer.ts` 中：
+      - 请求失败 → 转换为 `WebContentAnalyzerError`，写入 `state.error` 与 `analyzedError`，并调用：
+        - `handleAiError({ code?: analyzedErrorInstance.code, message }, { source: 'text' })`；
+      - 组件级异常（render/事件中的意外错误）也通过 `handleError` 调用 `handleAiError(..., { source: 'text' })`。
+- 约定：
+  - 新增 AI 相关 DomainError code 时，应同步更新 `useAiErrorUi` 的映射表，以保证 toast 语义一致；
+  - 具体页面/组件仍可以使用本地 state 显示错误详情（如表格、错误面板），但 **toast 行为应优先通过 `useAiErrorUi` 实现**，避免逻辑分散；
+  - 后续若引入 AI Chat 前端 Hook，同样应通过 `useAiErrorUi` 统一处理 AI 请求错误，以保持 Chat / Text / Image 在 UI 层的一致体验。

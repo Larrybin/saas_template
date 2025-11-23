@@ -15,6 +15,7 @@ import type {
   AnalyzeContentResponse,
   ModelProvider,
 } from '@/ai/text/utils/web-content-analyzer';
+import { useAiErrorUi } from '@/hooks/use-ai-error-ui';
 import {
   handleAuthFromEnvelope,
   useAuthErrorHandler,
@@ -104,6 +105,7 @@ export function useWebContentAnalyzer() {
     [t]
   );
   const handleAuthError = useAuthErrorHandler();
+  const { handleAiError } = useAiErrorUi();
 
   const handleAnalyzeUrl = useCallback(
     async (url: string, provider: ModelProvider) => {
@@ -237,27 +239,18 @@ export function useWebContentAnalyzer() {
 
         setAnalyzedError(analyzedErrorInstance);
 
-        const toastOptions = {
-          description: message,
-        };
-
-        setTimeout(() => {
-          switch (analyzedErrorInstance.severity) {
-            case ErrorSeverity.CRITICAL:
-            case ErrorSeverity.HIGH:
-              toast.error('Analysis Failed', toastOptions);
-              break;
-            case ErrorSeverity.MEDIUM:
-              toast.warning('Analysis Failed', toastOptions);
-              break;
-            case ErrorSeverity.LOW:
-              toast.info('Analysis Issue', toastOptions);
-              break;
-          }
-        }, 0);
+        handleAiError(
+          {
+            ...(analyzedErrorInstance.code
+              ? { code: analyzedErrorInstance.code }
+              : {}),
+            message,
+          },
+          { source: 'text' }
+        );
       }
     },
-    [translate, handleAuthError]
+    [translate, handleAuthError, handleAiError]
   );
 
   const handleNewAnalysis = useCallback(() => {
@@ -265,23 +258,28 @@ export function useWebContentAnalyzer() {
     setAnalyzedError(null);
   }, []);
 
-  const handleError = useCallback((error: Error) => {
-    logAnalyzerComponentError(error);
+  const handleError = useCallback(
+    (error: Error) => {
+      logAnalyzerComponentError(error);
 
-    dispatch({
-      type: 'SET_ERROR',
-      payload: {
-        error:
-          'An unexpected error occurred. Please refresh the page and try again.',
-      },
-    });
-
-    setTimeout(() => {
-      toast.error('Component error', {
-        description: 'An unexpected error occurred. Please refresh the page.',
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          error:
+            'An unexpected error occurred. Please refresh the page and try again.',
+        },
       });
-    }, 0);
-  }, []);
+
+      handleAiError(
+        {
+          message:
+            'An unexpected error occurred. Please refresh the page and try again.',
+        },
+        { source: 'text' }
+      );
+    },
+    [handleAiError]
+  );
 
   return {
     state,

@@ -7,6 +7,7 @@ import {
   incrementAiUsageAndCheckWithinFreeQuota,
 } from '@/ai/usage/ai-usage-service';
 import { consumeCredits } from '@/credits/credits';
+import { DomainError } from '@/lib/domain-errors';
 import { getLogger } from '@/lib/server/logger';
 
 export type ExecuteAiChatWithBillingInput = {
@@ -56,6 +57,29 @@ export async function executeAiChatWithBilling(
     span: 'usecase.ai.chat-with-billing',
     userId,
   });
+
+  // 先对请求做基础校验，避免对明显无效的请求计费。
+  const hasValidMessages = Array.isArray(messages) && messages.length > 0;
+  const hasValidModel = typeof model === 'string' && model.trim().length > 0;
+  const hasValidWebSearch = typeof webSearch === 'boolean';
+
+  if (!hasValidMessages || !hasValidModel || !hasValidWebSearch) {
+    logger.warn(
+      {
+        userId,
+        messagesLength: Array.isArray(messages) ? messages.length : undefined,
+        model,
+        webSearch,
+      },
+      'Invalid AI chat request parameters'
+    );
+
+    throw new DomainError({
+      code: 'AI_CHAT_INVALID_PARAMS',
+      message: 'Invalid chat request parameters',
+      retryable: false,
+    });
+  }
 
   logger.info(
     { userId, creditsPerCall: creditsToConsume },

@@ -40,7 +40,9 @@ type CreditTransactionsError = {
   success: false;
   error?: string;
 } & DomainErrorLike;
-type CreditTransactionsData = CreditTransactionsSuccess | CreditTransactionsError;
+type CreditTransactionsData =
+  | CreditTransactionsSuccess
+  | CreditTransactionsError;
 
 type AuthErrorHandler = ReturnType<typeof useAuthErrorHandler>;
 

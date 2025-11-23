@@ -1,13 +1,29 @@
-import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import type { UIMessage } from 'ai';
+import { NextResponse } from 'next/server';
+import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
+import {
+  createLoggerFromHeaders,
+  resolveRequestId,
+  withLogContext,
+} from '@/lib/server/logger';
 import { enforceRateLimit } from '@/lib/server/rate-limit';
+import { executeAiChatWithBilling } from '@/lib/server/usecases/execute-ai-chat-with-billing';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  const requestId = resolveRequestId(req.headers);
+  const logger = createLoggerFromHeaders(req.headers, {
+    span: 'api.ai.chat',
+    route: '/api/chat',
+    requestId,
+  });
+
   const authResult = await ensureApiUser(req);
   if (!authResult.ok) {
+    logger.warn('Unauthorized chat request');
     return authResult.response;
   }
 
@@ -20,6 +36,7 @@ export async function POST(req: Request) {
   });
 
   if (!rateLimitResult.ok) {
+    logger.warn({ userId: authResult.user.id }, 'Chat rate limit exceeded');
     return rateLimitResult.response;
   }
 
@@ -30,16 +47,58 @@ export async function POST(req: Request) {
   }: { messages: UIMessage[]; model: string; webSearch: boolean } =
     await req.json();
 
-  const result = streamText({
-    model: webSearch ? 'perplexity/sonar' : model,
-    messages: convertToModelMessages(messages),
-    system:
-      'You are a helpful assistant that can answer questions and help with tasks',
-  });
+  logger.info(
+    { userId: authResult.user.id, model, webSearch },
+    'Chat request accepted'
+  );
 
-  // send sources and reasoning back to the client
-  return result.toUIMessageStreamResponse({
-    sendSources: true,
-    sendReasoning: true,
-  });
+  try {
+    const result = await withLogContext(
+      { requestId, userId: authResult.user.id },
+      () =>
+        executeAiChatWithBilling({
+          userId: authResult.user.id,
+          messages,
+          model,
+          webSearch,
+        })
+    );
+
+    // send sources and reasoning back to the client
+    return result.toUIMessageStreamResponse({
+      sendSources: true,
+      sendReasoning: true,
+    });
+  } catch (error) {
+    if (error instanceof DomainError) {
+      logger.error(
+        { error, code: error.code, retryable: error.retryable, requestId },
+        'Domain error in chat route'
+      );
+
+      const status = error.retryable ? 500 : 400;
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+          code: error.code,
+          retryable: error.retryable,
+        },
+        { status }
+      );
+    }
+
+    logger.error({ error, requestId }, 'Unexpected error in chat route');
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+        code: 'UNEXPECTED_ERROR',
+        retryable: true,
+      },
+      { status: 500 }
+    );
+  }
 }

@@ -90,11 +90,76 @@ try {
 
 - `getLogger(bindings)`: 从 `AsyncLocalStorage` 获取上下文（`requestId`, `userId`, `span` 等），返回带有这些字段的 logger。
 - `withLogContext(bindings, fn)`: 在调用栈中附加日志上下文。
+- `createLoggerFromHeaders(headers, metadata)`: 从请求头解析 `x-request-id` / `x-requestid` 并创建带有 `requestId` 的 logger，适用于 API routes / 中间层。
+
+建议的 `span` 命名规范（便于日志聚合）：
+
+- HTTP API：`api.<域>.<子域>`，例如：
+  - `api.ai.chat`（聊天流式接口）
+  - `api.ai.text.analyze`（网页内容分析接口）
+  - `api.ai.image.generate`（图片生成接口）
+  - `api.credits.distribute`（积分分发 API）
+  - `api.storage.upload`（文件上传 API）
+  - `api.docs.search`（文档搜索 API）
+- 领域服务 / 批处理：`credits.*`, `payment.*`, `mail.*` 等（已在对应模块中使用）。
+- 基础设施：`infra.*`，例如 `infra.api-auth`、`safe-action` 等。
+
+常用 span 汇总表（便于日志筛选）：
+
+| span 值                                 | 描述                                   |
+| --------------------------------------- | -------------------------------------- |
+| `api.ai.chat`                           | Chat 接口 `/api/chat`                  |
+| `api.ai.text.analyze`                  | 文本分析接口 `/api/analyze-content`    |
+| `api.ai.image.generate`                | 图片生成接口 `/api/generate-images`    |
+| `api.docs.search`                      | 文档搜索接口 `/api/search`             |
+| `api.credits.distribute`              | 积分分发接口 `/api/distribute-credits` |
+| `api.storage.upload`                  | 文件上传接口 `/api/storage/upload`     |
+| `api.webhooks.stripe`                 | Stripe Webhook 路由                     |
+| `usecase.ai.chat-with-billing`        | Chat + 积分扣费用例                     |
+| `usecase.ai.text.analyze-with-credits`| 文本分析 + 积分扣费用例                 |
+| `usecase.ai.image.generate-with-credits`| 图片生成 + 积分扣费用例               |
+| `credits.ledger.domain`               | Credits 账本领域服务                    |
+| `credits.distribute`                  | 积分分发任务                            |
+| `credits.expiry.job`                  | 积分过期处理任务                        |
+| `payment.stripe`                      | Stripe 支付服务                         |
+| `payment.security`                    | 支付安全监控                            |
+| `ai.web-content-analyzer`             | Web 内容分析（服务端）                  |
+| `infra.api-auth`                      | API 鉴权逻辑                            |
+| `safe-action`                         | safe-action 全局错误处理                |
 
 约定：
 
-- `safe-action` 与关键 API routes 应通过 `withLogContext` 设置 `userId`、`span` 等，便于错误定位。
+- `safe-action` 与关键 API routes 应通过 `withLogContext` 或 `createLoggerFromHeaders` 设置 `requestId`、`userId`、`span` 等，便于错误定位。
 - Domain 层只需抛出 `DomainError`，不直接关心日志实现。
+
+示例：在 API route 中创建 request logger 并记录 DomainError：
+
+```ts
+import { createLoggerFromHeaders } from '@/lib/server/logger';
+import { DomainError } from '@/lib/domain-errors';
+
+export async function POST(request: Request) {
+  const logger = createLoggerFromHeaders(request.headers, {
+    span: 'api.example.feature',
+    route: '/api/example',
+  });
+
+  try {
+    // ...
+  } catch (error) {
+    if (error instanceof DomainError) {
+      logger.error(
+        { error, code: error.code, retryable: error.retryable },
+        'Domain error in route'
+      );
+      // 返回带 code/retryable 的 JSON
+    } else {
+      logger.error({ error }, 'Unhandled error in route');
+      // 返回 500
+    }
+  }
+}
+```
 
 ## 5. 前端消费与文案
 
@@ -222,8 +287,40 @@ toast.error(message);
     - 结算按钮（如 `CreditCheckoutButton`）：
       - `PAYMENT_SECURITY_VIOLATION`：在 toast 中提示「支付失败，请稍后再试或联系支持」，并可选记录埋点。
   - 建议将这类行为封装为小的 UI helper（例如 `useCreditsErrorUi`），由页面/卡片组件调用。
+  - 积分额度与过期策略由 `src/credits/config.ts` 适配器从 `websiteConfig` / price plan 中抽取，对错误模型和前端消费透明，未来若改为从数据库或后台配置读取，只需调整适配器即可。
 
 以上 UI 级行为在编码前，应先统一约定：
 
 - 每个 `code` 对应的 UX 目标（仅提示 / 引导跳转 / 提供重试入口）；
 - 行为应集中在少量 hooks 或 UI helper 中实现，组件层尽量只做调用，避免逻辑分散。
+
+### 8.1 AI 错误 UI 统一处理（useAiErrorUi）
+
+为避免在多个特性模块中重复编写 `if (code === ...) toast.*` 分支，前端针对 AI 相关错误约定使用统一的 UI helper：
+
+- Hook 入口：
+  - `src/hooks/use-ai-error-ui.ts`
+  - 导出 `handleAiError(error, context)`，其中：
+    - `error`：实现 `DomainErrorLike` 的错误对象或 `{ code?: string; message?: string }`；
+    - `context`：目前仅使用 `source?: 'text' | 'image' | 'unknown'`，用于区分文本/图片来源。
+- 职责：
+  - 通过 `getDomainErrorMessage(code, translate, fallback)` 将 `code` 映射为 i18n 文案；
+  - 根据错误类型选择 toast 级别：
+    - `AI_CONTENT_TIMEOUT` / `AI_IMAGE_TIMEOUT` / `AI_CONTENT_RATE_LIMIT` → `toast.warning`；
+    - `AI_CONTENT_SERVICE_UNAVAILABLE` / `AI_IMAGE_PROVIDER_ERROR` / `AI_CONTENT_NETWORK_ERROR` → `toast.error`；
+    - `AI_CONTENT_VALIDATION_ERROR` / `AI_IMAGE_INVALID_PARAMS` / `AI_IMAGE_INVALID_JSON` → `toast.info`；
+    - 其他 `code` 或无 `code` → 默认 `toast.error`，标题根据 `source` 区分文本 / 图片。
+- 当前接入点：
+  - 图片生成：
+    - `src/ai/image/hooks/use-image-generation.ts` 中，在 provider 请求失败时调用：
+      - `handleAiError({ code?, message }, { source: 'image' })`；
+    - Hook 自身仍维护 `errors` 状态，用于在 UI 中展示每个 provider 的错误详情。
+  - 文本分析：
+    - `src/ai/text/components/use-web-content-analyzer.ts` 中：
+      - 请求失败 → 转换为 `WebContentAnalyzerError`，写入 `state.error` 与 `analyzedError`，并调用：
+        - `handleAiError({ code?: analyzedErrorInstance.code, message }, { source: 'text' })`；
+      - 组件级异常（render/事件中的意外错误）也通过 `handleError` 调用 `handleAiError(..., { source: 'text' })`。
+- 约定：
+  - 新增 AI 相关 DomainError code 时，应同步更新 `useAiErrorUi` 的映射表，以保证 toast 语义一致；
+  - 具体页面/组件仍可以使用本地 state 显示错误详情（如表格、错误面板），但 **toast 行为应优先通过 `useAiErrorUi` 实现**，避免逻辑分散；
+  - 后续若引入 AI Chat 前端 Hook，同样应通过 `useAiErrorUi` 统一处理 AI 请求错误，以保持 Chat / Text / Image 在 UI 层的一致体验。

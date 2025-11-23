@@ -39,7 +39,10 @@ export function useAuthErrorHandler() {
 
 export function handleAuthFromEnvelope(
   handleAuthError: (error: AuthErrorInput | null | undefined) => boolean,
-  payload: { code?: string | undefined; error?: string | undefined } | null | undefined
+  payload:
+    | { code?: string | undefined; error?: string | undefined }
+    | null
+    | undefined
 ): void {
   if (!payload?.code) {
     return;

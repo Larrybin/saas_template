@@ -1,5 +1,8 @@
-import { websiteConfig } from '@/config/website';
-import { findPlanByPlanId, findPlanByPriceId } from '@/lib/price-plan';
+import {
+  getPlanCreditsConfigByPlanId,
+  getPlanCreditsConfigByPriceId,
+  getRegisterGiftCreditsConfig,
+} from '../config';
 import { CreditLedgerRepository } from '../data-access/credit-ledger-repository';
 import type { DbExecutor } from '../data-access/types';
 import { CreditLedgerDomainService } from '../domain/credit-ledger-domain-service';
@@ -91,8 +94,13 @@ export async function addRegisterGiftCredits(userId: string) {
   if (alreadyGranted) {
     return;
   }
-  const credits = websiteConfig.credits.registerGiftCredits.amount;
-  const expireDays = websiteConfig.credits.registerGiftCredits.expireDays;
+  const config = getRegisterGiftCreditsConfig();
+  if (!config || !config.enabled) {
+    return;
+  }
+
+  const credits = config.amount;
+  const expireDays = config.expireDays;
   const payload: AddCreditsPayload = {
     userId,
     amount: credits,
@@ -108,13 +116,8 @@ export async function addMonthlyFreeCredits(
   planId: string,
   refDate?: Date
 ) {
-  const pricePlan = findPlanByPlanId(planId);
-  if (
-    !pricePlan ||
-    pricePlan.disabled ||
-    !pricePlan.isFree ||
-    !pricePlan.credits?.enable
-  ) {
+  const config = getPlanCreditsConfigByPlanId(planId);
+  if (!config || config.disabled || !config.isFree || !config.enabled) {
     return;
   }
   const periodKey = getCurrentPeriodKey(refDate);
@@ -124,8 +127,8 @@ export async function addMonthlyFreeCredits(
     periodKey
   );
   if (!canAdd) return;
-  const credits = pricePlan.credits.amount ?? 0;
-  const expireDays = pricePlan.credits.expireDays;
+  const credits = config.amount;
+  const expireDays = config.expireDays;
   const payload: AddCreditsPayload = {
     userId,
     amount: credits,
@@ -143,8 +146,8 @@ export async function addSubscriptionCredits(
   cycleRefDate?: Date,
   transaction?: CreditsTransaction
 ) {
-  const plan = findPlanByPriceId(priceId);
-  if (!plan?.credits?.enable) {
+  const config = getPlanCreditsConfigByPriceId(priceId);
+  if (!config || !config.enabled) {
     return;
   }
   const refDate = cycleRefDate ?? new Date();
@@ -157,12 +160,12 @@ export async function addSubscriptionCredits(
   if (!canAdd) return;
   const payload: AddCreditsPayload = {
     userId,
-    amount: plan.credits.amount,
+    amount: config.amount,
     type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
-    description: `Subscription renewal credits: ${plan.credits.amount}`,
+    description: `Subscription renewal credits: ${config.amount}`,
     periodKey,
-    ...(plan.credits.expireDays !== undefined
-      ? { expireDays: plan.credits.expireDays }
+    ...(config.expireDays !== undefined
+      ? { expireDays: config.expireDays }
       : {}),
   };
   await addCredits(payload, transaction);
@@ -174,8 +177,8 @@ export async function addLifetimeMonthlyCredits(
   cycleRefDate?: Date,
   transaction?: CreditsTransaction
 ) {
-  const plan = findPlanByPriceId(priceId);
-  if (!plan?.isLifetime || plan.disabled || !plan.credits?.enable) {
+  const config = getPlanCreditsConfigByPriceId(priceId);
+  if (!config || !config.isLifetime || config.disabled || !config.enabled) {
     return;
   }
   const refDate = cycleRefDate ?? new Date();
@@ -188,12 +191,12 @@ export async function addLifetimeMonthlyCredits(
   if (!canAdd) return;
   const payload: AddCreditsPayload = {
     userId,
-    amount: plan.credits.amount,
+    amount: config.amount,
     type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
-    description: `Lifetime monthly credits: ${plan.credits.amount}`,
+    description: `Lifetime monthly credits: ${config.amount}`,
     periodKey,
-    ...(plan.credits.expireDays !== undefined
-      ? { expireDays: plan.credits.expireDays }
+    ...(config.expireDays !== undefined
+      ? { expireDays: config.expireDays }
       : {}),
   };
   await addCredits(payload, transaction);

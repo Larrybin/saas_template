@@ -1,6 +1,7 @@
 import { createTokenizer } from '@orama/tokenizers/mandarin';
 import { createI18nSearchAPI } from 'fumadocs-core/search/server';
 import { docsI18nConfig } from '@/lib/docs/i18n';
+import { createLoggerFromHeaders } from '@/lib/server/logger';
 import { source } from '@/lib/source';
 
 /**
@@ -68,6 +69,23 @@ const searchAPI = createI18nSearchAPI('advanced', {
  * https://github.com/fuma-nama/fumadocs/blob/dev/packages/core/src/search/orama/create-endpoint.ts#L19
  */
 export const GET = async (request: Request) => {
+  const logger = createLoggerFromHeaders(request.headers, {
+    span: 'api.docs.search',
+    route: '/api/search',
+  });
+
+  const url = new URL(request.url);
+  const query = url.searchParams.get('q') ?? undefined;
+  const locale = url.searchParams.get('locale') ?? undefined;
+
+  logger.info(
+    {
+      queryLength: typeof query === 'string' ? query.length : undefined,
+      locale,
+    },
+    'Docs search request'
+  );
+
   const response = await searchAPI.GET(request);
   return response;
 };

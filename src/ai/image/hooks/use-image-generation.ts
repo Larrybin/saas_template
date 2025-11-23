@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { useAiErrorUi } from '@/hooks/use-ai-error-ui';
 import {
   handleAuthFromEnvelope,
   useAuthErrorHandler,
@@ -42,6 +43,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
   const [activePrompt, setActivePrompt] = useState('');
   const t = useTranslations();
   const handleAuthError = useAuthErrorHandler();
+  const { handleAiError } = useAiErrorUi();
 
   const resetState = () => {
     setImages([]);
@@ -166,6 +168,14 @@ export function useImageGeneration(): UseImageGenerationReturn {
             errorObject instanceof Error && errorObject.message
               ? errorObject.message
               : 'Failed to generate image. Please try again.'
+          );
+
+          handleAiError(
+            {
+              ...(errorObject.code ? { code: errorObject.code } : {}),
+              message: resolvedMessage,
+            },
+            { source: 'image' }
           );
 
           setFailedProviders((prev) => [...prev, provider]);

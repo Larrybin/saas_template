@@ -185,3 +185,23 @@ export const stripeEvent = pgTable("stripe_event", {
 	createdAt: timestamp("created_at").notNull(),
 	processedAt: timestamp("processed_at"),
 });
+
+export const aiUsage = pgTable(
+	"ai_usage",
+	{
+		id: text("id").primaryKey(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		feature: text("feature").notNull(),
+		periodKey: integer("period_key").notNull(),
+		usedCalls: integer("used_calls").notNull().default(0),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
+	},
+	(table) => ({
+		aiUsageUserFeaturePeriodKeyIdx: uniqueIndex(
+			"ai_usage_user_feature_period_key_idx",
+		).on(table.userId, table.feature, table.periodKey),
+	}),
+);

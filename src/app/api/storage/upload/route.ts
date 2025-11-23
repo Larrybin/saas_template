@@ -6,7 +6,7 @@ import { StorageError } from '@/storage/types';
 export async function POST(request: NextRequest) {
   const logger = createLoggerFromHeaders(request.headers, {
     route: '/api/storage/upload',
-    span: 'storage.upload',
+    span: 'api.storage.upload',
   });
 
   try {

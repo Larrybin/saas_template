@@ -1,9 +1,9 @@
 import type { Locale } from 'next-intl';
+import type { PlanCreditsConfig } from '@/credits/config';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { CreditsTransaction } from '@/credits/services/transaction-context';
 import { DomainError } from '@/lib/domain-errors';
 import { getLogger } from '@/lib/server/logger';
-import type { PlanCreditsConfig } from '@/credits/config';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
@@ -14,10 +14,7 @@ import type {
 import type { PlanPolicy } from './plan-policy';
 
 export interface StartSubscriptionCheckoutInput
-  extends Omit<
-    CreateCheckoutParams,
-    'planId' | 'priceId' | 'customerEmail'
-  > {
+  extends Omit<CreateCheckoutParams, 'planId' | 'priceId' | 'customerEmail'> {
   planId: string;
   priceId: string;
   customerEmail: string;
@@ -45,9 +42,7 @@ export interface BillingService {
   startSubscriptionCheckout(
     input: StartSubscriptionCheckoutInput
   ): Promise<CheckoutResult>;
-  startCreditCheckout(
-    input: StartCreditCheckoutInput
-  ): Promise<CheckoutResult>;
+  startCreditCheckout(input: StartCreditCheckoutInput): Promise<CheckoutResult>;
   handleRenewal(input: BillingRenewalInput): Promise<void>;
   grantLifetimePlan(input: GrantLifetimePlanInput): Promise<void>;
 }
@@ -56,6 +51,7 @@ export type BillingServiceDeps = {
   paymentProvider: PaymentProvider;
   creditsGateway: CreditsGateway;
   planPolicy: PlanPolicy;
+  creditsEnabled: boolean;
 };
 
 export class DefaultBillingService implements BillingService {
@@ -63,11 +59,13 @@ export class DefaultBillingService implements BillingService {
   private readonly paymentProvider: PaymentProvider;
   private readonly creditsGateway: CreditsGateway;
   private readonly planPolicy: PlanPolicy;
+  private readonly creditsEnabled: boolean;
 
   constructor(deps: BillingServiceDeps) {
     this.paymentProvider = deps.paymentProvider;
     this.creditsGateway = deps.creditsGateway;
     this.planPolicy = deps.planPolicy;
+    this.creditsEnabled = deps.creditsEnabled;
   }
 
   async startSubscriptionCheckout(
@@ -78,16 +76,7 @@ export class DefaultBillingService implements BillingService {
       { planId: plan.id, priceId: input.priceId },
       'Starting subscription checkout'
     );
-    const params: CreateCheckoutParams = {
-      planId: plan.id,
-      priceId: input.priceId,
-      customerEmail: input.customerEmail,
-      successUrl: input.successUrl,
-      cancelUrl: input.cancelUrl,
-      metadata: input.metadata,
-      locale: input.locale,
-    };
-    return this.paymentProvider.createCheckout(params);
+    return this.paymentProvider.createCheckout(input);
   }
 
   async startCreditCheckout(
@@ -101,6 +90,13 @@ export class DefaultBillingService implements BillingService {
   }
 
   async handleRenewal(input: BillingRenewalInput): Promise<void> {
+    if (!this.creditsEnabled) {
+      this.logger.debug(
+        { priceId: input.priceId },
+        'Credits disabled globally, skipping renewal handling'
+      );
+      return;
+    }
     const refDate = input.cycleRefDate ?? new Date();
     const creditsConfig = this.planPolicy.getPlanCreditsConfigByPriceId(
       input.priceId
@@ -125,6 +121,13 @@ export class DefaultBillingService implements BillingService {
   }
 
   async grantLifetimePlan(input: GrantLifetimePlanInput): Promise<void> {
+    if (!this.creditsEnabled) {
+      this.logger.debug(
+        { priceId: input.priceId },
+        'Credits disabled globally, skipping lifetime grant'
+      );
+      return;
+    }
     const refDate = input.cycleRefDate ?? new Date();
     const creditsConfig = this.planPolicy.getPlanCreditsConfigByPriceId(
       input.priceId
@@ -177,3 +180,4 @@ export class DefaultBillingService implements BillingService {
     if (creditsConfig.disabled) return false;
     return true;
   }
+}

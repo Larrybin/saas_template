@@ -1,8 +1,8 @@
 export {
-  DefaultBillingService,
   type BillingRenewalInput,
   type BillingService,
   type BillingServiceDeps,
+  DefaultBillingService,
   type GrantLifetimePlanInput,
   type StartCreditCheckoutInput,
   type StartSubscriptionCheckoutInput,

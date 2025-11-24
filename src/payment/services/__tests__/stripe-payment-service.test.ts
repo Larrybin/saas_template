@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { websiteConfig } from '@/config/website';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
+import type { BillingService } from '@/domain/billing';
 import { PaymentTypes } from '../../types';
 import { PaymentSecurityError } from '../errors';
 import type { NotificationGateway } from '../gateways/notification-gateway';
@@ -92,6 +93,7 @@ const createService = (
     userRepository?: any;
     paymentRepository?: any;
     stripeEventRepository?: any;
+    billingService?: BillingService;
   } = {}
 ) => {
   const stripe = overrides.stripe ?? createStripeStub();
@@ -138,6 +140,14 @@ const createService = (
           return { skipped: false };
         }),
     } as const);
+  const billingService =
+    overrides.billingService ??
+    ({
+      startSubscriptionCheckout: vi.fn(),
+      startCreditCheckout: vi.fn(),
+      handleRenewal: vi.fn(),
+      grantLifetimePlan: vi.fn(),
+    } satisfies BillingService);
 
   const service = new StripePaymentService({
     stripeClient: stripe,
@@ -147,6 +157,7 @@ const createService = (
     userRepository: userRepository as any,
     paymentRepository: paymentRepository as any,
     stripeEventRepository: stripeEventRepository as any,
+    billingService,
   });
 
   return {
@@ -157,6 +168,7 @@ const createService = (
     userRepository,
     paymentRepository,
     stripeEventRepository,
+    billingService,
   };
 };
 
@@ -397,11 +409,12 @@ describe('StripePaymentService', () => {
     } as Stripe.Event;
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx-onetime' };
-    const creditsGateway = {
-      addCredits: vi.fn(),
-      addSubscriptionCredits: vi.fn(),
-      addLifetimeMonthlyCredits: vi.fn(),
-    };
+    const billingService = {
+      startSubscriptionCheckout: vi.fn(),
+      startCreditCheckout: vi.fn(),
+      handleRenewal: vi.fn(),
+      grantLifetimePlan: vi.fn(),
+    } satisfies BillingService;
     const notificationGateway = {
       notifyPurchase: vi.fn(),
     };
@@ -428,10 +441,10 @@ describe('StripePaymentService', () => {
     };
     const { service } = createService({
       stripe,
-      creditsGateway,
       paymentRepository,
       stripeEventRepository,
       notificationGateway,
+      billingService,
     });
 
     await service.handleWebhookEvent('payload', 'signature');
@@ -440,14 +453,14 @@ describe('StripePaymentService', () => {
       'cs_one_time',
       tx
     );
-    expect(creditsGateway.addLifetimeMonthlyCredits).toHaveBeenCalledWith(
-      'user-1',
-      'price_lifetime',
-      expect.any(Date),
-      expect.anything()
-    );
+    expect(billingService.grantLifetimePlan).toHaveBeenCalledWith({
+      userId: 'user-1',
+      priceId: 'price_lifetime',
+      cycleRefDate: expect.any(Date),
+      transaction: expect.anything(),
+    });
     const lifetimeTx =
-      creditsGateway.addLifetimeMonthlyCredits.mock.calls[0][3];
+      billingService.grantLifetimePlan.mock.calls[0]?.[0]?.transaction;
     expect(lifetimeTx?.unwrap()).toBe(tx);
     expect(notificationGateway.notifyPurchase).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId: 'cs_one_time', amount: 99 })
@@ -483,11 +496,12 @@ describe('StripePaymentService', () => {
       },
     } as unknown as Stripe.Event;
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
-    const creditsGateway = {
-      addCredits: vi.fn(),
-      addSubscriptionCredits: vi.fn(),
-      addLifetimeMonthlyCredits: vi.fn(),
-    };
+    const billingService = {
+      startSubscriptionCheckout: vi.fn(),
+      startCreditCheckout: vi.fn(),
+      handleRenewal: vi.fn(),
+      grantLifetimePlan: vi.fn(),
+    } satisfies BillingService;
     const tx = { id: 'tx-sub' };
     const paymentRepository = {
       listByUser: vi.fn(),
@@ -515,14 +529,15 @@ describe('StripePaymentService', () => {
     };
     const { service } = createService({
       stripe,
-      creditsGateway,
       paymentRepository,
       stripeEventRepository,
+      billingService,
     });
 
     await service.handleWebhookEvent('payload', 'signature');
 
-    const subTxWrapper = creditsGateway.addSubscriptionCredits.mock.calls[0][3];
+    const subTxWrapper =
+      billingService.handleRenewal.mock.calls[0]?.[0]?.transaction;
     expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.withTransaction).toHaveBeenCalled();
     expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
@@ -558,13 +573,12 @@ describe('StripePaymentService', () => {
     } as unknown as Stripe.Event;
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx-sub-fail' };
-    const creditsGateway = {
-      addCredits: vi.fn(),
-      addSubscriptionCredits: vi
-        .fn()
-        .mockRejectedValue(new Error('sub grant fail')),
-      addLifetimeMonthlyCredits: vi.fn(),
-    };
+    const billingService = {
+      startSubscriptionCheckout: vi.fn(),
+      startCreditCheckout: vi.fn(),
+      handleRenewal: vi.fn().mockRejectedValue(new Error('sub grant fail')),
+      grantLifetimePlan: vi.fn(),
+    } satisfies BillingService;
     const paymentRepository = {
       listByUser: vi.fn(),
       findOneBySubscriptionId: vi.fn().mockResolvedValue({
@@ -591,15 +605,16 @@ describe('StripePaymentService', () => {
     };
     const { service } = createService({
       stripe,
-      creditsGateway,
       paymentRepository,
       stripeEventRepository,
+      billingService,
     });
 
     await expect(
       service.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('sub grant fail');
-    const subTxWrapper = creditsGateway.addSubscriptionCredits.mock.calls[0][3];
+    const subTxWrapper =
+      billingService.handleRenewal.mock.calls[0]?.[0]?.transaction;
     expect(subTxWrapper?.unwrap()).toBe(tx);
     expect(paymentRepository.updateBySubscriptionId).toHaveBeenCalled();
     expect(paymentRepository.withTransaction).toHaveBeenCalled();

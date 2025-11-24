@@ -1,20 +1,33 @@
+import { websiteConfig } from '@/config/website';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
+import type { BillingService, BillingServiceDeps } from '@/domain/billing';
+import { DefaultBillingService, DefaultPlanPolicy } from '@/domain/billing';
 import { getPaymentProvider } from '@/payment';
-import type { BillingService } from '@/domain/billing';
-import {
-  DefaultBillingService,
-  DefaultPlanPolicy,
-} from '@/domain/billing';
+
+type BillingServiceFactoryOverrides = Partial<BillingServiceDeps>;
 
 let billingServiceInstance: BillingService | null = null;
 
-export const getBillingService = (): BillingService => {
+export const createBillingService = (
+  overrides: BillingServiceFactoryOverrides = {}
+): BillingService => {
+  return new DefaultBillingService({
+    paymentProvider: overrides.paymentProvider ?? getPaymentProvider(),
+    creditsGateway: overrides.creditsGateway ?? new CreditLedgerService(),
+    planPolicy: overrides.planPolicy ?? new DefaultPlanPolicy(),
+    creditsEnabled:
+      overrides.creditsEnabled ?? websiteConfig.credits?.enableCredits ?? false,
+  });
+};
+
+export const getBillingService = (
+  overrides?: BillingServiceFactoryOverrides
+): BillingService => {
+  if (overrides) {
+    return createBillingService(overrides);
+  }
   if (!billingServiceInstance) {
-    billingServiceInstance = new DefaultBillingService({
-      paymentProvider: getPaymentProvider(),
-      creditsGateway: new CreditLedgerService(),
-      planPolicy: new DefaultPlanPolicy(),
-    });
+    billingServiceInstance = createBillingService();
   }
   return billingServiceInstance;
 };

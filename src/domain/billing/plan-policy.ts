@@ -9,12 +9,8 @@ import type { PricePlan } from '@/payment/types';
 export interface PlanPolicy {
   getPlanById: (planId: string) => PricePlan | undefined;
   getPlanByPriceId: (priceId: string) => PricePlan | undefined;
-  getPlanCreditsConfigByPlanId: (
-    planId: string
-  ) => PlanCreditsConfig | null;
-  getPlanCreditsConfigByPriceId: (
-    priceId: string
-  ) => PlanCreditsConfig | null;
+  getPlanCreditsConfigByPlanId: (planId: string) => PlanCreditsConfig | null;
+  getPlanCreditsConfigByPriceId: (priceId: string) => PlanCreditsConfig | null;
 }
 
 export class DefaultPlanPolicy implements PlanPolicy {

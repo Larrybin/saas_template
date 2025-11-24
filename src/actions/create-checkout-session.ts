@@ -4,13 +4,13 @@ import { cookies } from 'next/headers';
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 import { websiteConfig } from '@/config/website';
+import type { StartSubscriptionCheckoutInput } from '@/domain/billing';
 import type { User } from '@/lib/auth-types';
 import { findPlanByPlanId } from '@/lib/price-plan';
 import { userActionClient } from '@/lib/safe-action';
+import { getBillingService } from '@/lib/server/billing-service';
 import { getLogger } from '@/lib/server/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
-import { getBillingService } from '@/lib/server/billing-service';
-import type { CreateCheckoutParams } from '@/payment/types';
 import { Routes } from '@/routes';
 
 const logger = getLogger({ span: 'actions.create-checkout-session' });
@@ -69,7 +69,7 @@ export const createCheckoutAction = userActionClient
         locale
       );
       const cancelUrl = getUrlWithLocale(Routes.Pricing, locale);
-      const params: CreateCheckoutParams = {
+      const params: StartSubscriptionCheckoutInput = {
         planId,
         priceId,
         customerEmail: currentUser.email,

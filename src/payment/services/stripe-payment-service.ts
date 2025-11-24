@@ -1,12 +1,13 @@
 import { Stripe } from 'stripe';
+import { websiteConfig } from '@/config/website';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import { serverEnv } from '@/env/server';
 import {
+  type BillingService,
   DefaultBillingService,
   DefaultPlanPolicy,
-  type BillingService,
 } from '@/domain/billing';
+import { serverEnv } from '@/env/server';
 import { getLogger } from '@/lib/server/logger';
 import { PaymentRepository } from '../data-access/payment-repository';
 import { StripeEventRepository } from '../data-access/stripe-event-repository';
@@ -94,6 +95,7 @@ export class StripePaymentService implements PaymentProvider {
         paymentProvider: this,
         creditsGateway: this.creditsGateway,
         planPolicy: new DefaultPlanPolicy(),
+        creditsEnabled: websiteConfig.credits?.enableCredits ?? false,
       });
   }
 

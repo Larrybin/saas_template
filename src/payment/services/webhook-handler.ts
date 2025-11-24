@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Logger } from 'pino';
 import type Stripe from 'stripe';
-import { websiteConfig } from '@/config/website';
 import { getCreditPackageById } from '@/credits/server';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { createCreditsTransaction } from '@/credits/services/transaction-context';
@@ -100,14 +99,12 @@ async function onCreateSubscription(
       },
       tx
     );
-    if (websiteConfig.credits?.enableCredits) {
-      await deps.billingService.handleRenewal({
-        userId,
-        priceId,
-        cycleRefDate: effectivePeriodStart,
-        transaction: createCreditsTransaction(tx),
-      });
-    }
+    await deps.billingService.handleRenewal({
+      userId,
+      priceId,
+      cycleRefDate: effectivePeriodStart,
+      transaction: createCreditsTransaction(tx),
+    });
   });
 }
 
@@ -150,7 +147,7 @@ async function onUpdateSubscription(
       periodStart &&
       existing.periodStart.getTime() !== periodStart.getTime() &&
       subscription.status === 'active';
-    if (isRenewal && existing?.userId && websiteConfig.credits?.enableCredits) {
+    if (isRenewal && existing?.userId) {
       const effectivePeriodStart =
         periodStart ?? existing.periodStart ?? new Date();
       await deps.billingService.handleRenewal({
@@ -215,14 +212,12 @@ async function onOnetimePayment(
       },
       tx
     );
-    if (websiteConfig.credits?.enableCredits) {
-      await deps.billingService.grantLifetimePlan({
-        userId,
-        priceId,
-        cycleRefDate: now,
-        transaction: createCreditsTransaction(tx),
-      });
-    }
+    await deps.billingService.grantLifetimePlan({
+      userId,
+      priceId,
+      cycleRefDate: now,
+      transaction: createCreditsTransaction(tx),
+    });
     return true;
   });
   if (!processed) {

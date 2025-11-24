@@ -9,7 +9,7 @@ import { findPlanByPlanId } from '@/lib/price-plan';
 import { userActionClient } from '@/lib/safe-action';
 import { getLogger } from '@/lib/server/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
-import { createCheckout } from '@/payment';
+import { getBillingService } from '@/lib/server/billing-service';
 import type { CreateCheckoutParams } from '@/payment/types';
 import { Routes } from '@/routes';
 
@@ -79,7 +79,8 @@ export const createCheckoutAction = userActionClient
         locale,
       };
 
-      const result = await createCheckout(params);
+      const billingService = getBillingService();
+      const result = await billingService.startSubscriptionCheckout(params);
       // console.log('create checkout session result:', result);
       return {
         success: true,

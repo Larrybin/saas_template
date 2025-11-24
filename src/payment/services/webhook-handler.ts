@@ -6,6 +6,7 @@ import { getCreditPackageById } from '@/credits/server';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { createCreditsTransaction } from '@/credits/services/transaction-context';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
+import type { BillingService } from '@/domain/billing';
 import type { PaymentRepository } from '../data-access/payment-repository';
 import { PaymentTypes } from '../types';
 import type { NotificationGateway } from './gateways/notification-gateway';
@@ -20,6 +21,7 @@ type WebhookDeps = {
   creditsGateway: CreditsGateway;
   notificationGateway: NotificationGateway;
   logger: Logger;
+  billingService: BillingService;
 };
 
 export async function handleStripeWebhookEvent(
@@ -99,12 +101,12 @@ async function onCreateSubscription(
       tx
     );
     if (websiteConfig.credits?.enableCredits) {
-      await deps.creditsGateway.addSubscriptionCredits(
+      await deps.billingService.handleRenewal({
         userId,
         priceId,
-        effectivePeriodStart,
-        createCreditsTransaction(tx)
-      );
+        cycleRefDate: effectivePeriodStart,
+        transaction: createCreditsTransaction(tx),
+      });
     }
   });
 }
@@ -151,12 +153,12 @@ async function onUpdateSubscription(
     if (isRenewal && existing?.userId && websiteConfig.credits?.enableCredits) {
       const effectivePeriodStart =
         periodStart ?? existing.periodStart ?? new Date();
-      await deps.creditsGateway.addSubscriptionCredits(
-        existing.userId,
+      await deps.billingService.handleRenewal({
+        userId: existing.userId,
         priceId,
-        effectivePeriodStart,
-        createCreditsTransaction(tx)
-      );
+        cycleRefDate: effectivePeriodStart,
+        transaction: createCreditsTransaction(tx),
+      });
     }
     return true;
   });
@@ -214,12 +216,12 @@ async function onOnetimePayment(
       tx
     );
     if (websiteConfig.credits?.enableCredits) {
-      await deps.creditsGateway.addLifetimeMonthlyCredits(
+      await deps.billingService.grantLifetimePlan({
         userId,
         priceId,
-        now,
-        createCreditsTransaction(tx)
-      );
+        cycleRefDate: now,
+        transaction: createCreditsTransaction(tx),
+      });
     }
     return true;
   });

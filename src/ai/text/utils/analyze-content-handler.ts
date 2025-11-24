@@ -514,8 +514,7 @@ export async function handleAnalyzeContentRequest(
     const result = await withTimeout(analysisPromise, TIMEOUT_MILLIS);
 
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-    // eslint-disable-next-line no-console
-    console.log(
+    logger.info(
       { elapsedSeconds: elapsed, url },
       'Completed analyze-content request'
     );

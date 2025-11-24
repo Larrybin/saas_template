@@ -9,6 +9,7 @@
     "logout": "退出",
     "signUp": "注册",
     "unauthorized": "请先登录后再执行此操作。",
+    "accountBanned": "您的账号已被暂停，请联系支持团队。",
     "language": "切换语言",
     "mode": {
       "label": "切换模式",

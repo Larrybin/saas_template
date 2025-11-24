@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useLocaleRouter } from '@/i18n/navigation';
+import { clientLogger } from '@/lib/client-logger';
 import { Routes } from '@/routes';
 
 interface LoginWrapperProps {
@@ -38,7 +39,7 @@ export const LoginWrapper = ({
     const loginPath = callbackUrl
       ? `${Routes.Login}?callbackUrl=${encodeURIComponent(callbackUrl)}`
       : `${Routes.Login}`;
-    console.log('login wrapper, loginPath', loginPath);
+    clientLogger.debug('login wrapper, loginPath', loginPath);
     router.push(loginPath);
   };
 

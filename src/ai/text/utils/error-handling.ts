@@ -4,6 +4,7 @@
 
 // Import configuration for performance settings
 import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
+import { clientLogger } from '@/lib/client-logger';
 import { DomainError } from '@/lib/domain-errors';
 
 // Error types for different failure scenarios
@@ -254,7 +255,7 @@ export async function withRetry<T>(
         config.maxDelay
       );
 
-      console.warn(
+      clientLogger.warn(
         `Attempt ${attempt} failed, retrying in ${delay}ms:`,
         lastError.message
       );
@@ -297,16 +298,16 @@ export function logError(
   // Log based on severity
   switch (error.severity) {
     case ErrorSeverity.CRITICAL:
-      console.error('CRITICAL WebContentAnalyzer Error:', logData);
+      clientLogger.error('CRITICAL WebContentAnalyzer Error:', logData);
       break;
     case ErrorSeverity.HIGH:
-      console.error('HIGH WebContentAnalyzer Error:', logData);
+      clientLogger.error('HIGH WebContentAnalyzer Error:', logData);
       break;
     case ErrorSeverity.MEDIUM:
-      console.warn('MEDIUM WebContentAnalyzer Error:', logData);
+      clientLogger.warn('MEDIUM WebContentAnalyzer Error:', logData);
       break;
     case ErrorSeverity.LOW:
-      console.info('LOW WebContentAnalyzer Error:', logData);
+      clientLogger.info('LOW WebContentAnalyzer Error:', logData);
       break;
   }
 }

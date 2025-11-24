@@ -8,7 +8,10 @@ import {
 } from "react-tweet";
 import { getTweet, type Tweet } from "react-tweet/api";
 
+import { getLogger } from "@/lib/server/logger";
 import { cn } from "@/lib/utils";
+
+const logger = getLogger({ span: "magicui.twitter-card" });
 
 interface TwitterIconProps {
 	className?: string;
@@ -271,7 +274,7 @@ export const TweetCard = async ({
 				if (onError) {
 					onError(err);
 				} else {
-					console.error(err);
+					logger.error({ error: err }, "Failed to fetch tweet");
 				}
 			})
 		: undefined;

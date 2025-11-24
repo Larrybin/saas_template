@@ -17,6 +17,7 @@ import { getAvatarLinks } from '@/config/avatar-config';
 import { websiteConfig } from '@/config/website';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { CreditsBalanceMenu } from './credits-balance-menu';
 
 interface UserButtonProps {
@@ -32,12 +33,12 @@ export function UserButton({ user }: UserButtonProps) {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          console.log('sign out success');
+          clientLogger.info('sign out success');
           // TanStack Query automatically handles cache invalidation on sign out
           localeRouter.replace('/');
         },
         onError: (error) => {
-          console.error('sign out error:', error);
+          clientLogger.error('sign out error:', error);
           toast.error(t('Common.logoutFailed'));
         },
       },

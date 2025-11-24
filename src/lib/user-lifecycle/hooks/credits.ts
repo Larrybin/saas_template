@@ -4,7 +4,10 @@ import {
   addRegisterGiftCredits,
 } from '@/credits/credits';
 import { getAllPricePlans } from '@/lib/price-plan';
+import { getLogger } from '@/lib/server/logger';
 import type { UserLifecycleHook } from '../types';
+
+const logger = getLogger({ span: 'user-lifecycle.credits' });
 
 export function createRegisterGiftCreditsHook(): UserLifecycleHook<'user.created'> {
   return async ({ user }) => {
@@ -18,9 +21,9 @@ export function createRegisterGiftCreditsHook(): UserLifecycleHook<'user.created
 
     try {
       await addRegisterGiftCredits(user.id);
-      console.log(`added register gift credits for user ${user.id}`);
+      logger.info({ userId: user.id }, 'Added register gift credits');
     } catch (error) {
-      console.error('Register gift credits error:', error);
+      logger.error({ error, userId: user.id }, 'Register gift credits error');
     }
   };
 }
@@ -42,9 +45,9 @@ export function createMonthlyFreeCreditsHook(): UserLifecycleHook<'user.created'
 
     try {
       await addMonthlyFreeCredits(user.id, freePlan.id);
-      console.log(`added Free monthly credits for user ${user.id}`);
+      logger.info({ userId: user.id }, 'Added free monthly credits');
     } catch (error) {
-      console.error('Free monthly credits error:', error);
+      logger.error({ error, userId: user.id }, 'Free monthly credits error');
     }
   };
 }

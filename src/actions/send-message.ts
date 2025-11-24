@@ -4,7 +4,10 @@ import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 import { websiteConfig } from '@/config/website';
 import { actionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
 import { sendEmail } from '@/mail';
+
+const logger = getLogger({ span: 'actions.send-message' });
 
 /**
  * DOC: When using Zod for validation, how can I localize error messages?
@@ -32,7 +35,7 @@ export const sendMessageAction = actionClient
       const { name, email, message } = parsedInput;
 
       if (!websiteConfig.mail.supportEmail) {
-        console.error('The mail receiver is not set');
+        logger.error('The mail receiver is not set');
         throw new Error('The mail receiver is not set');
       }
 
@@ -51,7 +54,7 @@ export const sendMessageAction = actionClient
       });
 
       if (!result) {
-        console.error('send message error');
+        logger.error('send message error');
         return {
           success: false,
           error: 'Failed to send the message',
@@ -62,7 +65,7 @@ export const sendMessageAction = actionClient
         success: true,
       };
     } catch (error) {
-      console.error('send message error:', error);
+      logger.error({ error }, 'send message error');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

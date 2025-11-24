@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { clientLogger } from '@/lib/client-logger';
 
 /**
  * Custom hook for debouncing values
@@ -178,15 +179,15 @@ export const PerformanceMonitor = {
   end(label: string): number {
     const startTime = timers.get(label);
     if (!startTime) {
-      console.warn(`Performance timer '${label}' was not started`);
+      clientLogger.warn(`Performance timer '${label}' was not started`);
       return 0;
     }
 
     const duration = performance.now() - startTime;
     timers.delete(label);
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`⏱️ ${label}: ${duration.toFixed(2)}ms`);
+    if (process.env.NODE_ENV !== 'production') {
+      clientLogger.debug(`⏱️ ${label}: ${duration.toFixed(2)}ms`);
     }
 
     return duration;

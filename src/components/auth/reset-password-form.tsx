@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { Routes } from '@/routes';
 
 /**
@@ -88,7 +89,7 @@ export const ResetPasswordForm = () => {
           router.push(`${Routes.Login}`);
         },
         onError: (ctx: { error: { status: number; message: string } }) => {
-          console.error('resetPassword, error:', ctx.error);
+          clientLogger.error('resetPassword, error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
         },
       }

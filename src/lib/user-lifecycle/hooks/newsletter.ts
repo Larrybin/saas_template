@@ -1,8 +1,10 @@
 import { websiteConfig } from '@/config/website';
+import { getLogger } from '@/lib/server/logger';
 import { subscribe } from '@/newsletter';
 import type { UserLifecycleHook } from '../types';
 
 const NEWSLETTER_DELAY_MS = 2000;
+const logger = getLogger({ span: 'user-lifecycle.newsletter' });
 
 export function createNewsletterAutoSubscribeHook(): UserLifecycleHook<'user.created'> {
   return ({ user }) => {
@@ -20,10 +22,16 @@ export function createNewsletterAutoSubscribeHook(): UserLifecycleHook<'user.cre
         if (!email) return;
         const subscribed = await subscribe(email);
         if (!subscribed) {
-          console.error(`Failed to subscribe user ${user.email} to newsletter`);
+          logger.error(
+            { userEmail: user.email },
+            'Failed to subscribe user to newsletter'
+          );
         }
       } catch (error) {
-        console.error('Newsletter subscription error:', error);
+        logger.error(
+          { error, userEmail: user.email },
+          'Newsletter subscription error'
+        );
       }
     }, NEWSLETTER_DELAY_MS);
   };

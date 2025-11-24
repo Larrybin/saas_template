@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import S3mini from 's3mini';
+import { getLogger } from '@/lib/server/logger';
 import { storageConfig } from '../config/storage-config';
 import {
   ConfigurationError,
@@ -10,6 +11,8 @@ import {
   type UploadFileParams,
   type UploadFileResult,
 } from '../types';
+
+const logger = getLogger({ span: 'storage.s3-provider' });
 
 /**
  * Amazon S3 storage provider implementation using s3mini
@@ -120,19 +123,19 @@ export class S3Provider implements StorageProvider {
       if (publicUrl) {
         // Use custom domain if provided
         url = `${publicUrl.replace(/\/$/, '')}/${key}`;
-        console.log('uploadFile, public url', url);
+        logger.debug({ url, key }, 'Resolved upload URL via public domain');
       } else {
         // For s3mini, we construct the URL manually
         // Since bucket is included in endpoint, we just append the key
         const baseUrl = this.config.endpoint?.replace(/\/$/, '') || '';
         url = `${baseUrl}/${key}`;
-        console.log('uploadFile, constructed url', url);
+        logger.debug({ url, key }, 'Constructed upload URL from endpoint');
       }
 
       return { url, key };
     } catch (error) {
       if (error instanceof ConfigurationError) {
-        console.error('uploadFile, configuration error', error);
+        logger.error({ error }, 'uploadFile configuration error');
         throw error;
       }
 
@@ -140,7 +143,7 @@ export class S3Provider implements StorageProvider {
         error instanceof Error
           ? error.message
           : 'Unknown error occurred during file upload';
-      console.error('uploadFile, error', message);
+      logger.error({ error }, 'uploadFile error');
       throw new UploadError(message);
     }
   }
@@ -155,8 +158,9 @@ export class S3Provider implements StorageProvider {
       const wasDeleted = await s3.deleteObject(key);
 
       if (!wasDeleted) {
-        console.warn(
-          `File with key ${key} was not found or could not be deleted`
+        logger.warn(
+          { key },
+          'File was not found or could not be deleted from storage'
         );
       }
     } catch (error) {
@@ -164,7 +168,7 @@ export class S3Provider implements StorageProvider {
         error instanceof Error
           ? error.message
           : 'Unknown error occurred during file deletion';
-      console.error('deleteFile, error', message);
+      logger.error({ error }, 'deleteFile error');
       throw new StorageError(message);
     }
   }

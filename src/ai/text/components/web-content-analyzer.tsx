@@ -5,6 +5,7 @@ import { Component } from 'react';
 
 import type { WebContentAnalyzerProps } from '@/ai/text/utils/web-content-analyzer';
 import { Button } from '@/components/ui/button';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 import { AnalysisResults as AnalysisResultsComponent } from './analysis-results';
 import { LoadingStates } from './loading-states';
@@ -28,7 +29,7 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error(
+    clientLogger.error(
       'WebContentAnalyzer Error Boundary caught an error:',
       error,
       errorInfo

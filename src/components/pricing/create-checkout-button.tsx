@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { createCheckoutAction } from '@/actions/create-checkout-session';
 import { Button } from '@/components/ui/button';
 import { websiteConfig } from '@/config/website';
+import { clientLogger } from '@/lib/client-logger';
 
 interface CheckoutButtonProps {
   userId: string;
@@ -68,7 +69,7 @@ export function CheckoutButton({
             : undefined;
         const promotekitReferral = rawPromotekitReferral ?? '';
         if (promotekitReferral) {
-          console.log(
+          clientLogger.debug(
             'create checkout button, promotekitReferral:',
             promotekitReferral
           );
@@ -90,7 +91,7 @@ export function CheckoutButton({
               })()
             : null;
         if (affonsoReferral) {
-          console.log(
+          clientLogger.debug(
             'create checkout button, affonsoReferral:',
             affonsoReferral
           );
@@ -113,15 +114,18 @@ export function CheckoutButton({
         if (typeof rawRedirectUrl === 'string') {
           redirectTo(rawRedirectUrl as string);
         } else {
-          console.error('Create checkout session error, missing url:', result);
+          clientLogger.error(
+            'Create checkout session error, missing url:',
+            result
+          );
           toast.error(t('checkoutFailed'));
         }
       } else {
-        console.error('Create checkout session error, result:', result);
+        clientLogger.error('Create checkout session error, result:', result);
         toast.error(t('checkoutFailed'));
       }
     } catch (error) {
-      console.error('Create checkout session error:', error);
+      clientLogger.error('Create checkout session error:', error);
       toast.error(t('checkoutFailed'));
     } finally {
       setIsLoading(false);

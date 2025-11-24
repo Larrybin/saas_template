@@ -1,3 +1,5 @@
+import { clientLogger } from '@/lib/client-logger';
+
 export const imageHelpers = {
   base64ToBlob: (base64Data: string, type = 'image/png'): Blob => {
     const byteString = atob(base64Data);
@@ -35,7 +37,7 @@ export const imageHelpers = {
       }
     } catch (error) {
       // Fall back to download for any error (including share cancellation)
-      console.error('Error sharing/downloading:', error);
+      clientLogger.error('Error sharing/downloading:', error);
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;

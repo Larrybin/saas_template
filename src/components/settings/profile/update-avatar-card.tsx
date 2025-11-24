@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/card';
 import { websiteConfig } from '@/config/website';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 import { uploadFileFromBrowser } from '@/storage/client';
 
@@ -87,7 +88,7 @@ function UpdateAvatarCardContent({ className }: UpdateAvatarCardProps) {
       const result = await uploadFileFromBrowser(file, 'avatars');
       // console.log('uploadFileFromBrowser, result', result);
       const { url } = result;
-      console.log('uploadFileFromBrowser, url', url);
+      clientLogger.debug('uploadFileFromBrowser, url', url);
 
       // Update the user's avatar using authClient
       await authClient.updateUser(
@@ -110,7 +111,7 @@ function UpdateAvatarCardContent({ className }: UpdateAvatarCardProps) {
             refetch();
           },
           onError: (ctx: { error: { status: number; message: string } }) => {
-            console.error('update avatar error:', ctx.error);
+            clientLogger.error('update avatar error:', ctx.error);
             setError(`${ctx.error.status}: ${ctx.error.message}`);
             // Restore the previous avatar on error
             if (session?.user?.image) {
@@ -121,7 +122,7 @@ function UpdateAvatarCardContent({ className }: UpdateAvatarCardProps) {
         }
       );
     } catch (error) {
-      console.error('update avatar error:', error);
+      clientLogger.error('update avatar error:', error);
       setError(error instanceof Error ? error.message : t('avatar.fail'));
       // Restore the previous avatar if there was an error
       if (session?.user?.image) {

@@ -1,12 +1,18 @@
 import type { Logger } from '@/lib/logger';
+import { getLogger } from '@/lib/server/logger';
 
 export type LifecycleLogger = Pick<Logger, 'error' | 'info' | 'warn'>;
 
-export function createConsoleLifecycleLogger(): LifecycleLogger {
+/**
+ * Creates the default lifecycle logger backed by the shared server logger,
+ * ensuring consistent formatting and log routing across hooks.
+ */
+export function createLifecycleLogger(): LifecycleLogger {
+  const logger = getLogger({ span: 'user-lifecycle' });
   return {
-    error: console.error.bind(console),
-    info: console.info.bind(console),
-    warn: console.warn.bind(console),
+    error: logger.error.bind(logger),
+    info: logger.info.bind(logger),
+    warn: logger.warn.bind(logger),
   };
 }
 

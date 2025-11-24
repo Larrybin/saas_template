@@ -25,6 +25,7 @@ import { websiteConfig } from '@/config/website';
 import { clientEnv } from '@/env/client';
 import { LocaleLink } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
 import { cn } from '@/lib/utils';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
@@ -51,7 +52,7 @@ export const LoginForm = ({
     locale
   );
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
-  console.log('login form, callbackUrl', callbackUrl);
+  clientLogger.debug('login form, callbackUrl', callbackUrl);
 
   const [error, setError] = useState<string | undefined>('');
   const [success, setSuccess] = useState<string | undefined>('');
@@ -115,7 +116,7 @@ export const LoginForm = ({
       });
 
       if (!captchaResult?.data?.success || !captchaResult?.data?.valid) {
-        console.error('login, captcha invalid:', values.captchaToken);
+        clientLogger.error('login, captcha invalid:', values.captchaToken);
         const errorMessage = captchaResult?.data?.error || t('captchaInvalid');
         setError(errorMessage);
         setIsPending(false);
@@ -150,7 +151,7 @@ export const LoginForm = ({
           // router.push(callbackUrl || "/dashboard");
         },
         onError: (ctx: { error: { status: number; message: string } }) => {
-          console.error('login, error:', ctx.error);
+          clientLogger.error('login, error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
           // Reset captcha on login error
           if (captchaConfigured) {

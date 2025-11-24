@@ -6,7 +6,10 @@
  * @param amount The purchase amount in the currency's main unit (e.g., dollars, not cents)
  */
 import { serverEnv } from '@/env/server';
+import { getLogger } from '@/lib/server/logger';
 import { getBaseUrl } from '@/lib/urls/urls';
+
+const logger = getLogger({ span: 'notification.feishu' });
 
 export async function sendMessageToFeishu(
   sessionId: string,
@@ -18,7 +21,7 @@ export async function sendMessageToFeishu(
     const webhookUrl = serverEnv.feishuWebhookUrl;
 
     if (!webhookUrl) {
-      console.warn(
+      logger.warn(
         'FEISHU_WEBHOOK_URL is not set, skipping Feishu notification'
       );
       return;
@@ -42,17 +45,15 @@ export async function sendMessageToFeishu(
     });
 
     if (!response.ok) {
-      console.error(
-        `<< Failed to send Feishu notification for user ${userName}:`,
-        response
+      logger.error(
+        { userName, status: response.status },
+        'Failed to send Feishu notification'
       );
     }
 
-    console.log(
-      `<< Successfully sent Feishu notification for user ${userName}`
-    );
+    logger.info({ userName }, 'Successfully sent Feishu notification');
   } catch (error) {
-    console.error('<< Failed to send Feishu notification:', error);
+    logger.error({ error }, 'Failed to send Feishu notification');
     // Don't rethrow the error to avoid interrupting the payment flow
   }
 }

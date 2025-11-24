@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useBanUser, useUnbanUser } from '@/hooks/use-users';
 import type { User } from '@/lib/auth-types';
+import { clientLogger } from '@/lib/client-logger';
 import { isDemoWebsite } from '@/lib/demo';
 import { formatDate } from '@/lib/formatter';
 import { getStripeDashboardCustomerUrl } from '@/lib/urls/urls';
@@ -87,7 +88,7 @@ export function UserDetailViewer({ user }: UserDetailViewerProps) {
       setBanExpiresAt(undefined);
     } catch (err) {
       const error = err as Error;
-      console.error('Failed to ban user:', error);
+      clientLogger.error('Failed to ban user:', error);
       setError(error.message || t('ban.error'));
       toast.error(error.message || t('ban.error'));
     }
@@ -109,7 +110,7 @@ export function UserDetailViewer({ user }: UserDetailViewerProps) {
       toast.success(t('unban.success'));
     } catch (err) {
       const error = err as Error;
-      console.error('Failed to unban user:', error);
+      clientLogger.error('Failed to unban user:', error);
       setError(error.message || t('unban.error'));
       toast.error(error.message || t('unban.error'));
     }

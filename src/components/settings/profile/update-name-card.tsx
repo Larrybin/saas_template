@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 
 interface UpdateNameCardProps {
@@ -72,7 +73,7 @@ export function UpdateNameCard({ className }: UpdateNameCardProps) {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // Don't update if the name hasn't changed
     if (values.name === session?.user?.name) {
-      console.log('No changes to save');
+      clientLogger.debug('No profile name changes to save');
       return;
     }
 
@@ -99,7 +100,7 @@ export function UpdateNameCard({ className }: UpdateNameCardProps) {
         },
         onError: (ctx: { error: { status: number; message: string } }) => {
           // update name fail, display the error message
-          console.error('update name error:', ctx.error);
+          clientLogger.error('update name error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
           toast.error(t('name.fail'));
         },

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { maskEnvSnapshot } from './utils';
+import { maskEnvSnapshot, reportEnvValidationError } from './utils';
 
 const optionalString = z
   .string()
@@ -145,7 +145,7 @@ const rawClientEnv = {
 const parsedClientEnv = clientSchema.safeParse(rawClientEnv);
 
 if (!parsedClientEnv.success) {
-  console.error('❌ Invalid client environment variables:', {
+  reportEnvValidationError('Invalid client environment variables', {
     issues: parsedClientEnv.error.format(),
     snapshot: maskEnvSnapshot(rawClientEnv, { revealLength: true }),
   });

@@ -28,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 
 interface UpdatePasswordCardProps {
@@ -103,7 +104,7 @@ export function UpdatePasswordCard({ className }: UpdatePasswordCardProps) {
         onError: (ctx: { error: { status: number; message: string } }) => {
           // update password fail, display the error message
           // { "message": "Invalid password", "code": "INVALID_PASSWORD", "status": 400, "statusText": "BAD_REQUEST" }
-          console.error('update password error:', ctx.error);
+          clientLogger.error('update password error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
           toast.error(t('fail'));
         },

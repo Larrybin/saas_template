@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
 
@@ -74,7 +75,7 @@ export const ForgotPasswordForm = ({ className }: { className?: string }) => {
           setSuccess(t('checkEmail'));
         },
         onError: (ctx: { error: { status: number; message: string } }) => {
-          console.error('forgotPassword, error:', ctx.error);
+          clientLogger.error('forgotPassword, error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
         },
       }

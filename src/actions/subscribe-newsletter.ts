@@ -3,8 +3,11 @@
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 import { actionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
 import { sendEmail } from '@/mail';
 import { subscribe } from '@/newsletter';
+
+const logger = getLogger({ span: 'actions.subscribe-newsletter' });
 
 // Newsletter schema for validation
 const newsletterSchema = z.object({
@@ -20,7 +23,7 @@ export const subscribeNewsletterAction = actionClient
       const subscribed = await subscribe(email);
 
       if (!subscribed) {
-        console.error('subscribe newsletter error:', email);
+        logger.error({ email }, 'subscribe newsletter error');
         return {
           success: false,
           error: 'Failed to subscribe to the newsletter',
@@ -42,7 +45,7 @@ export const subscribeNewsletterAction = actionClient
         success: true,
       };
     } catch (error) {
-      console.error('subscribe newsletter error:', error);
+      logger.error({ error }, 'subscribe newsletter error');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

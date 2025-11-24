@@ -1,5 +1,8 @@
+import { getLogger } from '@/lib/server/logger';
 import { sendMessageToDiscord } from './discord';
 import { sendMessageToFeishu } from './feishu';
+
+const logger = getLogger({ span: 'notification' });
 
 /**
  * Send a notification when a user makes a purchase
@@ -14,7 +17,7 @@ export async function sendNotification(
   userName: string,
   amount: number
 ): Promise<void> {
-  console.log('sendNotification', sessionId, customerId, userName, amount);
+  logger.info({ sessionId, customerId, userName, amount }, 'sendNotification');
 
   // Send message to Discord channel
   await sendMessageToDiscord(sessionId, customerId, userName, amount);

@@ -6,6 +6,9 @@ import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import { isDemoWebsite } from '@/lib/demo';
 import { adminActionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
+
+const logger = getLogger({ span: 'actions.get-users' });
 
 // Define the schema for getUsers parameters
 const getUsersSchema = z.object({
@@ -92,7 +95,7 @@ export const getUsersAction = adminActionClient
         },
       };
     } catch (error) {
-      console.error('get users error:', error);
+      logger.error({ error }, 'get users error');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch users',

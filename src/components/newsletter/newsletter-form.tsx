@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 
 export function NewsletterForm() {
@@ -64,7 +65,7 @@ export function NewsletterForm() {
           toast.error(errorMessage);
         }
       } catch (err) {
-        console.error('Newsletter subscription error:', err);
+        clientLogger.error('Newsletter subscription error:', err);
         const errorMessage = t('fail');
         setError(errorMessage);
         toast.error(errorMessage);

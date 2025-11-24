@@ -38,10 +38,6 @@ if (redisRestUrl && redisRestToken) {
     url: redisRestUrl,
     token: redisRestToken,
   });
-} else if (!allowInMemoryFallback) {
-  throw new Error(
-    'Upstash Redis is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production environments.'
-  );
 }
 
 const limiterCache = new Map<string, Ratelimit>();

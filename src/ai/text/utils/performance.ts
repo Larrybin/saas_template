@@ -171,6 +171,16 @@ export function useStableCallback<T extends (...args: unknown[]) => unknown>(
  */
 const timers = new Map<string, number>();
 
+const shouldLogPerformanceTiming = (): boolean => {
+  if (typeof process === 'undefined') {
+    return false;
+  }
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+  return process.env.NEXT_PUBLIC_ENABLE_PERF_LOGS === 'true';
+};
+
 export const PerformanceMonitor = {
   start(label: string): void {
     timers.set(label, performance.now());
@@ -186,7 +196,7 @@ export const PerformanceMonitor = {
     const duration = performance.now() - startTime;
     timers.delete(label);
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (shouldLogPerformanceTiming()) {
       clientLogger.debug(`⏱️ ${label}: ${duration.toFixed(2)}ms`);
     }
 

@@ -1,5 +1,5 @@
 import type { LifecycleLogger } from './logger';
-import { createConsoleLifecycleLogger } from './logger';
+import { createLifecycleLogger } from './logger';
 import type { UserLifecycleEvent, UserLifecycleHooks } from './types';
 
 export type UserLifecycleManagerOptions = {
@@ -13,7 +13,7 @@ export class UserLifecycleManager {
 
   constructor(options: UserLifecycleManagerOptions = {}) {
     this.hooks = options.hooks ?? {};
-    this.logger = options.logger ?? createConsoleLifecycleLogger();
+    this.logger = options.logger ?? createLifecycleLogger();
   }
 
   async emit(event: UserLifecycleEvent): Promise<void> {

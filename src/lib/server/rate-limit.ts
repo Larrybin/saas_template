@@ -26,8 +26,12 @@ type RateLimitResult =
 const redisConfig = serverEnv.rateLimit;
 const redisRestUrl = redisConfig?.redisRestUrl;
 const redisRestToken = redisConfig?.redisRestToken;
+const environment = process.env.NODE_ENV ?? 'development';
+const allowInMemoryFallback =
+  environment === 'development' || environment === 'test';
 
 let redisClient: Redis | null = null;
+let hasWarnedAboutMemoryFallback = false;
 
 if (redisRestUrl && redisRestToken) {
   redisClient = new Redis({
@@ -74,7 +78,19 @@ export async function enforceRateLimit(
     return { ok: true };
   }
 
+  if (!allowInMemoryFallback) {
+    throw new Error(
+      'Upstash Redis is not configured but required outside development.'
+    );
+  }
+
   // Fallback for local dev without Upstash configured.
+  if (!hasWarnedAboutMemoryFallback) {
+    console.warn(
+      '[rate-limit] Falling back to in-memory limiter (non-production only)'
+    );
+    hasWarnedAboutMemoryFallback = true;
+  }
   const now = Date.now();
   const entry = memoryStore.get(identifier);
 

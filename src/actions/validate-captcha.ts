@@ -3,6 +3,9 @@
 import { captchaSchema } from '@/actions/schemas';
 import { validateTurnstileToken } from '@/lib/captcha';
 import { actionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
+
+const logger = getLogger({ span: 'actions.validate-captcha' });
 
 // Create a safe action for captcha validation
 export const validateCaptchaAction = actionClient
@@ -18,7 +21,7 @@ export const validateCaptchaAction = actionClient
         valid: isValid,
       };
     } catch (error) {
-      console.error('Captcha validation error:', error);
+      logger.error({ error }, 'Captcha validation error');
       return {
         success: false,
         valid: false,

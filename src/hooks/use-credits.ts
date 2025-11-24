@@ -9,6 +9,7 @@ import {
   handleAuthFromEnvelope,
   useAuthErrorHandler,
 } from '@/hooks/use-auth-error-handler';
+import { clientLogger } from '@/lib/client-logger';
 import {
   type DomainErrorLike,
   getDomainErrorMessage,
@@ -115,13 +116,13 @@ export function useCreditBalance() {
   return useQuery({
     queryKey: creditsKeys.balance(),
     queryFn: async () => {
-      console.log('Fetching credit balance...');
+      clientLogger.debug('Fetching credit balance...');
       const result = await getCreditBalanceAction();
       const data = unwrapCreditBalance(
         result?.data as CreditBalanceData | undefined,
         handleAuthError
       );
-      console.log('Credit balance fetched:', data.credits);
+      clientLogger.debug('Credit balance fetched:', data.credits);
       return data.credits || 0;
     },
   });
@@ -134,13 +135,13 @@ export function useCreditStats() {
   return useQuery({
     queryKey: creditsKeys.stats(),
     queryFn: async () => {
-      console.log('Fetching credit stats...');
+      clientLogger.debug('Fetching credit stats...');
       const result = await getCreditStatsAction();
       const data = unwrapCreditStats(
         result?.data as CreditStatsData | undefined,
         handleAuthError
       );
-      console.log('Credit stats fetched:', data.data);
+      clientLogger.debug('Credit stats fetched:', data.data);
       return data.data;
     },
   });

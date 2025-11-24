@@ -32,7 +32,9 @@
     "global.d.ts",
     "types/**/*.d.ts",
     "src",
-    "tests"
+    "tests",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules", ".next", "mksaas_template-main-sorce"]
 }

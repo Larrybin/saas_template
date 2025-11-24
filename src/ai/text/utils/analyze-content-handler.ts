@@ -28,6 +28,7 @@ import {
   webContentAnalyzerServerConfig,
 } from '@/ai/text/utils/web-content-config.server';
 import { serverEnv } from '@/env/server';
+import { getLogger } from '@/lib/server/logger';
 
 const TIMEOUT_MILLIS = webContentAnalyzerConfig.timeoutMillis;
 const MAX_CONTENT_LENGTH = webContentAnalyzerConfig.maxContentLength;
@@ -348,6 +349,20 @@ export interface AnalyzeContentHandlerResult {
   response: AnalyzeContentResponse;
 }
 
+export type AnalyzeContentPreflightSuccess = {
+  ok: true;
+  data: { url: string; modelProvider: ModelProvider };
+};
+
+export type AnalyzeContentPreflightFailure = {
+  ok: false;
+  result: AnalyzeContentHandlerResult;
+};
+
+export type AnalyzeContentPreflightResult =
+  | AnalyzeContentPreflightSuccess
+  | AnalyzeContentPreflightFailure;
+
 export interface AnalyzeContentHandlerDeps {
   scrapeWebpage: typeof scrapeWebpage;
   analyzeContent: typeof analyzeContent;
@@ -358,30 +373,32 @@ const defaultDeps: AnalyzeContentHandlerDeps = {
   analyzeContent,
 };
 
-export async function handleAnalyzeContentRequest(
-  input: AnalyzeContentHandlerInput,
-  deps: AnalyzeContentHandlerDeps = defaultDeps
-): Promise<AnalyzeContentHandlerResult> {
-  const { body, requestId, requestUrl, startTime } = input;
+export function preflightAnalyzeContentRequest({
+  body,
+  requestId,
+}: {
+  body: unknown;
+  requestId: string;
+}): AnalyzeContentPreflightResult {
+  const validationResult = analyzeContentRequestSchema.safeParse(body);
 
-  try {
-    const validationResult = analyzeContentRequestSchema.safeParse(body);
+  if (!validationResult.success) {
+    const validationError = new WebContentAnalyzerError(
+      ErrorType.VALIDATION,
+      'Invalid request parameters',
+      'Please provide a valid URL.',
+      ErrorSeverity.MEDIUM,
+      false
+    );
 
-    if (!validationResult.success) {
-      const validationError = new WebContentAnalyzerError(
-        ErrorType.VALIDATION,
-        'Invalid request parameters',
-        'Please provide a valid URL.',
-        ErrorSeverity.MEDIUM,
-        false
-      );
+    logAnalyzerErrorServer(validationError, {
+      requestId,
+      validationErrors: validationResult.error,
+    });
 
-      logAnalyzerErrorServer(validationError, {
-        requestId,
-        validationErrors: validationResult.error,
-      });
-
-      return {
+    return {
+      ok: false,
+      result: {
         status: 400,
         response: {
           success: false,
@@ -389,29 +406,30 @@ export async function handleAnalyzeContentRequest(
           code: validationError.code,
           retryable: validationError.retryable,
         },
-      };
-    }
+      },
+    };
+  }
 
-    const { url, modelProvider } = validationResult.data;
-    // eslint-disable-next-line no-console
-    console.log('modelProvider', modelProvider, 'url', url);
+  const { url, modelProvider } = validationResult.data;
 
-    const urlValidation = validateUrl(url);
-    if (!urlValidation.success) {
-      const firstIssue = urlValidation.error?.issues[0];
-      const urlMessage = firstIssue?.message ?? 'Invalid URL';
+  const urlValidation = validateUrl(url);
+  if (!urlValidation.success) {
+    const firstIssue = urlValidation.error?.issues[0];
+    const urlMessage = firstIssue?.message ?? 'Invalid URL';
 
-      const urlError = new WebContentAnalyzerError(
-        ErrorType.VALIDATION,
-        urlMessage,
-        'Please enter a valid URL starting with http:// or https://',
-        ErrorSeverity.MEDIUM,
-        false
-      );
+    const urlError = new WebContentAnalyzerError(
+      ErrorType.VALIDATION,
+      urlMessage,
+      'Please enter a valid URL starting with http:// or https://',
+      ErrorSeverity.MEDIUM,
+      false
+    );
 
-      logAnalyzerErrorServer(urlError, { requestId, url });
+    logAnalyzerErrorServer(urlError, { requestId, url });
 
-      return {
+    return {
+      ok: false,
+      result: {
         status: 400,
         response: {
           success: false,
@@ -419,21 +437,24 @@ export async function handleAnalyzeContentRequest(
           code: urlError.code,
           retryable: urlError.retryable,
         },
-      };
-    }
+      },
+    };
+  }
 
-    if (!validateFirecrawlConfig()) {
-      const configError = new WebContentAnalyzerError(
-        ErrorType.SERVICE_UNAVAILABLE,
-        'Firecrawl API key is not configured',
-        'Web content analysis service is temporarily unavailable.',
-        ErrorSeverity.CRITICAL,
-        false
-      );
+  if (!validateFirecrawlConfig()) {
+    const configError = new WebContentAnalyzerError(
+      ErrorType.SERVICE_UNAVAILABLE,
+      'Firecrawl API key is not configured',
+      'Web content analysis service is temporarily unavailable.',
+      ErrorSeverity.CRITICAL,
+      false
+    );
 
-      logAnalyzerErrorServer(configError, { requestId });
+    logAnalyzerErrorServer(configError, { requestId });
 
-      return {
+    return {
+      ok: false,
+      result: {
         status: 503,
         response: {
           success: false,
@@ -441,11 +462,36 @@ export async function handleAnalyzeContentRequest(
           code: configError.code,
           retryable: configError.retryable,
         },
-      };
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    data: { url, modelProvider },
+  };
+}
+
+export async function handleAnalyzeContentRequest(
+  input: AnalyzeContentHandlerInput,
+  deps: AnalyzeContentHandlerDeps = defaultDeps
+): Promise<AnalyzeContentHandlerResult> {
+  const { body, requestId, requestUrl, startTime } = input;
+  const logger = getLogger({
+    span: 'ai.web-content-analyzer',
+    requestId,
+  });
+
+  try {
+    const preflight = preflightAnalyzeContentRequest({ body, requestId });
+    if (!preflight.ok) {
+      return preflight.result;
     }
 
-    // eslint-disable-next-line no-console
-    console.log(`Starting analysis [requestId=${requestId}, url=${url}]`);
+    const { url, modelProvider } = preflight.data;
+    logger.debug({ modelProvider, url }, 'Received analyze-content request');
+
+    logger.info({ url }, 'Starting analyze-content request');
 
     const analysisPromise = (async () => {
       try {
@@ -468,9 +514,9 @@ export async function handleAnalyzeContentRequest(
     const result = await withTimeout(analysisPromise, TIMEOUT_MILLIS);
 
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-    // eslint-disable-next-line no-console
-    console.log(
-      `Analysis completed [requestId=${requestId}, elapsed=${elapsed}s]`
+    logger.info(
+      { elapsedSeconds: elapsed, url },
+      'Completed analyze-content request'
     );
 
     return {

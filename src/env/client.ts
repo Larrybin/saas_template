@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { maskEnvSnapshot } from './utils';
+import { maskEnvSnapshot, reportEnvValidationError } from './utils';
 
 const optionalString = z
   .string()
@@ -33,6 +33,7 @@ const clientSchemaInput = z.object({
     .string()
     .url('NEXT_PUBLIC_BASE_URL must be a valid URL'),
   NEXT_PUBLIC_DEMO_WEBSITE: booleanString,
+  NEXT_PUBLIC_ENABLE_PERF_LOGS: booleanString,
   NEXT_PUBLIC_MAIL_FROM_EMAIL: emailString,
   NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: emailString,
   NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY: optionalString,
@@ -61,6 +62,7 @@ const clientSchemaInput = z.object({
 const clientSchema = clientSchemaInput.transform((value) => ({
   baseUrl: value.NEXT_PUBLIC_BASE_URL,
   isDemoWebsite: value.NEXT_PUBLIC_DEMO_WEBSITE ?? false,
+  enablePerformanceLogs: value.NEXT_PUBLIC_ENABLE_PERF_LOGS ?? false,
   mail: {
     from: value.NEXT_PUBLIC_MAIL_FROM_EMAIL,
     support: value.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL,
@@ -108,6 +110,7 @@ type ClientEnvShape = {
 const rawClientEnv = {
   NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
   NEXT_PUBLIC_DEMO_WEBSITE: process.env.NEXT_PUBLIC_DEMO_WEBSITE,
+  NEXT_PUBLIC_ENABLE_PERF_LOGS: process.env.NEXT_PUBLIC_ENABLE_PERF_LOGS,
   NEXT_PUBLIC_MAIL_FROM_EMAIL: process.env.NEXT_PUBLIC_MAIL_FROM_EMAIL,
   NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: process.env.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL,
   NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY:
@@ -145,7 +148,7 @@ const rawClientEnv = {
 const parsedClientEnv = clientSchema.safeParse(rawClientEnv);
 
 if (!parsedClientEnv.success) {
-  console.error('❌ Invalid client environment variables:', {
+  reportEnvValidationError('Invalid client environment variables', {
     issues: parsedClientEnv.error.format(),
     snapshot: maskEnvSnapshot(rawClientEnv, { revealLength: true }),
   });

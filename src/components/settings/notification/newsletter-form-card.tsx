@@ -31,6 +31,7 @@ import {
   useUnsubscribeNewsletter,
 } from '@/hooks/use-newsletter';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 
 interface NewsletterFormCardProps {
@@ -109,7 +110,7 @@ function NewsletterFormCardContent({ className }: NewsletterFormCardProps) {
         toast.success(t('newsletter.unsubscribeSuccess'));
       }
     } catch (error) {
-      console.error('newsletter subscription error:', error);
+      clientLogger.error('newsletter subscription error:', error);
       const errorMessage =
         error instanceof Error ? error.message : t('newsletter.error');
       toast.error(errorMessage);

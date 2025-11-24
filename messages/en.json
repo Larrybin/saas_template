@@ -9,6 +9,7 @@
     "logout": "Log out",
     "signUp": "Sign up",
     "unauthorized": "You must be logged in to perform this action.",
+    "accountBanned": "Your account has been suspended. Please contact support.",
     "language": "Switch language",
     "mode": {
       "label": "Toggle mode",

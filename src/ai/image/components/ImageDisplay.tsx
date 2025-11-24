@@ -10,6 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 import { imageHelpers } from '../lib/image-helpers';
 import type { ProviderTiming } from '../lib/image-types';
@@ -72,7 +73,7 @@ export function ImageDisplay({
 
   const handleActionClick = (imageData: string, provider: string) => {
     imageHelpers.shareOrDownload(imageData, provider).catch((error) => {
-      console.error('Failed to share/download image:', error);
+      clientLogger.error('Failed to share/download image:', error);
     });
   };
 

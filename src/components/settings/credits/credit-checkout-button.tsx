@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { createCreditCheckoutSession } from '@/actions/create-credit-checkout-session';
 import { Button } from '@/components/ui/button';
 import { websiteConfig } from '@/config/website';
+import { clientLogger } from '@/lib/client-logger';
 import { getDomainErrorMessage } from '@/lib/domain-error-utils';
 
 interface CreditCheckoutButtonProps {
@@ -72,7 +73,7 @@ export function CreditCheckoutButton({
             : undefined;
         const promotekitReferral = rawPromotekitReferral ?? '';
         if (promotekitReferral) {
-          console.log(
+          clientLogger.debug(
             'create credit checkout button, promotekitReferral:',
             promotekitReferral
           );
@@ -94,7 +95,7 @@ export function CreditCheckoutButton({
               })()
             : null;
         if (affonsoReferral) {
-          console.log(
+          clientLogger.debug(
             'create credit checkout button, affonsoReferral:',
             affonsoReferral
           );
@@ -119,7 +120,7 @@ export function CreditCheckoutButton({
         if (typeof rawRedirectUrl === 'string') {
           redirectTo(rawRedirectUrl as string);
         } else {
-          console.error(
+          clientLogger.error(
             'Create credit checkout session error, missing url:',
             result
           );
@@ -128,7 +129,10 @@ export function CreditCheckoutButton({
           );
         }
       } else {
-        console.error('Create credit checkout session error, result:', result);
+        clientLogger.error(
+          'Create credit checkout session error, result:',
+          result
+        );
         const code =
           payload && 'code' in payload
             ? (payload as { code?: string }).code
@@ -145,7 +149,7 @@ export function CreditCheckoutButton({
         toast.error(message);
       }
     } catch (error) {
-      console.error('Create credit checkout session error:', error);
+      clientLogger.error('Create credit checkout session error:', error);
       toast.error(
         translate('Dashboard.settings.credits.packages.checkoutFailed')
       );

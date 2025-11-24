@@ -1,6 +1,12 @@
 import { Stripe } from 'stripe';
+import { websiteConfig } from '@/config/website';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
+import {
+  type BillingService,
+  DefaultBillingService,
+  DefaultPlanPolicy,
+} from '@/domain/billing';
 import { serverEnv } from '@/env/server';
 import { getLogger } from '@/lib/server/logger';
 import { PaymentRepository } from '../data-access/payment-repository';
@@ -31,6 +37,7 @@ type StripePaymentServiceDeps = {
   userRepository?: UserRepository;
   paymentRepository?: PaymentRepository;
   stripeEventRepository?: StripeEventRepository;
+  billingService?: BillingService;
 };
 
 export class StripePaymentService implements PaymentProvider {
@@ -48,6 +55,7 @@ export class StripePaymentService implements PaymentProvider {
   private readonly checkoutService: StripeCheckoutService;
   private readonly customerPortalService: CustomerPortalService;
   private readonly subscriptionQueryService: SubscriptionQueryService;
+  private readonly billingService: BillingService;
 
   constructor(deps: StripePaymentServiceDeps = {}) {
     const webhookSecret = deps.webhookSecret ?? serverEnv.stripeWebhookSecret;
@@ -81,6 +89,14 @@ export class StripePaymentService implements PaymentProvider {
     this.subscriptionQueryService = new SubscriptionQueryService({
       paymentRepository: this.paymentRepository,
     });
+    this.billingService =
+      deps.billingService ??
+      new DefaultBillingService({
+        paymentProvider: this,
+        creditsGateway: this.creditsGateway,
+        planPolicy: new DefaultPlanPolicy(),
+        creditsEnabled: websiteConfig.credits?.enableCredits ?? false,
+      });
   }
 
   public async createCheckout(
@@ -129,6 +145,7 @@ export class StripePaymentService implements PaymentProvider {
           creditsGateway: this.creditsGateway,
           notificationGateway: this.notificationGateway,
           logger: log,
+          billingService: this.billingService,
         });
       }
     );

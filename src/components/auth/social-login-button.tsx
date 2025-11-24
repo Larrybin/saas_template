@@ -10,6 +10,7 @@ import { GoogleIcon } from '@/components/icons/google';
 import { Button } from '@/components/ui/button';
 import { websiteConfig } from '@/config/website';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
 
@@ -36,7 +37,7 @@ export const SocialLoginButton = ({
   );
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
   const [isLoading, setIsLoading] = useState<'google' | 'github' | null>(null);
-  console.log('social login button, callbackUrl', callbackUrl);
+  clientLogger.debug('social login button, callbackUrl', callbackUrl);
 
   const hasSocialLogin =
     websiteConfig.auth.enableGoogleLogin ||
@@ -87,7 +88,7 @@ export const SocialLoginButton = ({
           setIsLoading(null);
         },
         onError: (ctx: { error: { message: string } }) => {
-          console.log('social login error', ctx.error.message);
+          clientLogger.error('social login error', ctx.error.message);
           setIsLoading(null);
         },
       }

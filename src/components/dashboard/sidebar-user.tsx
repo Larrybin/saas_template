@@ -36,6 +36,7 @@ import { websiteConfig } from '@/config/website';
 import { useLocalePathname, useLocaleRouter } from '@/i18n/navigation';
 import { LOCALES, routing } from '@/i18n/routing';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { useLocaleStore } from '@/stores/locale-store';
 import { UserAvatar } from '../layout/user-avatar';
 
@@ -77,12 +78,12 @@ export function SidebarUser({ user }: SidebarUserProps) {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          console.log('sign out success');
+          clientLogger.info('sign out success');
           // TanStack Query automatically handles cache invalidation on sign out
           router.replace('/');
         },
         onError: (error) => {
-          console.error('sign out error:', error);
+          clientLogger.error('sign out error:', error);
           toast.error(t('Common.logoutFailed'));
         },
       },

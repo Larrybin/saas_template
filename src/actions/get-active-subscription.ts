@@ -4,7 +4,10 @@ import { getActiveSubscriptionInputSchema } from '@/actions/schemas';
 import { serverEnv } from '@/env/server';
 import type { User } from '@/lib/auth-types';
 import { userActionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
 import { getSubscriptions } from '@/payment';
+
+const logger = getLogger({ span: 'actions.get-active-subscription' });
 
 /**
  * Get active subscription data
@@ -22,7 +25,7 @@ export const getActiveSubscriptionAction = userActionClient
     const stripeWebhookSecret = serverEnv.stripeWebhookSecret;
 
     if (!stripeSecretKey || !stripeWebhookSecret) {
-      console.log('Stripe environment variables not configured, return');
+      logger.warn('Stripe environment variables not configured, return');
       return {
         success: true,
         data: null, // No subscription = free plan
@@ -46,16 +49,16 @@ export const getActiveSubscriptionAction = userActionClient
 
         // If found, use it
         if (activeSubscription) {
-          console.log('find active subscription for userId:', currentUser.id);
+          logger.info({ userId: currentUser.id }, 'Active subscription found');
           subscriptionData = activeSubscription;
         } else {
-          console.log(
-            'no active subscription found for userId:',
-            currentUser.id
+          logger.info(
+            { userId: currentUser.id },
+            'No active subscription found for user'
           );
         }
       } else {
-        console.log('no subscriptions found for userId:', currentUser.id);
+        logger.info({ userId: currentUser.id }, 'No subscriptions found');
       }
 
       return {
@@ -63,7 +66,7 @@ export const getActiveSubscriptionAction = userActionClient
         data: subscriptionData,
       };
     } catch (error) {
-      console.error('get user subscription data error:', error);
+      logger.error({ error }, 'get user subscription data error');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

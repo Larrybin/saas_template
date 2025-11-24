@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { clientLogger } from '@/lib/client-logger';
 
 /**
  * Contact form card component
@@ -78,7 +79,7 @@ export function ContactFormCard() {
           toast.error(errorMessage);
         }
       } catch (err) {
-        console.error('Form submission error:', err);
+        clientLogger.error('Form submission error:', err);
         setError(t('fail'));
         toast.error(t('fail'));
       }

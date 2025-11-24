@@ -63,6 +63,8 @@ jobs:
       NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
       NEXT_PUBLIC_MAIL_FROM_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_FROM_EMAIL }}
       NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: ./.github/actions/setup-node-pnpm
@@ -88,6 +90,8 @@ jobs:
       NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
       NEXT_PUBLIC_MAIL_FROM_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_FROM_EMAIL }}
       NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: ./.github/actions/setup-node-pnpm
@@ -127,6 +131,8 @@ jobs:
       NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
       NEXT_PUBLIC_MAIL_FROM_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_FROM_EMAIL }}
       NEXT_PUBLIC_MAIL_SUPPORT_EMAIL: ${{ secrets.NEXT_PUBLIC_MAIL_SUPPORT_EMAIL }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:

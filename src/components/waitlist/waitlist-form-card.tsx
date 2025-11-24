@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { clientLogger } from '@/lib/client-logger';
 
 /**
  * Waitlist form card component
@@ -68,7 +69,7 @@ export function WaitlistFormCard() {
           toast.error(errorMessage);
         }
       } catch (err) {
-        console.error('Form submission error:', err);
+        clientLogger.error('Waitlist form submission error:', err);
         setError(t('fail'));
         toast.error(t('fail'));
       }

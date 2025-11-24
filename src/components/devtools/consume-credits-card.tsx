@@ -2,6 +2,7 @@
 
 import { CoinsIcon } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useConsumeCredits, useCreditBalance } from '@/hooks/use-credits';
 import { useCreditsErrorUi } from '@/hooks/use-credits-error-ui';
@@ -34,6 +35,9 @@ export function ConsumeCreditsCard() {
       await consumeCreditsMutation.mutateAsync({
         amount: CONSUME_CREDITS,
         description: `Test credit consumption (${CONSUME_CREDITS} credits)`,
+      });
+      toast.success('Test credits consumed', {
+        description: `${CONSUME_CREDITS} credits removed successfully.`,
       });
     } catch (error) {
       handleCreditsError(error as Error);

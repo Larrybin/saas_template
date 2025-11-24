@@ -7,7 +7,10 @@ import { payment } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { userActionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
 import { PaymentTypes } from '@/payment/types';
+
+const logger = getLogger({ span: 'actions.get-lifetime-status' });
 
 // Input schema
 const schema = z.object({
@@ -71,7 +74,7 @@ export const getLifetimeStatusAction = userActionClient
         isLifetimeMember: hasLifetimePayment,
       };
     } catch (error) {
-      console.error('get user lifetime status error:', error);
+      logger.error({ error }, 'get user lifetime status error');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

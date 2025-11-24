@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { createPortalAction } from '@/actions/create-customer-portal-session';
 import { Button } from '@/components/ui/button';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 
 interface CustomerPortalButtonProps {
@@ -57,11 +58,11 @@ export function CustomerPortalButton({
       if (result?.data?.success && result.data.data?.url) {
         window.location.href = result.data.data?.url;
       } else {
-        console.error('Create customer portal error, result:', result);
+        clientLogger.error('Create customer portal error, result:', result);
         toast.error(t('createCustomerPortalFailed'));
       }
     } catch (error) {
-      console.error('Create customer portal error:', error);
+      clientLogger.error('Create customer portal error:', error);
       toast.error(t('createCustomerPortalFailed'));
     } finally {
       setIsLoading(false);

@@ -4,6 +4,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { UnauthorizedError } from '@/lib/auth-errors';
 import type { User } from '@/lib/auth-types';
+import {
+  AUTH_BANNED_FALLBACK_MESSAGE,
+  getDomainErrorMessage,
+} from '@/lib/domain-error-utils';
 import { getLogger } from '@/lib/server/logger';
 
 type ApiAuthResult =
@@ -31,6 +35,22 @@ const unauthorizedResponse = NextResponse.json(
   }
 );
 
+const bannedResponse = NextResponse.json(
+  {
+    success: false,
+    error: getDomainErrorMessage(
+      'AUTH_BANNED',
+      undefined,
+      AUTH_BANNED_FALLBACK_MESSAGE
+    ),
+    code: 'AUTH_BANNED',
+    retryable: false,
+  },
+  {
+    status: 403,
+  }
+);
+
 /**
  * Ensures the incoming API request has an authenticated Better Auth session.
  * Returns the resolved user when successful or a standardized 401 response on failure.
@@ -43,14 +63,27 @@ export async function ensureApiUser(request: Request): Promise<ApiAuthResult> {
     });
 
     if (session?.user) {
-      const user: User = {
+      const normalizedUser: User = {
         ...(session.user as User),
         role: (session.user as User).role ?? 'user',
         banned: (session.user as User).banned ?? false,
       };
+
+      if (normalizedUser.banned) {
+        logger.warn(
+          { userId: normalizedUser.id },
+          'Blocked banned user in ensureApiUser'
+        );
+
+        return {
+          ok: false,
+          response: bannedResponse,
+        };
+      }
+
       return {
         ok: true,
-        user,
+        user: normalizedUser,
       };
     }
   } catch (error) {

@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { websiteConfig } from '@/config/website';
 import { clientEnv } from '@/env/client';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
 import { Captcha, type CaptchaRef } from '../shared/captcha';
@@ -46,7 +47,7 @@ export const RegisterForm = ({
     locale
   );
   const callbackUrl = propCallbackUrl || paramCallbackUrl || defaultCallbackUrl;
-  console.log('register form, callbackUrl', callbackUrl);
+  clientLogger.debug('register form, callbackUrl', callbackUrl);
 
   const [error, setError] = useState<string | undefined>('');
   const [success, setSuccess] = useState<string | undefined>('');
@@ -114,7 +115,7 @@ export const RegisterForm = ({
       });
 
       if (!captchaResult?.data?.success || !captchaResult?.data?.valid) {
-        console.error('register, captcha invalid:', values.captchaToken);
+        clientLogger.error('register, captcha invalid:', values.captchaToken);
         const errorMessage = captchaResult?.data?.error || t('captchaInvalid');
         setError(errorMessage);
         setIsPending(false);
@@ -153,13 +154,13 @@ export const RegisterForm = ({
           // add affonso affiliate
           // https://affonso.io/app/affiliate-program/connect
           if (websiteConfig.features.enableAffonsoAffiliate) {
-            console.log('register, affonso affiliate:', values.email);
+            clientLogger.info('register, affonso affiliate:', values.email);
             window.Affonso.signup(values.email);
           }
         },
         onError: (ctx: { error: { status: number; message: string } }) => {
           // sign up fail, display the error message
-          console.error('register, error:', ctx.error);
+          clientLogger.error('register, error:', ctx.error);
           setError(`${ctx.error.status}: ${ctx.error.message}`);
           // Reset captcha on registration error
           if (captchaConfigured) {

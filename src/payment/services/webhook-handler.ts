@@ -1,11 +1,11 @@
 import { randomUUID } from 'crypto';
 import type { Logger } from 'pino';
 import type Stripe from 'stripe';
-import { websiteConfig } from '@/config/website';
 import { getCreditPackageById } from '@/credits/server';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { createCreditsTransaction } from '@/credits/services/transaction-context';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
+import type { BillingService } from '@/domain/billing';
 import type { PaymentRepository } from '../data-access/payment-repository';
 import { PaymentTypes } from '../types';
 import type { NotificationGateway } from './gateways/notification-gateway';
@@ -20,6 +20,7 @@ type WebhookDeps = {
   creditsGateway: CreditsGateway;
   notificationGateway: NotificationGateway;
   logger: Logger;
+  billingService: BillingService;
 };
 
 export async function handleStripeWebhookEvent(
@@ -98,14 +99,12 @@ async function onCreateSubscription(
       },
       tx
     );
-    if (websiteConfig.credits?.enableCredits) {
-      await deps.creditsGateway.addSubscriptionCredits(
-        userId,
-        priceId,
-        effectivePeriodStart,
-        createCreditsTransaction(tx)
-      );
-    }
+    await deps.billingService.handleRenewal({
+      userId,
+      priceId,
+      cycleRefDate: effectivePeriodStart,
+      transaction: createCreditsTransaction(tx),
+    });
   });
 }
 
@@ -148,15 +147,15 @@ async function onUpdateSubscription(
       periodStart &&
       existing.periodStart.getTime() !== periodStart.getTime() &&
       subscription.status === 'active';
-    if (isRenewal && existing?.userId && websiteConfig.credits?.enableCredits) {
+    if (isRenewal && existing?.userId) {
       const effectivePeriodStart =
         periodStart ?? existing.periodStart ?? new Date();
-      await deps.creditsGateway.addSubscriptionCredits(
-        existing.userId,
+      await deps.billingService.handleRenewal({
+        userId: existing.userId,
         priceId,
-        effectivePeriodStart,
-        createCreditsTransaction(tx)
-      );
+        cycleRefDate: effectivePeriodStart,
+        transaction: createCreditsTransaction(tx),
+      });
     }
     return true;
   });
@@ -213,14 +212,12 @@ async function onOnetimePayment(
       },
       tx
     );
-    if (websiteConfig.credits?.enableCredits) {
-      await deps.creditsGateway.addLifetimeMonthlyCredits(
-        userId,
-        priceId,
-        now,
-        createCreditsTransaction(tx)
-      );
-    }
+    await deps.billingService.grantLifetimePlan({
+      userId,
+      priceId,
+      cycleRefDate: now,
+      transaction: createCreditsTransaction(tx),
+    });
     return true;
   });
   if (!processed) {

@@ -7,9 +7,12 @@ import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
 import { userActionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { createCustomerPortal } from '@/payment';
 import type { CreatePortalParams } from '@/payment/types';
+
+const logger = getLogger({ span: 'actions.create-customer-portal' });
 
 // Portal schema for validation
 const portalSchema = z.object({
@@ -40,7 +43,7 @@ export const createPortalAction = userActionClient
 
       const customer = customerResult[0];
       if (!customer || !customer.customerId) {
-        console.error(`No customer found for user ${currentUser.id}`);
+        logger.error({ userId: currentUser.id }, 'No customer found for user');
         return {
           success: false,
           error: 'No customer found for user',
@@ -55,8 +58,9 @@ export const createPortalAction = userActionClient
         returnUrl || getUrlWithLocale('/settings/billing', locale);
       const customerId = customer.customerId;
       if (!customerId) {
-        console.error(
-          `No customer id found for user ${currentUser.id} after validation`
+        logger.error(
+          { userId: currentUser.id },
+          'No customer id found for user after validation'
         );
         return {
           success: false,
@@ -77,7 +81,7 @@ export const createPortalAction = userActionClient
         data: result,
       };
     } catch (error) {
-      console.error('create customer portal error:', error);
+      logger.error({ error }, 'create customer portal error');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

@@ -5,6 +5,7 @@ import {
   handleAuthFromEnvelope,
   useAuthErrorHandler,
 } from '@/hooks/use-auth-error-handler';
+import { clientLogger } from '@/lib/client-logger';
 import { getDomainErrorMessage } from '@/lib/domain-error-utils';
 import type { GenerateImageResponse } from '../lib/api-types';
 import type {
@@ -85,7 +86,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
       // Helper to fetch a single provider
       const generateImage = async (provider: ProviderKey, modelId: string) => {
         const startTime = now;
-        console.log(
+        clientLogger.debug(
           `Generate image request [provider=${provider}, modelId=${modelId}]`
         );
         try {
@@ -139,7 +140,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
             },
           }));
 
-          console.log(
+          clientLogger.debug(
             `Successful image response [provider=${provider}, modelId=${modelId}, elapsed=${elapsed}ms]`
           );
 
@@ -152,7 +153,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
             )
           );
         } catch (err) {
-          console.error(
+          clientLogger.error(
             `Error [provider=${provider}, modelId=${modelId}]:`,
             err
           );
@@ -209,7 +210,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
       await Promise.all(fetchPromises);
     } catch (error) {
-      console.error('Error fetching images:', error);
+      clientLogger.error('Error fetching images:', error);
     } finally {
       setIsLoading(false);
     }

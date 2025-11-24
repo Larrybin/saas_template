@@ -4,13 +4,16 @@ import { cookies } from 'next/headers';
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 import { websiteConfig } from '@/config/website';
+import type { StartSubscriptionCheckoutInput } from '@/domain/billing';
 import type { User } from '@/lib/auth-types';
 import { findPlanByPlanId } from '@/lib/price-plan';
 import { userActionClient } from '@/lib/safe-action';
+import { getBillingService } from '@/lib/server/billing-service';
+import { getLogger } from '@/lib/server/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
-import { createCheckout } from '@/payment';
-import type { CreateCheckoutParams } from '@/payment/types';
 import { Routes } from '@/routes';
+
+const logger = getLogger({ span: 'actions.create-checkout-session' });
 
 // Checkout schema for validation
 // metadata is optional, and may contain referral information if you need
@@ -66,7 +69,7 @@ export const createCheckoutAction = userActionClient
         locale
       );
       const cancelUrl = getUrlWithLocale(Routes.Pricing, locale);
-      const params: CreateCheckoutParams = {
+      const params: StartSubscriptionCheckoutInput = {
         planId,
         priceId,
         customerEmail: currentUser.email,
@@ -76,14 +79,15 @@ export const createCheckoutAction = userActionClient
         locale,
       };
 
-      const result = await createCheckout(params);
+      const billingService = getBillingService();
+      const result = await billingService.startSubscriptionCheckout(params);
       // console.log('create checkout session result:', result);
       return {
         success: true,
         data: result,
       };
     } catch (error) {
-      console.error('create checkout session error:', error);
+      logger.error({ error }, 'create checkout session error');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Something went wrong',

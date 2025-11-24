@@ -90,6 +90,7 @@ export const websiteConfig: WebsiteConfig = {
   storage: {
     enable: true,
     provider: 's3',
+    allowedFolders: ['uploads', 'avatars', 'attachments'],
   },
   payment: {
     provider: 'stripe',

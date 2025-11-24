@@ -14,6 +14,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHasCredentialProvider } from '@/hooks/use-auth';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 
 /**
@@ -31,7 +32,7 @@ export function PasswordCardWrapper() {
 
   // Handle error state
   if (error) {
-    console.error('check credential provider error:', error);
+    clientLogger.error('check credential provider error:', error);
     return null;
   }
 

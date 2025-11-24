@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/card';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
 
 /**
@@ -64,7 +65,7 @@ export function DeleteAccountCard() {
           router.replace('/');
         },
         onError: (ctx) => {
-          console.error('delete account error:', ctx.error);
+          clientLogger.error('delete account error:', ctx.error);
           // { "message": "Session expired. Re-authenticate to perform this action.",
           // "code": "SESSION_EXPIRED_REAUTHENTICATE_TO_PERFORM_THIS_ACTION",
           // "status": 400, "statusText": "BAD_REQUEST" }

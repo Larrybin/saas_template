@@ -7,6 +7,9 @@ import { creditTransaction } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
 import { CREDITS_EXPIRATION_DAYS } from '@/lib/constants';
 import { userActionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
+
+const logger = getLogger({ span: 'actions.get-credit-stats' });
 
 /**
  * Get credit statistics for a user
@@ -50,7 +53,7 @@ export const getCreditStatsAction = userActionClient.action(async ({ ctx }) => {
       },
     };
   } catch (error) {
-    console.error('get credit stats error:', error);
+    logger.error({ error }, 'get credit stats error');
     return {
       success: false,
       error:

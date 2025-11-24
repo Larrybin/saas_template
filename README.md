@@ -123,6 +123,7 @@ pnpm start
 
 ## Architecture Notes
 
+- **Client logging policy**: 前端代码（组件、hooks 等）禁止直接调用 `console.*`。请统一通过 `src/lib/client-logger.ts` 暴露的 `clientLogger.debug/info/warn/error` 输出，便于未来集中接入 Sentry/LogRocket 等监控服务，并避免在生产环境泄露敏感信息。Code Review 会以此为准；如确需保留 CLI/脚本级 `console`，请在说明中注明用途。
 - 站点基础信息与社交链接配置位于 `src/config/website.tsx` 的 `metadata.social` 字段。请替换为你自己的域名与社交账号，或删除不需要的条目。
 - 用户生命周期逻辑集中在 `src/lib/user-lifecycle`：
   - Better Auth 的 `databaseHooks.user.create.after` 通过此模块触发。

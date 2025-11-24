@@ -6,6 +6,9 @@ import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
 import { userActionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
+
+const logger = getLogger({ span: 'actions.get-credit-transactions' });
 
 // Define the schema for getCreditTransactions parameters
 const getCreditTransactionsSchema = z.object({
@@ -118,7 +121,7 @@ export const getCreditTransactionsAction = userActionClient
         },
       };
     } catch (error) {
-      console.error('get credit transactions error:', error);
+      logger.error({ error }, 'get credit transactions error');
       return {
         success: false,
         error:

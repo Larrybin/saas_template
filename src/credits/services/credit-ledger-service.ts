@@ -1,3 +1,4 @@
+import { getLogger } from '@/lib/server/logger';
 import {
   getPlanCreditsConfigByPlanId,
   getPlanCreditsConfigByPriceId,
@@ -16,13 +17,17 @@ export const creditLedgerRepository = new CreditLedgerRepository();
 const creditLedgerDomainService = new CreditLedgerDomainService(
   creditLedgerRepository
 );
+const creditsServiceLogger = getLogger({ span: 'credits.service' });
 
 export async function getUserCredits(userId: string): Promise<number> {
   try {
     return await creditLedgerDomainService.getUserCredits(userId);
   } catch (error) {
-    console.error('getUserCredits, error:', error);
-    return 0;
+    creditsServiceLogger.error(
+      { error, userId },
+      'getUserCredits failed to resolve balance'
+    );
+    throw error;
   }
 }
 
@@ -30,7 +35,8 @@ export async function updateUserCredits(userId: string, credits: number) {
   try {
     await creditLedgerDomainService.updateUserCredits(userId, credits);
   } catch (error) {
-    console.error('updateUserCredits, error:', error);
+    creditsServiceLogger.error({ error, userId }, 'updateUserCredits failed');
+    throw error;
   }
 }
 

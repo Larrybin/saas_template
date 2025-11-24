@@ -27,7 +27,13 @@ describe('UserLifecycleManager', () => {
       ],
     };
 
-    const manager = new UserLifecycleManager({ hooks });
+    const logger: LifecycleLogger = {
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    const manager = new UserLifecycleManager({ hooks, logger });
     await manager.emit(baseEvent as never);
 
     expect(calls.map((item) => item.label)).toEqual(['first', 'second']);

@@ -5,18 +5,15 @@ import type {
   AnalyzeContentHandlerInput,
   AnalyzeContentHandlerResult,
 } from '@/ai/text/utils/analyze-content-handler';
-import { handleAnalyzeContentRequest } from '@/ai/text/utils/analyze-content-handler';
+import {
+  handleAnalyzeContentRequest,
+  preflightAnalyzeContentRequest,
+} from '@/ai/text/utils/analyze-content-handler';
 import {
   ErrorSeverity,
   ErrorType,
   WebContentAnalyzerError,
 } from '@/ai/text/utils/error-handling';
-import { logAnalyzerErrorServer } from '@/ai/text/utils/error-logging.server';
-import {
-  analyzeContentRequestSchema,
-  validateUrl,
-} from '@/ai/text/utils/web-content-analyzer';
-import { validateFirecrawlConfig } from '@/ai/text/utils/web-content-config.server';
 import {
   AI_USAGE_FEATURE,
   incrementAiUsageAndCheckWithinFreeQuota,
@@ -49,6 +46,30 @@ export async function analyzeWebContentWithCredits(
   input: AnalyzeWebContentWithCreditsInput
 ): Promise<AnalyzeContentHandlerResult> {
   const { userId, body, requestId, requestUrl, requiredCredits } = input;
+  if (!body) {
+    const validationError = new WebContentAnalyzerError(
+      ErrorType.VALIDATION,
+      'Request body is required',
+      'Please provide a valid request body.',
+      ErrorSeverity.MEDIUM,
+      false
+    );
+
+    return {
+      status: 400,
+      response: {
+        success: false,
+        error: validationError.userMessage,
+        code: validationError.code,
+        retryable: validationError.retryable,
+      },
+    };
+  }
+
+  const preflight = preflightAnalyzeContentRequest({ body, requestId });
+  if (!preflight.ok) {
+    return preflight.result;
+  }
 
   const billingRule = getAnalyzeContentBillingRule();
   const creditsToConsume =
@@ -66,84 +87,6 @@ export async function analyzeWebContentWithCredits(
     { userId, creditsPerCall: creditsToConsume },
     'Starting web content analysis with billing'
   );
-
-  // 先进行请求级校验（Body / URL / 配置），避免对明显无效的请求计入免费额度或扣减积分。
-  const validationResult = analyzeContentRequestSchema.safeParse(body);
-
-  if (!validationResult.success) {
-    const validationError = new WebContentAnalyzerError(
-      ErrorType.VALIDATION,
-      'Invalid request parameters',
-      'Please provide a valid URL.',
-      ErrorSeverity.MEDIUM,
-      false
-    );
-
-    logAnalyzerErrorServer(validationError, {
-      requestId,
-      validationErrors: validationResult.error,
-    });
-
-    return {
-      status: 400,
-      response: {
-        success: false,
-        error: validationError.userMessage,
-        code: validationError.code,
-        retryable: validationError.retryable,
-      },
-    };
-  }
-
-  const { url } = validationResult.data;
-
-  const urlValidation = validateUrl(url);
-  if (!urlValidation.success) {
-    const firstIssue = urlValidation.error?.issues[0];
-    const urlMessage = firstIssue?.message ?? 'Invalid URL';
-
-    const urlError = new WebContentAnalyzerError(
-      ErrorType.VALIDATION,
-      urlMessage,
-      'Please enter a valid URL starting with http:// or https://',
-      ErrorSeverity.MEDIUM,
-      false
-    );
-
-    logAnalyzerErrorServer(urlError, { requestId, url });
-
-    return {
-      status: 400,
-      response: {
-        success: false,
-        error: urlError.userMessage,
-        code: urlError.code,
-        retryable: urlError.retryable,
-      },
-    };
-  }
-
-  if (!validateFirecrawlConfig()) {
-    const configError = new WebContentAnalyzerError(
-      ErrorType.SERVICE_UNAVAILABLE,
-      'Firecrawl API key is not configured',
-      'Web content analysis service is temporarily unavailable.',
-      ErrorSeverity.CRITICAL,
-      false
-    );
-
-    logAnalyzerErrorServer(configError, { requestId });
-
-    return {
-      status: 503,
-      response: {
-        success: false,
-        error: configError.userMessage,
-        code: configError.code,
-        retryable: configError.retryable,
-      },
-    };
-  }
 
   const freeCallsPerPeriod = billingRule.freeCallsPerPeriod ?? 0;
   const withinFreeQuota =

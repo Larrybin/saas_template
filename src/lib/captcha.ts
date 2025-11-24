@@ -1,5 +1,8 @@
 import { websiteConfig } from '@/config/website';
 import { serverEnv } from '@/env/server';
+import { getLogger } from '@/lib/server/logger';
+
+const logger = getLogger({ span: 'lib.captcha' });
 
 interface TurnstileResponse {
   success: boolean;
@@ -12,12 +15,12 @@ interface TurnstileResponse {
 export async function validateTurnstileToken(token: string) {
   const turnstileEnabled = websiteConfig.features.enableTurnstileCaptcha;
   if (!turnstileEnabled) {
-    console.log('validateTurnstileToken, turnstile is disabled');
+    logger.info('validateTurnstileToken, turnstile is disabled');
     return false;
   }
 
   if (!serverEnv.turnstileSecretKey) {
-    console.error('validateTurnstileToken, TURNSTILE_SECRET_KEY is not set');
+    logger.error('validateTurnstileToken, TURNSTILE_SECRET_KEY is not set');
     return false;
   }
 

@@ -7,6 +7,7 @@ import { type ComponentProps, forwardRef } from 'react';
 import { FormMessage } from '@/components/ui/form';
 import { websiteConfig } from '@/config/website';
 import { clientEnv } from '@/env/client';
+import { clientLogger } from '@/lib/client-logger';
 
 const Turnstile = dynamic(
   () => import('@marsidev/react-turnstile').then((mod) => mod.Turnstile),
@@ -79,7 +80,7 @@ export const Captcha = forwardRef<CaptchaRef, Props>(
 
     // If turnstile is enabled but site key is missing, show error message
     if (!siteKey) {
-      console.error('Captcha: NEXT_PUBLIC_TURNSTILE_SITE_KEY is not set');
+      clientLogger.error('Captcha: NEXT_PUBLIC_TURNSTILE_SITE_KEY is not set');
       return null;
     }
 

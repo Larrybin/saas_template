@@ -2,7 +2,10 @@
 
 import { z } from 'zod';
 import { userActionClient } from '@/lib/safe-action';
+import { getLogger } from '@/lib/server/logger';
 import { isSubscribed } from '@/newsletter';
+
+const logger = getLogger({ span: 'actions.check-newsletter-status' });
 
 // Newsletter schema for validation
 const newsletterSchema = z.object({
@@ -21,7 +24,7 @@ export const checkNewsletterStatusAction = userActionClient
         subscribed,
       };
     } catch (error) {
-      console.error('check newsletter status error:', error);
+      logger.error({ error, email }, 'check newsletter status error');
       return {
         success: false,
         subscribed: false,

@@ -68,3 +68,30 @@ export function maskEnvSnapshot<T extends EnvSource>(
     {} as Record<keyof T, string | undefined>
   );
 }
+
+/**
+ * Emits environment validation failures without relying on browser consoles.
+ * Prefers writing to stderr (Node.js / build time) and falls back to console if needed.
+ */
+export function reportEnvValidationError(
+  message: string,
+  payload?: Record<string, unknown>
+): void {
+  const serializedPayload =
+    payload && Object.keys(payload).length > 0 ? JSON.stringify(payload) : '';
+  const fullMessage = serializedPayload
+    ? `[env] ${message} ${serializedPayload}`
+    : `[env] ${message}`;
+
+  if (
+    typeof process !== 'undefined' &&
+    typeof process.stderr?.write === 'function'
+  ) {
+    process.stderr.write(`${fullMessage}\n`);
+    return;
+  }
+
+  if (typeof console !== 'undefined') {
+    console.error('[env]', message, payload);
+  }
+}

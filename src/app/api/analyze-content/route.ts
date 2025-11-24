@@ -9,12 +9,16 @@ import { logAnalyzerErrorServer } from '@/ai/text/utils/error-logging.server';
 import type { AnalyzeContentResponse } from '@/ai/text/utils/web-content-analyzer';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
-import { createLoggerFromHeaders, withLogContext } from '@/lib/server/logger';
+import {
+  createLoggerFromHeaders,
+  resolveRequestId,
+  withLogContext,
+} from '@/lib/server/logger';
 import { enforceRateLimit } from '@/lib/server/rate-limit';
 import { analyzeWebContentWithCredits } from '@/lib/server/usecases/analyze-web-content-with-credits';
 
 export async function POST(req: NextRequest) {
-  const requestId = Math.random().toString(36).substring(7);
+  const requestId = resolveRequestId(req.headers);
   const logger = createLoggerFromHeaders(req.headers, {
     span: 'api.ai.text.analyze',
     route: '/api/analyze-content',

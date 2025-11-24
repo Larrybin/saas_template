@@ -28,6 +28,7 @@ import {
   webContentAnalyzerServerConfig,
 } from '@/ai/text/utils/web-content-config.server';
 import { serverEnv } from '@/env/server';
+import { getLogger } from '@/lib/server/logger';
 
 const TIMEOUT_MILLIS = webContentAnalyzerConfig.timeoutMillis;
 const MAX_CONTENT_LENGTH = webContentAnalyzerConfig.maxContentLength;
@@ -363,6 +364,10 @@ export async function handleAnalyzeContentRequest(
   deps: AnalyzeContentHandlerDeps = defaultDeps
 ): Promise<AnalyzeContentHandlerResult> {
   const { body, requestId, requestUrl, startTime } = input;
+  const logger = getLogger({
+    span: 'ai.web-content-analyzer',
+    requestId,
+  });
 
   try {
     const validationResult = analyzeContentRequestSchema.safeParse(body);
@@ -393,8 +398,7 @@ export async function handleAnalyzeContentRequest(
     }
 
     const { url, modelProvider } = validationResult.data;
-    // eslint-disable-next-line no-console
-    console.log('modelProvider', modelProvider, 'url', url);
+    logger.debug({ modelProvider, url }, 'Received analyze-content request');
 
     const urlValidation = validateUrl(url);
     if (!urlValidation.success) {
@@ -444,8 +448,7 @@ export async function handleAnalyzeContentRequest(
       };
     }
 
-    // eslint-disable-next-line no-console
-    console.log(`Starting analysis [requestId=${requestId}, url=${url}]`);
+    logger.info({ url }, 'Starting analyze-content request');
 
     const analysisPromise = (async () => {
       try {
@@ -470,7 +473,8 @@ export async function handleAnalyzeContentRequest(
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
     // eslint-disable-next-line no-console
     console.log(
-      `Analysis completed [requestId=${requestId}, elapsed=${elapsed}s]`
+      { elapsedSeconds: elapsed, url },
+      'Completed analyze-content request'
     );
 
     return {

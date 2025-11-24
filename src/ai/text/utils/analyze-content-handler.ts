@@ -349,6 +349,20 @@ export interface AnalyzeContentHandlerResult {
   response: AnalyzeContentResponse;
 }
 
+export type AnalyzeContentPreflightSuccess = {
+  ok: true;
+  data: { url: string; modelProvider: ModelProvider };
+};
+
+export type AnalyzeContentPreflightFailure = {
+  ok: false;
+  result: AnalyzeContentHandlerResult;
+};
+
+export type AnalyzeContentPreflightResult =
+  | AnalyzeContentPreflightSuccess
+  | AnalyzeContentPreflightFailure;
+
 export interface AnalyzeContentHandlerDeps {
   scrapeWebpage: typeof scrapeWebpage;
   analyzeContent: typeof analyzeContent;
@@ -358,6 +372,105 @@ const defaultDeps: AnalyzeContentHandlerDeps = {
   scrapeWebpage,
   analyzeContent,
 };
+
+export function preflightAnalyzeContentRequest({
+  body,
+  requestId,
+}: {
+  body: unknown;
+  requestId: string;
+}): AnalyzeContentPreflightResult {
+  const validationResult = analyzeContentRequestSchema.safeParse(body);
+
+  if (!validationResult.success) {
+    const validationError = new WebContentAnalyzerError(
+      ErrorType.VALIDATION,
+      'Invalid request parameters',
+      'Please provide a valid URL.',
+      ErrorSeverity.MEDIUM,
+      false
+    );
+
+    logAnalyzerErrorServer(validationError, {
+      requestId,
+      validationErrors: validationResult.error,
+    });
+
+    return {
+      ok: false,
+      result: {
+        status: 400,
+        response: {
+          success: false,
+          error: validationError.userMessage,
+          code: validationError.code,
+          retryable: validationError.retryable,
+        },
+      },
+    };
+  }
+
+  const { url, modelProvider } = validationResult.data;
+
+  const urlValidation = validateUrl(url);
+  if (!urlValidation.success) {
+    const firstIssue = urlValidation.error?.issues[0];
+    const urlMessage = firstIssue?.message ?? 'Invalid URL';
+
+    const urlError = new WebContentAnalyzerError(
+      ErrorType.VALIDATION,
+      urlMessage,
+      'Please enter a valid URL starting with http:// or https://',
+      ErrorSeverity.MEDIUM,
+      false
+    );
+
+    logAnalyzerErrorServer(urlError, { requestId, url });
+
+    return {
+      ok: false,
+      result: {
+        status: 400,
+        response: {
+          success: false,
+          error: urlError.userMessage,
+          code: urlError.code,
+          retryable: urlError.retryable,
+        },
+      },
+    };
+  }
+
+  if (!validateFirecrawlConfig()) {
+    const configError = new WebContentAnalyzerError(
+      ErrorType.SERVICE_UNAVAILABLE,
+      'Firecrawl API key is not configured',
+      'Web content analysis service is temporarily unavailable.',
+      ErrorSeverity.CRITICAL,
+      false
+    );
+
+    logAnalyzerErrorServer(configError, { requestId });
+
+    return {
+      ok: false,
+      result: {
+        status: 503,
+        response: {
+          success: false,
+          error: configError.userMessage,
+          code: configError.code,
+          retryable: configError.retryable,
+        },
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    data: { url, modelProvider },
+  };
+}
 
 export async function handleAnalyzeContentRequest(
   input: AnalyzeContentHandlerInput,
@@ -370,83 +483,13 @@ export async function handleAnalyzeContentRequest(
   });
 
   try {
-    const validationResult = analyzeContentRequestSchema.safeParse(body);
-
-    if (!validationResult.success) {
-      const validationError = new WebContentAnalyzerError(
-        ErrorType.VALIDATION,
-        'Invalid request parameters',
-        'Please provide a valid URL.',
-        ErrorSeverity.MEDIUM,
-        false
-      );
-
-      logAnalyzerErrorServer(validationError, {
-        requestId,
-        validationErrors: validationResult.error,
-      });
-
-      return {
-        status: 400,
-        response: {
-          success: false,
-          error: validationError.userMessage,
-          code: validationError.code,
-          retryable: validationError.retryable,
-        },
-      };
+    const preflight = preflightAnalyzeContentRequest({ body, requestId });
+    if (!preflight.ok) {
+      return preflight.result;
     }
 
-    const { url, modelProvider } = validationResult.data;
+    const { url, modelProvider } = preflight.data;
     logger.debug({ modelProvider, url }, 'Received analyze-content request');
-
-    const urlValidation = validateUrl(url);
-    if (!urlValidation.success) {
-      const firstIssue = urlValidation.error?.issues[0];
-      const urlMessage = firstIssue?.message ?? 'Invalid URL';
-
-      const urlError = new WebContentAnalyzerError(
-        ErrorType.VALIDATION,
-        urlMessage,
-        'Please enter a valid URL starting with http:// or https://',
-        ErrorSeverity.MEDIUM,
-        false
-      );
-
-      logAnalyzerErrorServer(urlError, { requestId, url });
-
-      return {
-        status: 400,
-        response: {
-          success: false,
-          error: urlError.userMessage,
-          code: urlError.code,
-          retryable: urlError.retryable,
-        },
-      };
-    }
-
-    if (!validateFirecrawlConfig()) {
-      const configError = new WebContentAnalyzerError(
-        ErrorType.SERVICE_UNAVAILABLE,
-        'Firecrawl API key is not configured',
-        'Web content analysis service is temporarily unavailable.',
-        ErrorSeverity.CRITICAL,
-        false
-      );
-
-      logAnalyzerErrorServer(configError, { requestId });
-
-      return {
-        status: 503,
-        response: {
-          success: false,
-          error: configError.userMessage,
-          code: configError.code,
-          retryable: configError.retryable,
-        },
-      };
-    }
 
     logger.info({ url }, 'Starting analyze-content request');
 

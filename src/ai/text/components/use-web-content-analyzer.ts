@@ -124,11 +124,25 @@ export function useWebContentAnalyzer() {
 
           const data: AnalyzeContentResponse = await response.json();
 
-          if (response.status === 401) {
+          if (response.status === 401 || response.status === 403) {
             handleAuthFromEnvelope(handleAuthError, {
               code: data.code,
               error: data.error,
             });
+
+            const authMessage =
+              data.error ||
+              (response.status === 401
+                ? 'You must be logged in to analyze websites.'
+                : 'Your account has been suspended. Please contact support.');
+
+            throw new WebContentAnalyzerError(
+              ErrorType.AUTHENTICATION,
+              authMessage,
+              authMessage,
+              ErrorSeverity.HIGH,
+              false
+            );
           }
 
           if (!response.ok) {

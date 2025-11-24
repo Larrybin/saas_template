@@ -41,11 +41,11 @@ export function getDomainErrorMessage(
     return fallbackMessage;
   }
   const key = DOMAIN_ERROR_I18N_KEYS[code];
-  if (key && t) {
-    return t(key);
-  }
   if (key) {
-    return key;
+    if (t) {
+      return t(key);
+    }
+    return fallbackMessage;
   }
   return fallbackMessage;
 }

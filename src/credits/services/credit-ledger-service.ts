@@ -18,20 +18,11 @@ const creditLedgerDomainService = new CreditLedgerDomainService(
 );
 
 export async function getUserCredits(userId: string): Promise<number> {
-  try {
-    return await creditLedgerDomainService.getUserCredits(userId);
-  } catch (error) {
-    console.error('getUserCredits, error:', error);
-    return 0;
-  }
+  return creditLedgerDomainService.getUserCredits(userId);
 }
 
 export async function updateUserCredits(userId: string, credits: number) {
-  try {
-    await creditLedgerDomainService.updateUserCredits(userId, credits);
-  } catch (error) {
-    console.error('updateUserCredits, error:', error);
-  }
+  await creditLedgerDomainService.updateUserCredits(userId, credits);
 }
 
 export async function addCredits(

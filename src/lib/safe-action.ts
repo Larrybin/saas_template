@@ -1,6 +1,10 @@
 import { createSafeActionClient } from 'next-safe-action';
 import type { User } from './auth-types';
 import { isDemoWebsite } from './demo';
+import {
+  AUTH_BANNED_FALLBACK_MESSAGE,
+  getDomainErrorMessage,
+} from './domain-error-utils';
 import { DomainError } from './domain-errors';
 import { getSession } from './server';
 import { getLogger, withLogContext } from './server/logger';
@@ -55,6 +59,21 @@ export const userActionClient = actionClient.use(async ({ next }) => {
   }
 
   const user = session.user;
+  if ((user as User).banned) {
+    const logger = getLogger({ span: 'safe-action' });
+    logger.warn({ userId: user.id }, 'Blocked banned user from safe-action');
+
+    return {
+      success: false,
+      error: getDomainErrorMessage(
+        'AUTH_BANNED',
+        undefined,
+        AUTH_BANNED_FALLBACK_MESSAGE
+      ),
+      code: 'AUTH_BANNED',
+      retryable: false,
+    };
+  }
 
   return await withLogContext({ userId: user.id }, () =>
     next({ ctx: { user } })

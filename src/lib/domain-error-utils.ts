@@ -4,6 +4,7 @@ const DOMAIN_ERROR_I18N_KEYS: Record<string, string> = {
   PAYMENT_SECURITY_VIOLATION:
     'Dashboard.settings.credits.packages.purchaseFailed',
   AUTH_UNAUTHORIZED: 'Common.unauthorized',
+  AUTH_BANNED: 'Common.accountBanned',
   AI_CONTENT_VALIDATION_ERROR: 'AITextPage.analyzer.errors.invalidUrl',
   AI_CONTENT_NETWORK_ERROR: 'AITextPage.analyzer.errors.networkError',
   AI_CONTENT_TIMEOUT: 'AITextPage.analyzer.errors.timeout',
@@ -20,6 +21,9 @@ const DOMAIN_ERROR_I18N_KEYS: Record<string, string> = {
   AI_IMAGE_TIMEOUT: 'AIImagePage.errors.timeout',
   AI_IMAGE_PROVIDER_ERROR: 'AIImagePage.errors.providerError',
 };
+
+export const AUTH_BANNED_FALLBACK_MESSAGE =
+  'Your account has been suspended. Please contact support.';
 
 export type DomainErrorLike = {
   code?: string;

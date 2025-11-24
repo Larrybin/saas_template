@@ -11,6 +11,8 @@ export type AuthErrorInput = DomainErrorLike & {
   message?: string | undefined;
 };
 
+const HANDLED_AUTH_CODES = new Set(['AUTH_UNAUTHORIZED', 'AUTH_BANNED']);
+
 export function useAuthErrorHandler() {
   const t = useTranslations();
   const router = useLocaleRouter();
@@ -20,7 +22,7 @@ export function useAuthErrorHandler() {
       return false;
     }
 
-    if (error.code !== 'AUTH_UNAUTHORIZED') {
+    if (!HANDLED_AUTH_CODES.has(error.code)) {
       return false;
     }
 
@@ -48,7 +50,9 @@ export function handleAuthFromEnvelope(
     return;
   }
 
-  if (payload.code === 'AUTH_UNAUTHORIZED') {
-    handleAuthError({ code: payload.code, message: payload.error });
+  if (!HANDLED_AUTH_CODES.has(payload.code)) {
+    return;
   }
+
+  handleAuthError({ code: payload.code, message: payload.error });
 }

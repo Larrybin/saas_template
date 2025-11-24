@@ -49,25 +49,26 @@ export async function analyzeWebContentWithCredits(
   input: AnalyzeWebContentWithCreditsInput
 ): Promise<AnalyzeContentHandlerResult> {
   const { userId, body, requestId, requestUrl, requiredCredits } = input;
+  if (!body) {
+    const validationError = new WebContentAnalyzerError(
+      ErrorType.VALIDATION,
+      'Request body is required',
+      'Please provide a valid request body.',
+      ErrorSeverity.MEDIUM,
+      false
+    );
 
-  const billingRule = getAnalyzeContentBillingRule();
-  const creditsToConsume =
-    typeof requiredCredits === 'number'
-      ? requiredCredits
-      : billingRule.creditsPerCall;
+    return {
+      status: 400,
+      response: {
+        success: false,
+        error: validationError.userMessage,
+        code: validationError.code,
+        retryable: validationError.retryable,
+      },
+    };
+  }
 
-  const logger = getLogger({
-    span: 'usecase.ai.text.analyze-with-credits',
-    userId,
-    requestId,
-  });
-
-  logger.info(
-    { userId, creditsPerCall: creditsToConsume },
-    'Starting web content analysis with billing'
-  );
-
-  // 先进行请求级校验（Body / URL / 配置），避免对明显无效的请求计入免费额度或扣减积分。
   const validationResult = analyzeContentRequestSchema.safeParse(body);
 
   if (!validationResult.success) {
@@ -96,8 +97,8 @@ export async function analyzeWebContentWithCredits(
   }
 
   const { url } = validationResult.data;
-
   const urlValidation = validateUrl(url);
+
   if (!urlValidation.success) {
     const firstIssue = urlValidation.error?.issues[0];
     const urlMessage = firstIssue?.message ?? 'Invalid URL';
@@ -144,6 +145,23 @@ export async function analyzeWebContentWithCredits(
       },
     };
   }
+
+  const billingRule = getAnalyzeContentBillingRule();
+  const creditsToConsume =
+    typeof requiredCredits === 'number'
+      ? requiredCredits
+      : billingRule.creditsPerCall;
+
+  const logger = getLogger({
+    span: 'usecase.ai.text.analyze-with-credits',
+    userId,
+    requestId,
+  });
+
+  logger.info(
+    { userId, creditsPerCall: creditsToConsume },
+    'Starting web content analysis with billing'
+  );
 
   const freeCallsPerPeriod = billingRule.freeCallsPerPeriod ?? 0;
   const withinFreeQuota =

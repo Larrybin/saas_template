@@ -4,6 +4,10 @@ import { getDb } from '@/db';
 import { payment, user } from '@/db/schema';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
+import {
+  type LifetimeMembershipRecord,
+  UserLifetimeMembershipRepository,
+} from '@/payment/data-access/user-lifetime-membership-repository';
 import { PlanIntervals } from '@/payment/types';
 import {
   CreditDistributionService,
@@ -18,6 +22,7 @@ import { getPeriodKey } from './utils/period-key';
  */
 const baseLogger = getLogger({ span: 'credits.distribute' });
 const creditDistributionService = new CreditDistributionService();
+const lifetimeMembershipRepository = new UserLifetimeMembershipRepository();
 
 type UserWithPayment = {
   userId: string;
@@ -27,6 +32,66 @@ type UserWithPayment = {
   paymentStatus: string | null;
   paymentCreatedAt: Date | null;
 };
+
+export type PlanResolver = (
+  priceId: string | null | undefined
+) => ReturnType<typeof findPlanByPriceId>;
+
+export function createCachedPlanResolver(
+  resolver: typeof findPlanByPriceId
+): PlanResolver {
+  const cache = new Map<string, ReturnType<typeof findPlanByPriceId>>();
+  return (priceId) => {
+    if (!priceId) {
+      return undefined;
+    }
+    if (cache.has(priceId)) {
+      return cache.get(priceId);
+    }
+    const plan = resolver(priceId);
+    cache.set(priceId, plan);
+    return plan;
+  };
+}
+
+export function collectValidLifetimeMemberships(
+  memberships: LifetimeMembershipRecord[] | undefined,
+  resolvePlan: PlanResolver
+): {
+  validMemberships: PlanUserRecord[];
+  invalidMemberships: LifetimeMembershipRecord[];
+  shouldFallbackToFree: boolean;
+} {
+  if (!memberships || memberships.length === 0) {
+    return {
+      validMemberships: [],
+      invalidMemberships: [],
+      shouldFallbackToFree: false,
+    };
+  }
+
+  const validMemberships: PlanUserRecord[] = [];
+  const invalidMemberships: LifetimeMembershipRecord[] = [];
+
+  memberships.forEach((membership) => {
+    const plan = resolvePlan(membership.priceId);
+    if (plan?.isLifetime && plan.credits?.enable) {
+      validMemberships.push({
+        userId: membership.userId,
+        priceId: membership.priceId,
+      });
+      return;
+    }
+
+    invalidMemberships.push(membership);
+  });
+
+  return {
+    validMemberships,
+    invalidMemberships,
+    shouldFallbackToFree: validMemberships.length === 0,
+  };
+}
 
 export async function distributeCreditsToAllUsers(options?: {
   refDate?: Date;
@@ -106,6 +171,8 @@ export async function distributeCreditsToAllUsers(options?: {
       .limit(limit);
   };
 
+  const resolvePlan = createCachedPlanResolver(findPlanByPriceId);
+
   do {
     const userBatch = await fetchUsersBatch(lastProcessedUserId, userBatchSize);
     if (userBatch.length === 0) {
@@ -114,18 +181,59 @@ export async function distributeCreditsToAllUsers(options?: {
 
     usersCount += userBatch.length;
 
+    const userIdsInBatch = userBatch.map((record) => record.userId);
+    const membershipsInBatch =
+      await lifetimeMembershipRepository.findActiveByUserIds(
+        userIdsInBatch,
+        db
+      );
+    const membershipsByUser = membershipsInBatch.reduce<
+      Map<string, LifetimeMembershipRecord[]>
+    >((acc, membership) => {
+      const existing = acc.get(membership.userId);
+      if (existing) {
+        existing.push(membership);
+      } else {
+        acc.set(membership.userId, [membership]);
+      }
+      return acc;
+    }, new Map());
+
     const freeUserIds: string[] = [];
     const lifetimeUsers: PlanUserRecord[] = [];
     const yearlyUsers: PlanUserRecord[] = [];
 
     userBatch.forEach((userRecord) => {
+      const membershipsForUser = membershipsByUser.get(userRecord.userId);
+      if (membershipsForUser && membershipsForUser.length > 0) {
+        const { validMemberships, invalidMemberships, shouldFallbackToFree } =
+          collectValidLifetimeMemberships(membershipsForUser, resolvePlan);
+        if (validMemberships.length > 0) {
+          lifetimeUsers.push(...validMemberships);
+        }
+        if (invalidMemberships.length > 0) {
+          log.warn(
+            {
+              userId: userRecord.userId,
+              priceIds: invalidMemberships.map(
+                (membership) => membership.priceId
+              ),
+            },
+            'Lifetime membership missing valid plan configuration, falling back to free credits'
+          );
+        }
+        if (shouldFallbackToFree) {
+          freeUserIds.push(userRecord.userId);
+        }
+        return;
+      }
       if (
         userRecord.priceId &&
         userRecord.paymentStatus &&
         (userRecord.paymentStatus === 'active' ||
           userRecord.paymentStatus === 'trialing')
       ) {
-        const pricePlan = findPlanByPriceId(userRecord.priceId);
+        const pricePlan = resolvePlan(userRecord.priceId);
         if (pricePlan?.isLifetime && pricePlan?.credits?.enable) {
           lifetimeUsers.push({
             userId: userRecord.userId,

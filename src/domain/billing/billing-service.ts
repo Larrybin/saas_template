@@ -1,9 +1,13 @@
 import type { Locale } from 'next-intl';
 import type { PlanCreditsConfig } from '@/credits/config';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import type { CreditsTransaction } from '@/credits/services/transaction-context';
+import {
+  type CreditsTransaction,
+  resolveExecutor,
+} from '@/credits/services/transaction-context';
 import { DomainError } from '@/lib/domain-errors';
 import { getLogger } from '@/lib/server/logger';
+import { UserLifetimeMembershipRepository } from '@/payment/data-access/user-lifetime-membership-repository';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
@@ -52,6 +56,7 @@ export type BillingServiceDeps = {
   creditsGateway: CreditsGateway;
   planPolicy: PlanPolicy;
   creditsEnabled: boolean;
+  lifetimeMembershipRepository?: UserLifetimeMembershipRepository;
 };
 
 export class DefaultBillingService implements BillingService {
@@ -60,12 +65,16 @@ export class DefaultBillingService implements BillingService {
   private readonly creditsGateway: CreditsGateway;
   private readonly planPolicy: PlanPolicy;
   private readonly creditsEnabled: boolean;
+  private readonly lifetimeMembershipRepository: UserLifetimeMembershipRepository;
 
   constructor(deps: BillingServiceDeps) {
     this.paymentProvider = deps.paymentProvider;
     this.creditsGateway = deps.creditsGateway;
     this.planPolicy = deps.planPolicy;
     this.creditsEnabled = deps.creditsEnabled;
+    this.lifetimeMembershipRepository =
+      deps.lifetimeMembershipRepository ??
+      new UserLifetimeMembershipRepository();
   }
 
   async startSubscriptionCheckout(
@@ -148,6 +157,15 @@ export class DefaultBillingService implements BillingService {
       input.priceId,
       refDate,
       input.transaction
+    );
+    const executor = resolveExecutor(input.transaction);
+    await this.lifetimeMembershipRepository.upsertMembership(
+      {
+        userId: input.userId,
+        priceId: input.priceId,
+        cycleRefDate: refDate,
+      },
+      executor
     );
   }
 

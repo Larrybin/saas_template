@@ -205,3 +205,26 @@ export const aiUsage = pgTable(
 		).on(table.userId, table.feature, table.periodKey),
 	}),
 );
+
+export const userLifetimeMembership = pgTable(
+	"user_lifetime_membership",
+	{
+		id: text("id").primaryKey(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		priceId: text("price_id").notNull(),
+		cycleRefDate: timestamp("cycle_ref_date").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
+		revokedAt: timestamp("revoked_at"),
+	},
+	(table) => ({
+		userLifetimeMembershipUserIdx: index(
+			"user_lifetime_membership_user_idx",
+		).on(table.userId),
+		userLifetimeMembershipUserPriceIdx: uniqueIndex(
+			"user_lifetime_membership_user_price_idx",
+		).on(table.userId, table.priceId),
+	}),
+);

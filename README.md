@@ -120,6 +120,7 @@ pnpm start
   - 服务端代码：`import { serverEnv } from '@/env/server'`
   - 客户端 / 共享代码：`import { clientEnv } from '@/env/client'`
 - `.env.example` 列出了所有支持的变量。根据环境复制为 `.env.local`（或其他环境文件），填入所需的机密配置后再执行 `pnpm build` 或部署。
+- 若希望在生产环境强制依赖 Upstash Redis，可设置 `RATE_LIMIT_REQUIRE_REDIS=true`；默认值为 `false`，会在 Redis 缺失时回退到进程级内存桶并输出警告日志。
 
 ## Architecture Notes
 

@@ -2,10 +2,8 @@ import { getLogger } from '@/lib/server/logger';
 import { CreditLedgerRepository } from '../data-access/credit-ledger-repository';
 import type { DbExecutor } from '../data-access/types';
 import { CreditLedgerDomainService } from '../domain/credit-ledger-domain-service';
-import {
-  DefaultPlanCreditsPolicy,
-  type PlanCreditsPolicy,
-} from '../domain/plan-credits-policy';
+import { DefaultPlanCreditsPolicy, type PlanCreditsPolicy } from '../domain/plan-credits-policy';
+import { CreditsPlanPolicyMissingError } from '../domain/errors';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 import { getCurrentPeriodKey, getPeriodKey } from '../utils/period-key';
 import type { AddCreditsPayload, CreditsGateway } from './credits-gateway';
@@ -158,6 +156,10 @@ export class CreditLedgerService implements CreditsGateway {
     }
     const rule = this.policy.getRegisterGiftRule();
     if (!rule) {
+      creditsServiceLogger.info(
+        { userId, type: CREDIT_TRANSACTION_TYPE.REGISTER_GIFT },
+        'Register gift credits rule not found, skipping grant'
+      );
       return;
     }
 
@@ -180,6 +182,10 @@ export class CreditLedgerService implements CreditsGateway {
   ): Promise<void> {
     const rule = this.policy.getMonthlyFreeRule(planId);
     if (!rule) {
+      creditsServiceLogger.info(
+        { userId, planId, type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH },
+        'Monthly free credits rule not found for plan, skipping grant'
+      );
       return;
     }
     const periodKey = getCurrentPeriodKey(refDate);
@@ -210,7 +216,13 @@ export class CreditLedgerService implements CreditsGateway {
   ): Promise<void> {
     const rule = this.policy.getSubscriptionRenewalRule(priceId);
     if (!rule) {
-      return;
+      creditsServiceLogger.error(
+        { userId, priceId, type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL },
+        'Subscription renewal credits rule missing for price'
+      );
+      throw new CreditsPlanPolicyMissingError(
+        `Subscription renewal credits rule is missing for priceId ${priceId}`
+      );
     }
     const refDate = cycleRefDate ?? new Date();
     const periodKey = getPeriodKey(refDate);
@@ -239,7 +251,13 @@ export class CreditLedgerService implements CreditsGateway {
   ): Promise<void> {
     const rule = this.policy.getLifetimeMonthlyRule(priceId);
     if (!rule) {
-      return;
+      creditsServiceLogger.error(
+        { userId, priceId, type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY },
+        'Lifetime monthly credits rule missing for price'
+      );
+      throw new CreditsPlanPolicyMissingError(
+        `Lifetime monthly credits rule is missing for priceId ${priceId}`
+      );
     }
     const refDate = cycleRefDate ?? new Date();
     const periodKey = getPeriodKey(refDate);

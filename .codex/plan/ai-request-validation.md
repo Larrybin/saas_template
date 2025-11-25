@@ -76,7 +76,19 @@
   - 错误 code 一致且可观测：
     - `/api/chat`：`AI_CHAT_INVALID_PARAMS`。
     - `/api/generate-images`：`AI_IMAGE_INVALID_JSON` / `AI_IMAGE_INVALID_PARAMS`。
-    - `/api/analyze-content`：`AI_CONTENT_VALIDATION_ERROR`（源自 `WebContentAnalyzerError` 的 code 映射）。
+  - `/api/analyze-content`：`AI_CONTENT_VALIDATION_ERROR`（源自 `WebContentAnalyzerError` 的 code 映射）。
+- 已补充路由级集成测试：
+  - `src/app/api/__tests__/chat-route.test.ts`
+    - 无效 body → 400 + `AI_CHAT_INVALID_PARAMS`，不调用 use case。
+    - 有效 body → 调用 `executeAiChatWithBilling`，并返回 200。
+  - `src/app/api/__tests__/generate-images-route.test.ts`
+    - 非 JSON body → 400 + `AI_IMAGE_INVALID_JSON`。
+    - 字段缺失 → 400 + `AI_IMAGE_INVALID_PARAMS`，不调用 use case。
+    - use case 返回 `AI_IMAGE_INVALID_RESPONSE` → 路由映射为 502。
+    - 成功场景 → 200，且参数正确传入 `generateImageWithCredits`。
+  - `src/app/api/__tests__/analyze-content-route.test.ts`
+    - 非 JSON body → 400 + `AI_CONTENT_VALIDATION_ERROR`。
+    - schema 校验失败 → 400 + `AI_CONTENT_VALIDATION_ERROR`，不调用 use case。
+    - 校验通过 → 调用 `analyzeWebContentWithCredits`，并透传其 status/response。
 - 已运行：
-  - `pnpm test`（全量 Vitest），确保现有测试（尤其是 AI / credits / billing / analyze-content 相关用例）全部通过。
-
+  - `pnpm test`（全量 Vitest），确保现有测试（尤其是新增的 API route 测试和既有 AI / credits / billing / analyze-content 用例）全部通过。

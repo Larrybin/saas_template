@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { DbExecutor } from '@/credits/data-access/types';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
+import { CreditsTransaction } from '@/credits/services/transaction-context';
 import { DefaultBillingService } from '@/domain/billing/billing-service';
 import type { PlanPolicy } from '@/domain/billing/plan-policy';
+import type { UserLifetimeMembershipRepository } from '@/payment/data-access/user-lifetime-membership-repository';
 import type {
   CheckoutResult,
   PaymentProvider,
@@ -180,5 +183,67 @@ describe('DefaultBillingService', () => {
       priceId: 'price_basic',
     });
     expect(creditsGateway.addLifetimeMonthlyCredits).not.toHaveBeenCalled();
+  });
+
+  it('passes resolved executor to lifetime membership repository', async () => {
+    const creditsGateway = createCreditsGateway();
+    const lifetimePlan: PricePlan = {
+      ...mockPlan,
+      isLifetime: true,
+      credits: {
+        enable: true,
+        amount: 100,
+      },
+    };
+    const planPolicy: PlanPolicy = {
+      getPlanById: vi.fn().mockReturnValue(lifetimePlan),
+      getPlanByPriceId: vi.fn().mockReturnValue(lifetimePlan),
+      getPlanCreditsConfigByPlanId: vi.fn().mockReturnValue({
+        enabled: true,
+        amount: 100,
+        expireDays: undefined,
+        isFree: false,
+        isLifetime: true,
+        disabled: false,
+      }),
+      getPlanCreditsConfigByPriceId: vi.fn().mockReturnValue({
+        enabled: true,
+        amount: 100,
+        expireDays: undefined,
+        isFree: false,
+        isLifetime: true,
+        disabled: false,
+      }),
+    };
+    const membershipRepository: Pick<
+      UserLifetimeMembershipRepository,
+      'upsertMembership'
+    > = {
+      upsertMembership: vi.fn(),
+    };
+    const service = new DefaultBillingService({
+      paymentProvider: createPaymentProvider(),
+      creditsGateway,
+      planPolicy,
+      creditsEnabled: true,
+      lifetimeMembershipRepository:
+        membershipRepository as UserLifetimeMembershipRepository,
+    });
+    const executor = {} as DbExecutor;
+    const transaction = new CreditsTransaction(executor);
+
+    await service.grantLifetimePlan({
+      userId: 'user_1',
+      priceId: 'price_basic',
+      transaction,
+    });
+
+    expect(membershipRepository.upsertMembership).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_1',
+        priceId: 'price_basic',
+      }),
+      executor
+    );
   });
 });

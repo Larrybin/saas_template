@@ -21,3 +21,16 @@ export class InsufficientCreditsError extends DomainError {
     this.name = 'InsufficientCreditsError';
   }
 }
+
+export class CreditsPlanPolicyMissingError extends DomainError {
+  constructor(
+    message = 'Credits plan policy is missing for the given plan or price'
+  ) {
+    super({
+      code: 'CREDITS_PLAN_POLICY_MISSING',
+      message,
+      retryable: false,
+    });
+    this.name = 'CreditsPlanPolicyMissingError';
+  }
+}

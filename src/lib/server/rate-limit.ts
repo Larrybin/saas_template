@@ -4,6 +4,7 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { NextResponse } from 'next/server';
 import { serverEnv } from '@/env/server';
+import { getLogger } from '@/lib/server/logger';
 
 type WindowUnit = 's' | 'm' | 'h' | 'd';
 type RateLimitWindow = `${number} ${WindowUnit}`;
@@ -26,8 +27,14 @@ type RateLimitResult =
 const redisConfig = serverEnv.rateLimit;
 const redisRestUrl = redisConfig?.redisRestUrl;
 const redisRestToken = redisConfig?.redisRestToken;
-const requireRedis = redisConfig?.requireRedis ?? false;
-const allowInMemoryFallback = !requireRedis;
+const environment = process.env.NODE_ENV ?? 'development';
+const isDevOrTest = environment === 'development' || environment === 'test';
+
+const requireRedisFlag = redisConfig?.requireRedis;
+const requireRedis =
+  typeof requireRedisFlag === 'boolean' ? requireRedisFlag : !isDevOrTest;
+const allowInMemoryFallback = !requireRedis && isDevOrTest;
+const rateLimitLogger = getLogger({ span: 'infra.rate-limit' });
 
 let redisClient: Redis | null = null;
 let hasWarnedAboutMemoryFallback = false;
@@ -78,6 +85,15 @@ export async function enforceRateLimit(
   }
 
   if (!allowInMemoryFallback) {
+    rateLimitLogger.error(
+      {
+        environment,
+        hasRedisUrl: Boolean(redisRestUrl),
+        hasRedisToken: Boolean(redisRestToken),
+        requireRedis,
+      },
+      'Upstash Redis is not configured but required for rate limiting'
+    );
     throw new Error(
       'Upstash Redis is not configured but required outside development.'
     );

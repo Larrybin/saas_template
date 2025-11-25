@@ -110,7 +110,7 @@ const serverSchema = serverSchemaInput.transform((value) => ({
   rateLimit: {
     redisRestUrl: value.UPSTASH_REDIS_REST_URL,
     redisRestToken: value.UPSTASH_REDIS_REST_TOKEN,
-    requireRedis: value.RATE_LIMIT_REQUIRE_REDIS ?? false,
+    requireRedis: value.RATE_LIMIT_REQUIRE_REDIS,
   },
 }));
 const rawServerEnv = pickEnv(serverSchemaInput);

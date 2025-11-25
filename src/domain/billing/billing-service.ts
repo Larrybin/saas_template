@@ -194,6 +194,7 @@ export class DefaultBillingService implements BillingService {
   ): boolean {
     if (!creditsConfig) return false;
     if (!creditsConfig.enabled) return false;
+    if (creditsConfig.isFree) return false;
     if (creditsConfig.isLifetime) return false;
     if (creditsConfig.disabled) return false;
     return true;

@@ -41,6 +41,7 @@ export class DefaultPlanCreditsPolicy implements PlanCreditsPolicy {
   getSubscriptionRenewalRule(priceId: string): PlanCreditsRule | null {
     return this.normalizeRule(getPlanCreditsConfigByPriceId(priceId), {
       requireLifetime: false,
+      requireFree: false,
     });
   }
 

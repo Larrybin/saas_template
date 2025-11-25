@@ -93,50 +93,6 @@ export async function canAddCreditsByType(
   );
 }
 
-export async function addRegisterGiftCredits(userId: string) {
-  await defaultCreditLedgerService.addRegisterGiftCredits(userId);
-}
-
-export async function addMonthlyFreeCredits(
-  userId: string,
-  planId: string,
-  refDate?: Date
-) {
-  await defaultCreditLedgerService.addMonthlyFreeCredits(
-    userId,
-    planId,
-    refDate
-  );
-}
-
-export async function addSubscriptionCredits(
-  userId: string,
-  priceId: string,
-  cycleRefDate?: Date,
-  transaction?: CreditsTransaction
-) {
-  await defaultCreditLedgerService.addSubscriptionCredits(
-    userId,
-    priceId,
-    cycleRefDate ?? new Date(),
-    transaction
-  );
-}
-
-export async function addLifetimeMonthlyCredits(
-  userId: string,
-  priceId: string,
-  cycleRefDate?: Date,
-  transaction?: CreditsTransaction
-) {
-  await defaultCreditLedgerService.addLifetimeMonthlyCredits(
-    userId,
-    priceId,
-    cycleRefDate ?? new Date(),
-    transaction
-  );
-}
-
 export class CreditLedgerService implements CreditsGateway {
   constructor(
     private readonly policy: PlanCreditsPolicy = defaultPlanCreditsPolicy
@@ -283,3 +239,47 @@ export class CreditLedgerService implements CreditsGateway {
 }
 
 export const defaultCreditLedgerService = new CreditLedgerService();
+
+export async function addRegisterGiftCredits(userId: string) {
+  await defaultCreditLedgerService.addRegisterGiftCredits(userId);
+}
+
+export async function addMonthlyFreeCredits(
+  userId: string,
+  planId: string,
+  refDate?: Date
+) {
+  await defaultCreditLedgerService.addMonthlyFreeCredits(
+    userId,
+    planId,
+    refDate
+  );
+}
+
+export async function addSubscriptionCredits(
+  userId: string,
+  priceId: string,
+  cycleRefDate?: Date,
+  transaction?: CreditsTransaction
+) {
+  await defaultCreditLedgerService.addSubscriptionCredits(
+    userId,
+    priceId,
+    cycleRefDate ?? new Date(),
+    transaction
+  );
+}
+
+export async function addLifetimeMonthlyCredits(
+  userId: string,
+  priceId: string,
+  cycleRefDate?: Date,
+  transaction?: CreditsTransaction
+) {
+  await defaultCreditLedgerService.addLifetimeMonthlyCredits(
+    userId,
+    priceId,
+    cycleRefDate ?? new Date(),
+    transaction
+  );
+}

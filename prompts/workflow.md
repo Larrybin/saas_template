@@ -157,7 +157,7 @@ description: '专业AI编程助手，提供结构化六阶段开发工作流（�
 - 在导入语句之前添加使用方法（关键规则）
 - 在项目根目录 `.codex/plan/任务名.md` 中存储执行计划
 - 在关键里程碑请求反馈
-- 代码开发完成后运行 pnpm lint 审查和 npx tsc --noEmit 的TSC检查还有 pnpm test
+- 代码开发完成后运行按需运行 pnpm lint 审查和 npx tsc --noEmit 的TSC检查还有 pnpm test
 
 ### 🚀 阶段 5：代码优化
 

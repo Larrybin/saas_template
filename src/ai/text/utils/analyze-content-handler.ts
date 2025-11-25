@@ -30,11 +30,16 @@ const withTimeout = <T>(
   ]);
 };
 
+export type ValidatedAnalyzeRequest = {
+  url: string;
+  modelProvider: ModelProvider;
+};
+
 export interface AnalyzeContentHandlerInput {
-  body: unknown;
   requestId: string;
   requestUrl: string;
   startTime: number;
+  validatedRequest: ValidatedAnalyzeRequest;
 }
 
 export interface AnalyzeContentHandlerResult {
@@ -44,7 +49,7 @@ export interface AnalyzeContentHandlerResult {
 
 export type AnalyzeContentPreflightSuccess = {
   ok: true;
-  data: { url: string; modelProvider: ModelProvider };
+  data: ValidatedAnalyzeRequest;
 };
 
 export type AnalyzeContentPreflightFailure = {
@@ -169,19 +174,14 @@ export async function handleAnalyzeContentRequest(
   input: AnalyzeContentHandlerInput,
   deps: AnalyzeContentHandlerDeps = defaultDeps
 ): Promise<AnalyzeContentHandlerResult> {
-  const { body, requestId, requestUrl, startTime } = input;
+  const { requestId, requestUrl, startTime, validatedRequest } = input;
   const logger = getLogger({
     span: 'ai.web-content-analyzer',
     requestId,
   });
 
   try {
-    const preflight = preflightAnalyzeContentRequest({ body, requestId });
-    if (!preflight.ok) {
-      return preflight.result;
-    }
-
-    const { url, modelProvider } = preflight.data;
+    const { url, modelProvider } = validatedRequest;
     logger.debug({ modelProvider, url }, 'Received analyze-content request');
 
     logger.info({ url }, 'Starting analyze-content request');

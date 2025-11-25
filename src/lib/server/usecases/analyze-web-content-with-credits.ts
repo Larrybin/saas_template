@@ -4,6 +4,7 @@ import { getAnalyzeContentBillingRule } from '@/ai/billing-config';
 import type {
   AnalyzeContentHandlerInput,
   AnalyzeContentHandlerResult,
+  ValidatedAnalyzeRequest,
 } from '@/ai/text/utils/analyze-content-handler';
 import {
   handleAnalyzeContentRequest,
@@ -70,6 +71,7 @@ export async function analyzeWebContentWithCredits(
   if (!preflight.ok) {
     return preflight.result;
   }
+  const validatedRequest: ValidatedAnalyzeRequest = preflight.data;
 
   const billingRule = getAnalyzeContentBillingRule();
   const creditsToConsume =
@@ -119,10 +121,10 @@ export async function analyzeWebContentWithCredits(
   const startTime = performance.now();
 
   const handlerInput: AnalyzeContentHandlerInput = {
-    body,
     requestId,
     requestUrl,
     startTime,
+    validatedRequest,
   };
 
   const result = await handleAnalyzeContentRequest(handlerInput);

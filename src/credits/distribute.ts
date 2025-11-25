@@ -47,6 +47,11 @@ export type LifetimeMembershipResolution = {
   shouldFallbackToFree: boolean;
 };
 
+export type MisconfiguredPaidUser = {
+  userId: string;
+  priceId: string;
+};
+
 export type PlanResolver = (
   priceId: string | null | undefined
 ) => ReturnType<typeof findPlanByPriceId>;
@@ -193,6 +198,7 @@ export function classifyUsersByPlan(
   const freeUserIds: string[] = [];
   const lifetimeUsers: PlanUserRecord[] = [];
   const yearlyUsers: PlanUserRecord[] = [];
+  const misconfiguredPaidUsers: MisconfiguredPaidUser[] = [];
 
   userBatch.forEach((userRecord) => {
     const membershipResult = membershipsByUser.get(userRecord.userId);
@@ -232,6 +238,12 @@ export function classifyUsersByPlan(
             userId: userRecord.userId,
             priceId: userRecord.priceId,
           });
+        } else {
+          misconfiguredPaidUsers.push({
+            userId: userRecord.userId,
+            priceId: userRecord.priceId,
+          });
+          freeUserIds.push(userRecord.userId);
         }
       }
     } else {
@@ -239,7 +251,7 @@ export function classifyUsersByPlan(
     }
   });
 
-  return { freeUserIds, lifetimeUsers, yearlyUsers };
+  return { freeUserIds, lifetimeUsers, yearlyUsers, misconfiguredPaidUsers };
 }
 
 async function distributeForFreeUsers({
@@ -497,11 +509,17 @@ export async function distributeCreditsToAllUsers(
       }
     }
 
-    const { freeUserIds, lifetimeUsers, yearlyUsers } = classifyUsersByPlan(
-      userBatch,
-      perUserMembershipResults,
-      resolvePlan
-    );
+    const { freeUserIds, lifetimeUsers, yearlyUsers, misconfiguredPaidUsers } =
+      classifyUsersByPlan(userBatch, perUserMembershipResults, resolvePlan);
+
+    if (misconfiguredPaidUsers.length > 0) {
+      log.warn(
+        {
+          users: misconfiguredPaidUsers,
+        },
+        'Paid users missing yearly pricing configuration, falling back to free credits'
+      );
+    }
 
     const freeResult = await distributeForFreeUsers({
       freeUserIds,

@@ -17,8 +17,8 @@ vi.mock('@/lib/server/usecases/analyze-web-content-with-credits', () => ({
     analyzeWebContentWithCreditsMock(...args),
 }));
 
-import { POST as analyzeContentPost } from '@/app/api/analyze-content/route';
 import type { AnalyzeContentResponse } from '@/ai/text/utils/web-content-analyzer';
+import { POST as analyzeContentPost } from '@/app/api/analyze-content/route';
 
 describe('/api/analyze-content route', () => {
   beforeEach(() => {

@@ -237,5 +237,56 @@ describe('classifyUsersByPlan', () => {
       { userId: 'user-yearly', priceId: 'price_yearly' },
     ]);
     expect(result.freeUserIds).toContain('user-free');
+    expect((result as any).misconfiguredPaidUsers ?? []).toHaveLength(0);
+  });
+
+  it('falls back to free users and marks misconfigured paid users when non-free plan lacks yearly pricing', () => {
+    const misconfiguredPlan = createPlan({
+      isLifetime: false,
+      isFree: false,
+      credits: {
+        enable: true,
+        amount: 200,
+      },
+      prices: [
+        {
+          priceId: 'price_monthly_only',
+          interval: PlanIntervals.MONTH,
+        } as any,
+      ],
+    });
+
+    const resolver = (priceId: string | null | undefined) => {
+      if (priceId === 'price_monthly_only') {
+        return misconfiguredPlan;
+      }
+      return undefined;
+    };
+
+    const userBatch = [
+      {
+        userId: 'user-misconfigured',
+        email: null,
+        name: null,
+        priceId: 'price_monthly_only',
+        paymentStatus: 'active',
+        paymentCreatedAt: new Date('2024-01-01T00:00:00Z'),
+      },
+    ];
+
+    const membershipsByUser = new Map<string, any>();
+
+    const result = classifyUsersByPlan(
+      userBatch as any,
+      membershipsByUser,
+      resolver
+    ) as any;
+
+    expect(result.yearlyUsers).toHaveLength(0);
+    expect(result.lifetimeUsers).toHaveLength(0);
+    expect(result.freeUserIds).toEqual(['user-misconfigured']);
+    expect(result.misconfiguredPaidUsers).toEqual([
+      { userId: 'user-misconfigured', priceId: 'price_monthly_only' },
+    ]);
   });
 });

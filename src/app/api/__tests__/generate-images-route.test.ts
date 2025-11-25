@@ -17,8 +17,8 @@ vi.mock('@/lib/server/usecases/generate-image-with-credits', () => ({
     generateImageWithCreditsMock(...args),
 }));
 
-import { POST as generateImagesPost } from '@/app/api/generate-images/route';
 import type { GenerateImageResponse } from '@/ai/image/lib/api-types';
+import { POST as generateImagesPost } from '@/app/api/generate-images/route';
 
 describe('/api/generate-images route', () => {
   beforeEach(() => {

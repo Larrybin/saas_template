@@ -17,6 +17,17 @@ const MAX_CONTENT_LENGTH = webContentAnalyzerConfig.maxContentLength;
 
 const getFirecrawlClient = () => {
   const apiKey = getFirecrawlApiKey();
+
+  if (!apiKey) {
+    throw new WebContentAnalyzerError(
+      ErrorType.SERVICE_UNAVAILABLE,
+      'Firecrawl API key is not configured',
+      'Web content analysis service is temporarily unavailable.',
+      ErrorSeverity.CRITICAL,
+      false
+    );
+  }
+
   return new Firecrawl({
     apiKey,
     apiUrl: webContentAnalyzerServerConfig.firecrawl.baseUrl,

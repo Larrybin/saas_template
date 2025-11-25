@@ -120,18 +120,62 @@ describe('DefaultBillingService', () => {
       creditsEnabled: true,
     });
 
+    const cycleRefDate = new Date('2025-01-01');
+
+    await service.handleRenewal({
+      userId: 'user_1',
+      priceId: 'price_basic',
+      cycleRefDate,
+    });
+
+    expect(creditsGateway.addSubscriptionCredits).toHaveBeenCalledWith(
+      'user_1',
+      'price_basic',
+      cycleRefDate,
+      undefined
+    );
+  });
+
+  it('skips renewal handling when credits are globally disabled', async () => {
+    const creditsGateway = createCreditsGateway();
+    const service = new DefaultBillingService({
+      paymentProvider: createPaymentProvider(),
+      creditsGateway,
+      planPolicy: createPlanPolicy(),
+      creditsEnabled: false,
+    });
+
     await service.handleRenewal({
       userId: 'user_1',
       priceId: 'price_basic',
       cycleRefDate: new Date('2025-01-01'),
     });
 
-    expect(creditsGateway.addSubscriptionCredits).toHaveBeenCalledWith(
-      'user_1',
-      'price_basic',
-      new Date('2025-01-01'),
-      undefined
-    );
+    expect(creditsGateway.addSubscriptionCredits).not.toHaveBeenCalled();
+  });
+
+  it('skips renewal handling when subscription credits config is missing', async () => {
+    const creditsGateway = createCreditsGateway();
+    const planPolicy = createPlanPolicy();
+
+    planPolicy.getPlanCreditsConfigByPriceId = vi
+      .fn()
+      .mockReturnValueOnce(null);
+
+    const service = new DefaultBillingService({
+      paymentProvider: createPaymentProvider(),
+      creditsGateway,
+      planPolicy,
+      creditsEnabled: true,
+    });
+
+    await service.handleRenewal({
+      userId: 'user_1',
+      priceId: 'price_basic',
+      cycleRefDate: new Date('2025-01-01'),
+    });
+
+    expect(creditsGateway.addSubscriptionCredits).not.toHaveBeenCalled();
   });
 
   it('throws when plan is not found', async () => {

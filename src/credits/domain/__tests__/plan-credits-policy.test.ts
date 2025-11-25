@@ -49,6 +49,15 @@ describe('DefaultPlanCreditsPolicy', () => {
     expect(policy.getRegisterGiftRule()).toBeNull();
   });
 
+  it('filters out register gift rules with non-positive amount', () => {
+    registerGiftMock.mockReturnValue({
+      enabled: true,
+      amount: 0,
+    } as RegisterGiftCreditsConfig);
+
+    expect(policy.getRegisterGiftRule()).toBeNull();
+  });
+
   it('returns monthly free rule only for free plans', () => {
     const rule: PlanCreditsConfig = {
       enabled: true,
@@ -69,6 +78,16 @@ describe('DefaultPlanCreditsPolicy', () => {
       isFree: false,
       isLifetime: false,
       disabled: false,
+    } as PlanCreditsConfig);
+
+    expect(policy.getMonthlyFreeRule('pro-plan')).toBeNull();
+
+    planByPlanIdMock.mockReturnValue({
+      enabled: true,
+      amount: 50,
+      isFree: false,
+      isLifetime: false,
+      disabled: true,
     } as PlanCreditsConfig);
 
     expect(policy.getMonthlyFreeRule('pro-plan')).toBeNull();
@@ -97,6 +116,28 @@ describe('DefaultPlanCreditsPolicy', () => {
     } as PlanCreditsConfig);
 
     expect(policy.getSubscriptionRenewalRule('price_lifetime')).toBeNull();
+  });
+
+  it('filters out disabled or zero-amount subscription renewal rules', () => {
+    planByPriceIdMock.mockReturnValue({
+      enabled: true,
+      amount: 0,
+      isFree: false,
+      isLifetime: false,
+      disabled: false,
+    } as PlanCreditsConfig);
+
+    expect(policy.getSubscriptionRenewalRule('price_zero_amount')).toBeNull();
+
+    planByPriceIdMock.mockReturnValue({
+      enabled: true,
+      amount: 100,
+      isFree: false,
+      isLifetime: false,
+      disabled: true,
+    } as PlanCreditsConfig);
+
+    expect(policy.getSubscriptionRenewalRule('price_disabled')).toBeNull();
   });
 
   it('returns lifetime rule only for lifetime plans', () => {

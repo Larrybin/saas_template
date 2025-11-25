@@ -120,7 +120,8 @@ pnpm start
   - 服务端代码：`import { serverEnv } from '@/env/server'`
   - 客户端 / 共享代码：`import { clientEnv } from '@/env/client'`
 - `.env.example` 列出了所有支持的变量。根据环境复制为 `.env.local`（或其他环境文件），填入所需的机密配置后再执行 `pnpm build` 或部署。
-- 若希望在生产环境强制依赖 Upstash Redis，可设置 `RATE_LIMIT_REQUIRE_REDIS=true`；默认值为 `false`，会在 Redis 缺失时回退到进程级内存桶并输出警告日志。
+- Rate limiting（请求限流）使用 Upstash Redis。在生产及其他非 dev/test 环境中，推荐配置 `UPSTASH_REDIS_REST_URL` 与 `UPSTASH_REDIS_REST_TOKEN`，并将 `RATE_LIMIT_REQUIRE_REDIS=true`，这样在 Redis 未正确配置时会直接抛错而不是静默回退到进程级内存桶。
+- 在本地开发和测试环境中，若未配置 Redis，则会自动回退到单实例内存限流，并输出相应的警告日志；如需在 dev/test 环境下也强制使用 Redis，可显式设置 `RATE_LIMIT_REQUIRE_REDIS=true`。
 
 ## Architecture Notes
 

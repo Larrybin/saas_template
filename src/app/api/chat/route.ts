@@ -1,5 +1,5 @@
-import type { UIMessage } from 'ai';
 import { NextResponse } from 'next/server';
+import { chatRequestSchema } from '@/ai/chat/lib/api-schema';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
 import {
@@ -40,12 +40,33 @@ export async function POST(req: Request) {
     return rateLimitResult.response;
   }
 
-  const {
-    messages,
-    model,
-    webSearch,
-  }: { messages: UIMessage[]; model: string; webSearch: boolean } =
-    await req.json();
+  const body = await req.json();
+  const parseResult = chatRequestSchema.safeParse(body);
+
+  if (!parseResult.success) {
+    logger.warn(
+      {
+        issues: parseResult.error.issues.map((issue) => ({
+          path: issue.path,
+          code: issue.code,
+          message: issue.message,
+        })),
+      },
+      'Invalid chat request parameters'
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Invalid chat request parameters',
+        code: 'AI_CHAT_INVALID_PARAMS',
+        retryable: false,
+      },
+      { status: 400 }
+    );
+  }
+
+  const { messages, model, webSearch } = parseResult.data;
 
   logger.info(
     { userId: authResult.user.id, model, webSearch },

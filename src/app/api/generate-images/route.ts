@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import type {
-  GenerateImageRequest,
-  GenerateImageResponse,
+import {
+  type GenerateImageResponse,
+  generateImageRequestSchema,
 } from '@/ai/image/lib/api-types';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
@@ -54,7 +54,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { prompt, provider, modelId } = body as GenerateImageRequest;
+  const parseResult = generateImageRequestSchema.safeParse(body);
+
+  if (!parseResult.success) {
+    logger.warn(
+      {
+        issues: parseResult.error.issues.map((issue) => ({
+          path: issue.path,
+          code: issue.code,
+          message: issue.message,
+        })),
+      },
+      'Invalid image generation request parameters'
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Invalid image generation parameters.',
+        code: 'AI_IMAGE_INVALID_PARAMS',
+        retryable: false,
+      } satisfies GenerateImageResponse,
+      { status: 400 }
+    );
+  }
+
+  const { prompt, provider, modelId } = parseResult.data;
 
   try {
     const result = await withLogContext(

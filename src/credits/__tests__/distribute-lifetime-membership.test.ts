@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  classifyUsersByPlan,
   collectValidLifetimeMemberships,
   createCachedPlanResolver,
-  classifyUsersByPlan,
 } from '@/credits/distribute';
 import type { LifetimeMembershipRecord } from '@/payment/data-access/user-lifetime-membership-repository';
 import { PlanIntervals, type PricePlan } from '@/payment/types';

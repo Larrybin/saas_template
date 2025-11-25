@@ -67,4 +67,3 @@ export function collectValidLifetimeMemberships(
     shouldFallbackToFree: validMemberships.length === 0,
   };
 }
-

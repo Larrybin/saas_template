@@ -82,4 +82,3 @@ export function classifyUsersByPlan(
 
   return { freeUserIds, lifetimeUsers, yearlyUsers, misconfiguredPaidUsers };
 }
-

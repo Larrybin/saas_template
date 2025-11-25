@@ -8,10 +8,12 @@ import {
   canAddCreditsByType,
 } from '../credits';
 import type { DbExecutor } from '../data-access/types';
-import type { PlanUserRecord } from '../domain/lifetime-membership';
 import type { PeriodicAddCreditsPayload } from '../services/credits-gateway';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 import type { CommandExecutionResult, CreditCommand } from './credit-command';
+import type { PlanUserRecord } from '../domain/lifetime-membership';
+
+export type { PlanUserRecord } from '../domain/lifetime-membership';
 
 export class CreditDistributionService {
   constructor(

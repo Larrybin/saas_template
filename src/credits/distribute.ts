@@ -6,9 +6,8 @@ import {
   type LifetimeMembershipRecord,
   UserLifetimeMembershipRepository,
 } from '@/payment/data-access/user-lifetime-membership-repository';
-import {
-  CreditDistributionService,
-} from './distribution/credit-distribution-service';
+import { createUserBillingReader } from './data-access/user-billing-view';
+import { CreditDistributionService } from './distribution/credit-distribution-service';
 import {
   collectValidLifetimeMemberships,
   createCachedPlanResolver,
@@ -16,11 +15,7 @@ import {
   type PlanResolver,
   type PlanUserRecord,
 } from './domain/lifetime-membership';
-import {
-  classifyUsersByPlan,
-  type MisconfiguredPaidUser,
-} from './domain/plan-classifier';
-import { createUserBillingReader } from './data-access/user-billing-view';
+import { classifyUsersByPlan } from './domain/plan-classifier';
 import { runExpirationJob } from './expiry-job';
 import { getPeriodKey } from './utils/period-key';
 
@@ -39,16 +34,17 @@ const defaultDeps: DistributeCreditsDeps = {
   creditDistributionService: new CreditDistributionService(),
   lifetimeMembershipRepository: new UserLifetimeMembershipRepository(),
 };
+
 export type {
   LifetimeMembershipResolution,
   PlanResolver,
   PlanUserRecord,
 } from './domain/lifetime-membership';
-export type { MisconfiguredPaidUser } from './domain/plan-classifier';
 export {
   collectValidLifetimeMemberships,
   createCachedPlanResolver,
 } from './domain/lifetime-membership';
+export type { MisconfiguredPaidUser } from './domain/plan-classifier';
 export { classifyUsersByPlan } from './domain/plan-classifier';
 
 async function resolveLifetimeMemberships(
@@ -303,7 +299,10 @@ export async function distributeCreditsToAllUsers(
   const resolvePlan = createCachedPlanResolver(findPlanByPriceId);
 
   do {
-    const userBatch = await billingReader.fetchBatch(lastProcessedUserId, userBatchSize);
+    const userBatch = await billingReader.fetchBatch(
+      lastProcessedUserId,
+      userBatchSize
+    );
     if (userBatch.length === 0) {
       break;
     }

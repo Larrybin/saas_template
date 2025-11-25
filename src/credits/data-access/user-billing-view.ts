@@ -73,4 +73,3 @@ export function createUserBillingReader(db: Db): UserBillingReader {
     },
   };
 }
-

@@ -26,9 +26,8 @@ type RateLimitResult =
 const redisConfig = serverEnv.rateLimit;
 const redisRestUrl = redisConfig?.redisRestUrl;
 const redisRestToken = redisConfig?.redisRestToken;
-const environment = process.env.NODE_ENV ?? 'development';
-const allowInMemoryFallback =
-  environment === 'development' || environment === 'test';
+const requireRedis = redisConfig?.requireRedis ?? false;
+const allowInMemoryFallback = !requireRedis;
 
 let redisClient: Redis | null = null;
 let hasWarnedAboutMemoryFallback = false;

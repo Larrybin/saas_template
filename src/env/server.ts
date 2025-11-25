@@ -11,6 +11,11 @@ const booleanString = z
   .optional()
   .transform((value) => (value === undefined ? true : value === 'true'));
 
+const optionalBooleanString = z
+  .enum(['true', 'false'])
+  .optional()
+  .transform((value) => (value ? value === 'true' : undefined));
+
 const telemetryString = z
   .enum(['0', '1', 'true', 'false'] as const)
   .default('1');
@@ -50,6 +55,7 @@ const serverSchemaInput = z.object({
   GOOGLE_CLIENT_SECRET: optionalString,
   UPSTASH_REDIS_REST_URL: optionalString,
   UPSTASH_REDIS_REST_TOKEN: optionalString,
+  RATE_LIMIT_REQUIRE_REDIS: optionalBooleanString,
 });
 
 const serverSchema = serverSchemaInput.transform((value) => ({
@@ -104,6 +110,7 @@ const serverSchema = serverSchemaInput.transform((value) => ({
   rateLimit: {
     redisRestUrl: value.UPSTASH_REDIS_REST_URL,
     redisRestToken: value.UPSTASH_REDIS_REST_TOKEN,
+    requireRedis: value.RATE_LIMIT_REQUIRE_REDIS ?? false,
   },
 }));
 const rawServerEnv = pickEnv(serverSchemaInput);

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const ensureApiUserMock = vi.fn();
 const enforceRateLimitMock = vi.fn();
@@ -86,4 +86,3 @@ describe('/api/chat route', () => {
     );
   });
 });
-

@@ -118,3 +118,34 @@
       - 有有效终身会员时直接归入 `lifetimeUsers`，且不会调用 `resolvePlan`；
       - 仅存在无效会员且 `shouldFallbackToFree = true` 时，用户归入 `freeUserIds`；
       - 无会员信息时，依据 `resolvePlan` 返回的 `PricePlan`（终身 / 年付）与 `PlanIntervals.YEAR` 归类到 `lifetimeUsers` / `yearlyUsers`，其它用户归入 `freeUserIds`。
+
+### 6. 后续可选优化（暂不实施，仅记录思路）
+
+> 仅在未来 credits 分发逻辑进一步复杂、需要在多个 Job 之间复用“加载/划分/批处理”流程时考虑，当前版本不执行该重构。
+
+- 模块化拆分建议（拟放在 `src/credits/distribution/` 下）：
+  - `user-loader.ts`：封装 DB 访问（Drizzle + feature flag），对外提供分页获取 `UserWithPayment[]` 的函数，隐藏具体 SQL 与分页条件。
+  - `user-partitioner.ts`：依据 plan / feature flag / 当前时间，将用户划分为 `free/lifetime/yearly` 三类，返回类似 `DistributionPartition` 的结构。
+  - `batch-runner.ts`：通用批处理执行器，负责：
+    - 将某一类用户按 batchSize 切片；
+    - 调用 `CreditDistributionService` 的 `generate*Commands` + `execute`；
+    - 统一累计 `processedDelta` / `errorDelta`，并处理 progress / error 日志。
+  - `distribution-orchestrator.ts`（或继续使用 `src/credits/distribute.ts` 中的 `distributeCreditsToAllUsers`）：
+    - 作为 orchestrator，调用 `runExpirationJob`、`user-loader`、`user-partitioner`、`batch-runner`；
+    - 汇总最终的 `{ usersCount, processedCount, errorCount }`。
+
+- 依赖注入与共享类型：
+  - 定义 `DistributionContext`，包含：
+    - `logger`、`periodKey`、`monthLabel`；
+    - `creditDistributionService`、`lifetimeMembershipRepository` 等依赖；
+  - `batch-runner` 通过参数接收 `CreditDistributionService`（而不是内部 new），与当前 `DistributeCreditsDeps` 思路一致；
+  - 保持 `DistributionResult`（`{ usersCount, processedCount, errorCount }`）结构与现有 API 兼容。
+
+- 日志与指标：
+  - 将针对 free/lifetime/yearly 的进度日志统一集中到 `batch-runner` 或 orchestrator，避免分散在多处；
+  - 保留 `runExpirationJob` 的前后日志在 orchestrator 中，以便串联整个任务。
+
+- 集成方式：
+  - `distributeCreditsToAllUsers` 入口签名保持不变，内部重写为：
+    - `runExpirationJob` → 调用 `user-loader` 分页加载 → `user-partitioner` 划分 → 对每个分段使用 `batch-runner` → 汇总；
+  - `src/app/api/distribute-credits/route.ts` 无需改动，只要入口函数签名与返回值兼容。

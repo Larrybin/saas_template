@@ -1,12 +1,11 @@
 import { getLogger } from '@/lib/server/logger';
-import {
-  getPlanCreditsConfigByPlanId,
-  getPlanCreditsConfigByPriceId,
-  getRegisterGiftCreditsConfig,
-} from '../config';
 import { CreditLedgerRepository } from '../data-access/credit-ledger-repository';
 import type { DbExecutor } from '../data-access/types';
 import { CreditLedgerDomainService } from '../domain/credit-ledger-domain-service';
+import {
+  DefaultPlanCreditsPolicy,
+  type PlanCreditsPolicy,
+} from '../domain/plan-credits-policy';
 import { CREDIT_TRANSACTION_TYPE } from '../types';
 import { getCurrentPeriodKey, getPeriodKey } from '../utils/period-key';
 import type { AddCreditsPayload, CreditsGateway } from './credits-gateway';
@@ -18,6 +17,7 @@ const creditLedgerDomainService = new CreditLedgerDomainService(
   creditLedgerRepository
 );
 const creditsServiceLogger = getLogger({ span: 'credits.service' });
+const defaultPlanCreditsPolicy = new DefaultPlanCreditsPolicy();
 
 export async function getUserCredits(userId: string): Promise<number> {
   try {
@@ -93,28 +93,7 @@ export async function canAddCreditsByType(
 }
 
 export async function addRegisterGiftCredits(userId: string) {
-  const alreadyGranted = await creditLedgerDomainService.hasTransactionOfType(
-    userId,
-    CREDIT_TRANSACTION_TYPE.REGISTER_GIFT
-  );
-  if (alreadyGranted) {
-    return;
-  }
-  const config = getRegisterGiftCreditsConfig();
-  if (!config || !config.enabled) {
-    return;
-  }
-
-  const credits = config.amount;
-  const expireDays = config.expireDays;
-  const payload: AddCreditsPayload = {
-    userId,
-    amount: credits,
-    type: CREDIT_TRANSACTION_TYPE.REGISTER_GIFT,
-    description: `Register gift credits: ${credits}`,
-    ...(expireDays !== undefined ? { expireDays } : {}),
-  };
-  await addCredits(payload);
+  await defaultCreditLedgerService.addRegisterGiftCredits(userId);
 }
 
 export async function addMonthlyFreeCredits(
@@ -122,28 +101,11 @@ export async function addMonthlyFreeCredits(
   planId: string,
   refDate?: Date
 ) {
-  const config = getPlanCreditsConfigByPlanId(planId);
-  if (!config || config.disabled || !config.isFree || !config.enabled) {
-    return;
-  }
-  const periodKey = getCurrentPeriodKey(refDate);
-  const canAdd = await canAddCreditsByType(
+  await defaultCreditLedgerService.addMonthlyFreeCredits(
     userId,
-    CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
-    periodKey
+    planId,
+    refDate
   );
-  if (!canAdd) return;
-  const credits = config.amount;
-  const expireDays = config.expireDays;
-  const payload: AddCreditsPayload = {
-    userId,
-    amount: credits,
-    type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
-    description: `Free monthly credits: ${credits}`,
-    periodKey,
-    ...(expireDays !== undefined ? { expireDays } : {}),
-  };
-  await addCredits(payload);
 }
 
 export async function addSubscriptionCredits(
@@ -152,29 +114,12 @@ export async function addSubscriptionCredits(
   cycleRefDate?: Date,
   transaction?: CreditsTransaction
 ) {
-  const config = getPlanCreditsConfigByPriceId(priceId);
-  if (!config || !config.enabled) {
-    return;
-  }
-  const refDate = cycleRefDate ?? new Date();
-  const periodKey = getPeriodKey(refDate);
-  const canAdd = await canAddCreditsByType(
+  await defaultCreditLedgerService.addSubscriptionCredits(
     userId,
-    CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
-    periodKey
+    priceId,
+    cycleRefDate ?? new Date(),
+    transaction
   );
-  if (!canAdd) return;
-  const payload: AddCreditsPayload = {
-    userId,
-    amount: config.amount,
-    type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
-    description: `Subscription renewal credits: ${config.amount}`,
-    periodKey,
-    ...(config.expireDays !== undefined
-      ? { expireDays: config.expireDays }
-      : {}),
-  };
-  await addCredits(payload, transaction);
 }
 
 export async function addLifetimeMonthlyCredits(
@@ -183,37 +128,78 @@ export async function addLifetimeMonthlyCredits(
   cycleRefDate?: Date,
   transaction?: CreditsTransaction
 ) {
-  const config = getPlanCreditsConfigByPriceId(priceId);
-  if (!config || !config.isLifetime || config.disabled || !config.enabled) {
-    return;
-  }
-  const refDate = cycleRefDate ?? new Date();
-  const periodKey = getPeriodKey(refDate);
-  const canAdd = await canAddCreditsByType(
+  await defaultCreditLedgerService.addLifetimeMonthlyCredits(
     userId,
-    CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
-    periodKey
+    priceId,
+    cycleRefDate ?? new Date(),
+    transaction
   );
-  if (!canAdd) return;
-  const payload: AddCreditsPayload = {
-    userId,
-    amount: config.amount,
-    type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
-    description: `Lifetime monthly credits: ${config.amount}`,
-    periodKey,
-    ...(config.expireDays !== undefined
-      ? { expireDays: config.expireDays }
-      : {}),
-  };
-  await addCredits(payload, transaction);
 }
 
 export class CreditLedgerService implements CreditsGateway {
+  constructor(
+    private readonly policy: PlanCreditsPolicy = defaultPlanCreditsPolicy
+  ) {}
+
   async addCredits(
     payload: AddCreditsPayload,
     transaction?: CreditsTransaction
   ): Promise<void> {
     await addCredits(payload, transaction);
+  }
+
+  async addRegisterGiftCredits(userId: string): Promise<void> {
+    const alreadyGranted = await creditLedgerDomainService.hasTransactionOfType(
+      userId,
+      CREDIT_TRANSACTION_TYPE.REGISTER_GIFT
+    );
+    if (alreadyGranted) {
+      return;
+    }
+    const rule = this.policy.getRegisterGiftRule();
+    if (!rule) {
+      return;
+    }
+
+    const credits = rule.amount;
+    const expireDays = rule.expireDays;
+    const payload: AddCreditsPayload = {
+      userId,
+      amount: credits,
+      type: CREDIT_TRANSACTION_TYPE.REGISTER_GIFT,
+      description: `Register gift credits: ${credits}`,
+      ...(expireDays !== undefined ? { expireDays } : {}),
+    };
+    await addCredits(payload);
+  }
+
+  async addMonthlyFreeCredits(
+    userId: string,
+    planId: string,
+    refDate?: Date
+  ): Promise<void> {
+    const rule = this.policy.getMonthlyFreeRule(planId);
+    if (!rule) {
+      return;
+    }
+    const periodKey = getCurrentPeriodKey(refDate);
+    const canAdd = await canAddCreditsByType(
+      userId,
+      CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+      periodKey
+    );
+    if (!canAdd) return;
+    const credits = rule.amount;
+    const expireDays = rule.expireDays;
+    const payload: AddCreditsPayload = {
+      userId,
+      amount: credits,
+      type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
+      description: `Free monthly credits: ${credits}`,
+      periodKey,
+      ...(expireDays !== undefined ? { expireDays } : {}),
+    };
+    await addCredits(payload);
   }
 
   async addSubscriptionCredits(
@@ -222,7 +208,27 @@ export class CreditLedgerService implements CreditsGateway {
     cycleRefDate: Date,
     transaction?: CreditsTransaction
   ): Promise<void> {
-    await addSubscriptionCredits(userId, priceId, cycleRefDate, transaction);
+    const rule = this.policy.getSubscriptionRenewalRule(priceId);
+    if (!rule) {
+      return;
+    }
+    const refDate = cycleRefDate ?? new Date();
+    const periodKey = getPeriodKey(refDate);
+    const canAdd = await canAddCreditsByType(
+      userId,
+      CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
+      periodKey
+    );
+    if (!canAdd) return;
+    const payload: AddCreditsPayload = {
+      userId,
+      amount: rule.amount,
+      type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
+      description: `Subscription renewal credits: ${rule.amount}`,
+      periodKey,
+      ...(rule.expireDays !== undefined ? { expireDays: rule.expireDays } : {}),
+    };
+    await addCredits(payload, transaction);
   }
 
   async addLifetimeMonthlyCredits(
@@ -231,6 +237,28 @@ export class CreditLedgerService implements CreditsGateway {
     cycleRefDate: Date,
     transaction?: CreditsTransaction
   ): Promise<void> {
-    await addLifetimeMonthlyCredits(userId, priceId, cycleRefDate, transaction);
+    const rule = this.policy.getLifetimeMonthlyRule(priceId);
+    if (!rule) {
+      return;
+    }
+    const refDate = cycleRefDate ?? new Date();
+    const periodKey = getPeriodKey(refDate);
+    const canAdd = await canAddCreditsByType(
+      userId,
+      CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
+      periodKey
+    );
+    if (!canAdd) return;
+    const payload: AddCreditsPayload = {
+      userId,
+      amount: rule.amount,
+      type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
+      description: `Lifetime monthly credits: ${rule.amount}`,
+      periodKey,
+      ...(rule.expireDays !== undefined ? { expireDays: rule.expireDays } : {}),
+    };
+    await addCredits(payload, transaction);
   }
 }
+
+export const defaultCreditLedgerService = new CreditLedgerService();

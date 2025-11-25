@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { getActiveSubscriptionAction } from '@/actions/get-active-subscription';
 import { getLifetimeStatusAction } from '@/actions/get-lifetime-status';
+import { resolveCurrentPlan } from '@/domain/plan/resolve-current-plan';
 import { getAllPricePlans } from '@/lib/price-plan';
 import type { PricePlan, Subscription } from '@/payment/types';
 
@@ -55,6 +57,7 @@ export function useLifetimeStatus(userId: string | undefined) {
 
 // Hook to get current plan based on subscription and lifetime status
 export function useCurrentPlan(userId: string | undefined) {
+  const plans = useMemo(() => getAllPricePlans(), []);
   const {
     data: subscription,
     isLoading: isLoadingSubscription,
@@ -71,37 +74,12 @@ export function useCurrentPlan(userId: string | undefined) {
     queryFn: async (): Promise<{
       currentPlan: PricePlan | null;
       subscription: Subscription | null;
-    }> => {
-      const plans: PricePlan[] = getAllPricePlans();
-      const freePlan = plans.find((plan) => plan.isFree);
-      const lifetimePlan = plans.find((plan) => plan.isLifetime);
-
-      // If lifetime member, return lifetime plan
-      if (isLifetimeMember) {
-        return {
-          currentPlan: lifetimePlan || null,
-          subscription: null,
-        };
-      }
-
-      // If has active subscription, find the corresponding plan
-      if (subscription) {
-        const plan =
-          plans.find((p) =>
-            p.prices.find((price) => price.priceId === subscription.priceId)
-          ) || null;
-        return {
-          currentPlan: plan,
-          subscription,
-        };
-      }
-
-      // Default to free plan
-      return {
-        currentPlan: freePlan || null,
-        subscription: null,
-      };
-    },
+    }> =>
+      resolveCurrentPlan({
+        plans,
+        subscription: subscription ?? null,
+        isLifetimeMember: Boolean(isLifetimeMember),
+      }),
     enabled: !!userId && !isLoadingSubscription && !isLoadingLifetime,
   });
 }

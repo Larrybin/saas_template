@@ -210,7 +210,7 @@ describe('Billing -> Credits integration (happy path)', () => {
     expect(balances.get('user-1')).toBe(subscriptionRule.amount);
 
     expect(transactions).toHaveLength(1);
-    const tx = transactions[0]!;
+    const tx = transactions[0] as CreditTransactionInsert;
     expect(tx.userId).toBe('user-1');
     expect(tx.type).toBe(CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL);
     expect(tx.amount).toBe(subscriptionRule.amount);
@@ -309,7 +309,7 @@ describe('Billing -> Credits integration (happy path)', () => {
     expect(balances.get('user-1')).toBe(lifetimeRule.amount);
 
     expect(transactions).toHaveLength(1);
-    const tx = transactions[0]!;
+    const tx = transactions[0] as CreditTransactionInsert;
     expect(tx.userId).toBe('user-1');
     expect(tx.type).toBe(CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY);
     expect(tx.amount).toBe(lifetimeRule.amount);

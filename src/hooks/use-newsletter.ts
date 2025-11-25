@@ -2,6 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { checkNewsletterStatusAction } from '@/actions/check-newsletter-status';
 import { subscribeNewsletterAction } from '@/actions/subscribe-newsletter';
 import { unsubscribeNewsletterAction } from '@/actions/unsubscribe-newsletter';
+import {
+  handleAuthFromEnvelope,
+  useAuthErrorHandler,
+} from '@/hooks/use-auth-error-handler';
+import {
+  type EnvelopeWithDomainError,
+  unwrapEnvelopeOrThrowDomainError,
+} from '@/lib/domain-error-utils';
+
+type Envelope<T> = EnvelopeWithDomainError<T>;
 
 // Query keys
 export const newsletterKeys = {
@@ -11,6 +21,8 @@ export const newsletterKeys = {
 
 // Hook to check newsletter subscription status
 export function useNewsletterStatus(email: string | undefined) {
+  const handleAuthError = useAuthErrorHandler();
+
   return useQuery({
     queryKey: newsletterKeys.status(email || ''),
     queryFn: async () => {
@@ -18,12 +30,20 @@ export function useNewsletterStatus(email: string | undefined) {
         throw new Error('Email is required');
       }
       const result = await checkNewsletterStatusAction({ email });
-      if (!result?.data?.success) {
-        throw new Error(
-          result?.data?.error || 'Failed to check newsletter status'
-        );
-      }
-      return result.data;
+      const data = unwrapEnvelopeOrThrowDomainError<{
+        success: true;
+        subscribed: boolean;
+      }>(
+        result?.data as
+          | Envelope<{ success: true; subscribed: boolean }>
+          | undefined,
+        {
+          defaultErrorMessage: 'Failed to check newsletter status',
+          handleAuthEnvelope: (payload) =>
+            handleAuthFromEnvelope(handleAuthError, payload),
+        }
+      );
+      return { subscribed: data.subscribed };
     },
     enabled: !!email,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -37,12 +57,12 @@ export function useSubscribeNewsletter() {
   return useMutation({
     mutationFn: async (email: string) => {
       const result = await subscribeNewsletterAction({ email });
-      if (!result?.data?.success) {
-        throw new Error(
-          result?.data?.error || 'Failed to subscribe to newsletter'
-        );
-      }
-      return result.data;
+      const data = unwrapEnvelopeOrThrowDomainError<{
+        success: true;
+      }>(result?.data as Envelope<{ success: true }> | undefined, {
+        defaultErrorMessage: 'Failed to subscribe to newsletter',
+      });
+      return data;
     },
     onSuccess: (_, email) => {
       // Invalidate and refetch the newsletter status
@@ -60,12 +80,12 @@ export function useUnsubscribeNewsletter() {
   return useMutation({
     mutationFn: async (email: string) => {
       const result = await unsubscribeNewsletterAction({ email });
-      if (!result?.data?.success) {
-        throw new Error(
-          result?.data?.error || 'Failed to unsubscribe from newsletter'
-        );
-      }
-      return result.data;
+      const data = unwrapEnvelopeOrThrowDomainError<{
+        success: true;
+      }>(result?.data as Envelope<{ success: true }> | undefined, {
+        defaultErrorMessage: 'Failed to unsubscribe from newsletter',
+      });
+      return data;
     },
     onSuccess: (_, email) => {
       // Invalidate and refetch the newsletter status

@@ -3,8 +3,18 @@ import { useMemo } from 'react';
 import { getActiveSubscriptionAction } from '@/actions/get-active-subscription';
 import { getLifetimeStatusAction } from '@/actions/get-lifetime-status';
 import { resolveCurrentPlan } from '@/domain/plan/resolve-current-plan';
+import {
+  handleAuthFromEnvelope,
+  useAuthErrorHandler,
+} from '@/hooks/use-auth-error-handler';
+import {
+  type EnvelopeWithDomainError,
+  unwrapEnvelopeOrThrowDomainError,
+} from '@/lib/domain-error-utils';
 import { getAllPricePlans } from '@/lib/price-plan';
 import type { PricePlan, Subscription } from '@/payment/types';
+
+type Envelope<T> = EnvelopeWithDomainError<T>;
 
 // Query keys
 export const paymentKeys = {
@@ -19,6 +29,8 @@ export const paymentKeys = {
 
 // Hook to fetch active subscription
 export function useActiveSubscription(userId: string | undefined) {
+  const handleAuthError = useAuthErrorHandler();
+
   return useQuery({
     queryKey: paymentKeys.subscription(userId || ''),
     queryFn: async (): Promise<Subscription | null> => {
@@ -26,10 +38,20 @@ export function useActiveSubscription(userId: string | undefined) {
         throw new Error('User ID is required');
       }
       const result = await getActiveSubscriptionAction({ userId });
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to fetch subscription');
-      }
-      return result.data.data || null;
+      const data = unwrapEnvelopeOrThrowDomainError<{
+        success: true;
+        data: Subscription | null;
+      }>(
+        result?.data as
+          | Envelope<{ success: true; data: Subscription | null }>
+          | undefined,
+        {
+          defaultErrorMessage: 'Failed to fetch subscription',
+          handleAuthEnvelope: (payload) =>
+            handleAuthFromEnvelope(handleAuthError, payload),
+        }
+      );
+      return data.data || null;
     },
     enabled: !!userId,
   });
@@ -37,6 +59,8 @@ export function useActiveSubscription(userId: string | undefined) {
 
 // Hook to fetch lifetime status
 export function useLifetimeStatus(userId: string | undefined) {
+  const handleAuthError = useAuthErrorHandler();
+
   return useQuery({
     queryKey: paymentKeys.lifetime(userId || ''),
     queryFn: async (): Promise<boolean> => {
@@ -44,12 +68,20 @@ export function useLifetimeStatus(userId: string | undefined) {
         throw new Error('User ID is required');
       }
       const result = await getLifetimeStatusAction({ userId });
-      if (!result?.data?.success) {
-        throw new Error(
-          result?.data?.error || 'Failed to fetch lifetime status'
-        );
-      }
-      return result.data.isLifetimeMember || false;
+      const data = unwrapEnvelopeOrThrowDomainError<{
+        success: true;
+        isLifetimeMember: boolean;
+      }>(
+        result?.data as
+          | Envelope<{ success: true; isLifetimeMember: boolean }>
+          | undefined,
+        {
+          defaultErrorMessage: 'Failed to fetch lifetime status',
+          handleAuthEnvelope: (payload) =>
+            handleAuthFromEnvelope(handleAuthError, payload),
+        }
+      );
+      return data.isLifetimeMember || false;
     },
     enabled: !!userId,
   });

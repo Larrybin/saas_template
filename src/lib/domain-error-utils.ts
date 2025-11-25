@@ -58,6 +58,32 @@ export type DomainErrorLike = {
   retryable?: boolean;
 };
 
+export type AuthEnvelopePayload =
+  | {
+      code: string | undefined;
+      error: string | undefined;
+    }
+  | null
+  | undefined;
+
+export type AuthEnvelopeHandler = (payload: AuthEnvelopePayload) => void;
+
+export type EnvelopeWithDomainError<TSuccess> =
+  | (TSuccess & { success: true })
+  | ({ success?: boolean; error?: string } & DomainErrorLike);
+
+/**
+ * Typical envelope shape returned from safe actions or API routes:
+ *
+ * type GetSomethingSuccess = { success: true; data: { /* ... *\/ } };
+ * type GetSomethingEnvelope =
+ *   | GetSomethingSuccess
+ *   | { success?: false; error?: string; code?: string; retryable?: boolean };
+ *
+ * On the client, prefer using `unwrapEnvelopeOrThrowDomainError` inside hooks
+ * instead of manually checking `result?.data?.success` in every component.
+ */
+
 type Translator = (key: string) => string;
 
 export function getDomainErrorMessage(
@@ -92,4 +118,40 @@ export function isDomainErrorResponse(
     return true;
   }
   return false;
+}
+
+export function unwrapEnvelopeOrThrowDomainError<TSuccess>(
+  data: EnvelopeWithDomainError<TSuccess> | undefined,
+  options: {
+    defaultErrorMessage: string;
+    handleAuthEnvelope?: AuthEnvelopeHandler;
+  }
+): TSuccess & { success: true } {
+  const { defaultErrorMessage, handleAuthEnvelope } = options;
+
+  if (!data) {
+    throw new Error(defaultErrorMessage);
+  }
+
+  if (!('success' in data) || data.success) {
+    return data as TSuccess & { success: true };
+  }
+
+  handleAuthEnvelope?.({ code: data.code, error: data.error });
+  // From here on, the error is treated as a domain error and converted
+  // into an Error instance with an optional `code` / `retryable` flag.
+
+  const resolvedMessage =
+    data.error ??
+    getDomainErrorMessage(data.code, undefined, defaultErrorMessage);
+
+  const error = new Error(resolvedMessage) as Error & DomainErrorLike;
+  if (typeof data.code === 'string') {
+    error.code = data.code;
+  }
+  if (typeof data.retryable === 'boolean') {
+    error.retryable = data.retryable;
+  }
+
+  throw error;
 }

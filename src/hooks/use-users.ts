@@ -1,8 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SortingState } from '@tanstack/react-table';
 import { getUsersAction } from '@/actions/get-users';
+import {
+  handleAuthFromEnvelope,
+  useAuthErrorHandler,
+} from '@/hooks/use-auth-error-handler';
 import { authClient } from '@/lib/auth-client';
 import type { User } from '@/lib/auth-types';
+import {
+  type EnvelopeWithDomainError,
+  unwrapEnvelopeOrThrowDomainError,
+} from '@/lib/domain-error-utils';
+
+type Envelope<T> = EnvelopeWithDomainError<T>;
 
 type AdminClient = {
   banUser: (params: {
@@ -32,6 +42,8 @@ export function useUsers(
   search: string,
   sorting: SortingState
 ) {
+  const handleAuthError = useAuthErrorHandler();
+
   return useQuery<{ items: User[]; total: number }>({
     queryKey: usersKeys.list({ pageIndex, pageSize, search, sorting }),
     queryFn: async () => {
@@ -42,12 +54,22 @@ export function useUsers(
         sorting,
       });
 
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to fetch users');
-      }
+      const data = unwrapEnvelopeOrThrowDomainError<{
+        success: true;
+        data: { items: User[]; total: number };
+      }>(
+        result?.data as
+          | Envelope<{ success: true; data: { items: User[]; total: number } }>
+          | undefined,
+        {
+          defaultErrorMessage: 'Failed to fetch users',
+          handleAuthEnvelope: (payload) =>
+            handleAuthFromEnvelope(handleAuthError, payload),
+        }
+      );
 
-      const items = (result.data.data?.items || []) as User[];
-      const total = result.data.data?.total ?? 0;
+      const items = (data.data?.items || []) as User[];
+      const total = data.data?.total ?? 0;
 
       return {
         items,

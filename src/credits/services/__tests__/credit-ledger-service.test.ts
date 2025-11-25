@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { InsufficientCreditsError } from '@/credits/domain/errors';
 import { getDb } from '@/db';
 import { CREDIT_TRANSACTION_TYPE } from '../../types';
 import {
   addCredits,
   consumeCredits,
   creditLedgerRepository,
+  hasEnoughCredits,
 } from '../credit-ledger-service';
 
 vi.mock('@/db', () => ({
@@ -212,5 +214,62 @@ describe('CreditLedgerService', () => {
     ).rejects.toThrow(
       'periodKey should not be set for non-periodic credit transactions'
     );
+  });
+
+  it('indicates whether user has enough credits based on current balance', async () => {
+    const findUserCreditSpy = vi
+      .spyOn(creditLedgerRepository, 'findUserCredit')
+      .mockResolvedValueOnce({
+        currentCredits: 30,
+      } as any)
+      .mockResolvedValueOnce({
+        currentCredits: 10,
+      } as any);
+
+    const enough = await hasEnoughCredits({
+      userId: 'user-1',
+      requiredCredits: 20,
+    });
+    const notEnough = await hasEnoughCredits({
+      userId: 'user-1',
+      requiredCredits: 20,
+    });
+
+    expect(findUserCreditSpy).toHaveBeenCalledTimes(2);
+    expect(enough).toBe(true);
+    expect(notEnough).toBe(false);
+  });
+
+  it('throws InsufficientCreditsError when consuming more credits than available', async () => {
+    vi.spyOn(creditLedgerRepository, 'findUserCredit').mockResolvedValue({
+      id: 'ledger-1',
+      userId: 'user-1',
+      currentCredits: 10,
+    } as any);
+    vi.spyOn(
+      creditLedgerRepository,
+      'findFifoEligibleTransactions'
+    ).mockResolvedValue([{ id: 'txn-1', remainingAmount: 5 }] as any);
+    const updateRemainingSpy = vi
+      .spyOn(creditLedgerRepository, 'updateTransactionRemainingAmount')
+      .mockResolvedValue();
+    const updateCreditsSpy = vi
+      .spyOn(creditLedgerRepository, 'updateUserCredits')
+      .mockResolvedValue();
+    const usageSpy = vi
+      .spyOn(creditLedgerRepository, 'insertUsageRecord')
+      .mockResolvedValue();
+
+    await expect(
+      consumeCredits({
+        userId: 'user-1',
+        amount: 20,
+        description: 'Insufficient balance test',
+      })
+    ).rejects.toBeInstanceOf(InsufficientCreditsError);
+
+    expect(updateRemainingSpy).not.toHaveBeenCalled();
+    expect(updateCreditsSpy).not.toHaveBeenCalled();
+    expect(usageSpy).not.toHaveBeenCalled();
   });
 });

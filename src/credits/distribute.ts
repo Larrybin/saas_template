@@ -21,8 +21,16 @@ import { getPeriodKey } from './utils/period-key';
  * This function is designed to be called by a cron job
  */
 const baseLogger = getLogger({ span: 'credits.distribute' });
-const creditDistributionService = new CreditDistributionService();
-const lifetimeMembershipRepository = new UserLifetimeMembershipRepository();
+
+export type DistributeCreditsDeps = {
+  creditDistributionService: CreditDistributionService;
+  lifetimeMembershipRepository: UserLifetimeMembershipRepository;
+};
+
+const defaultDeps: DistributeCreditsDeps = {
+  creditDistributionService: new CreditDistributionService(),
+  lifetimeMembershipRepository: new UserLifetimeMembershipRepository(),
+};
 
 type UserWithPayment = {
   userId: string;
@@ -31,6 +39,17 @@ type UserWithPayment = {
   priceId: string | null;
   paymentStatus: string | null;
   paymentCreatedAt: Date | null;
+};
+
+export type LifetimeMembershipResolution = {
+  validMemberships: PlanUserRecord[];
+  invalidMemberships: LifetimeMembershipRecord[];
+  shouldFallbackToFree: boolean;
+};
+
+export type MisconfiguredPaidUser = {
+  userId: string;
+  priceId: string;
 };
 
 export type PlanResolver = (
@@ -57,11 +76,7 @@ export function createCachedPlanResolver(
 export function collectValidLifetimeMemberships(
   memberships: LifetimeMembershipRecord[] | undefined,
   resolvePlan: PlanResolver
-): {
-  validMemberships: PlanUserRecord[];
-  invalidMemberships: LifetimeMembershipRecord[];
-  shouldFallbackToFree: boolean;
-} {
+): LifetimeMembershipResolution {
   if (!memberships || memberships.length === 0) {
     return {
       validMemberships: [],
@@ -93,19 +108,8 @@ export function collectValidLifetimeMemberships(
   };
 }
 
-export async function distributeCreditsToAllUsers(options?: {
-  refDate?: Date;
-}) {
-  const log = baseLogger.child({ span: 'distributeCreditsToAllUsers' });
-  log.info('Starting credit distribution job');
-
-  // Process expired credits first before distributing new credits
-  log.debug('Processing expired credits before distribution');
-  const expiredResult = await runExpirationJob();
-  log.debug({ expiredResult }, 'Finished processing expired credits');
-
-  const db = await getDb();
-  const latestPaymentQuery = db
+function createLatestPaymentSubquery(db: Awaited<ReturnType<typeof getDb>>) {
+  return db
     .select({
       userId: payment.userId,
       priceId: payment.priceId,
@@ -119,6 +123,333 @@ export async function distributeCreditsToAllUsers(options?: {
     .from(payment)
     .where(or(eq(payment.status, 'active'), eq(payment.status, 'trialing')))
     .as('latest_payment');
+}
+
+async function fetchUsersBatch(
+  db: Awaited<ReturnType<typeof getDb>>,
+  latestPaymentQuery: ReturnType<typeof createLatestPaymentSubquery>,
+  lastUserId: string | null,
+  limit: number
+): Promise<UserWithPayment[]> {
+  const baseCondition = or(isNull(user.banned), eq(user.banned, false));
+  const paginationCondition = lastUserId
+    ? and(baseCondition, gt(user.id, lastUserId))
+    : baseCondition;
+
+  return await db
+    .select({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      priceId: latestPaymentQuery.priceId,
+      paymentStatus: latestPaymentQuery.status,
+      paymentCreatedAt: latestPaymentQuery.createdAt,
+    })
+    .from(user)
+    .leftJoin(
+      latestPaymentQuery,
+      and(
+        eq(user.id, latestPaymentQuery.userId),
+        eq(latestPaymentQuery.rowNumber, 1)
+      )
+    )
+    .where(paginationCondition)
+    .orderBy(user.id)
+    .limit(limit);
+}
+
+async function resolveLifetimeMemberships(
+  userIds: string[],
+  db: Awaited<ReturnType<typeof getDb>>,
+  deps: DistributeCreditsDeps,
+  resolvePlan: PlanResolver
+) {
+  const membershipsInBatch =
+    await deps.lifetimeMembershipRepository.findActiveByUserIds(userIds, db);
+  const membershipsByUser = membershipsInBatch.reduce<
+    Map<string, LifetimeMembershipRecord[]>
+  >((acc, membership) => {
+    const existing = acc.get(membership.userId);
+    if (existing) {
+      existing.push(membership);
+    } else {
+      acc.set(membership.userId, [membership]);
+    }
+    return acc;
+  }, new Map());
+
+  const perUserResults = new Map<string, LifetimeMembershipResolution>();
+
+  for (const [userId, memberships] of membershipsByUser.entries()) {
+    perUserResults.set(
+      userId,
+      collectValidLifetimeMemberships(memberships, resolvePlan)
+    );
+  }
+
+  return perUserResults;
+}
+
+export function classifyUsersByPlan(
+  userBatch: UserWithPayment[],
+  membershipsByUser: Map<string, LifetimeMembershipResolution>,
+  resolvePlan: PlanResolver
+) {
+  const freeUserIds: string[] = [];
+  const lifetimeUsers: PlanUserRecord[] = [];
+  const yearlyUsers: PlanUserRecord[] = [];
+  const misconfiguredPaidUsers: MisconfiguredPaidUser[] = [];
+
+  userBatch.forEach((userRecord) => {
+    const membershipResult = membershipsByUser.get(userRecord.userId);
+    if (membershipResult) {
+      if (membershipResult.validMemberships.length > 0) {
+        lifetimeUsers.push(...membershipResult.validMemberships);
+      }
+      if (
+        membershipResult.invalidMemberships.length > 0 &&
+        membershipResult.shouldFallbackToFree
+      ) {
+        freeUserIds.push(userRecord.userId);
+      }
+      return;
+    }
+
+    if (
+      userRecord.priceId &&
+      userRecord.paymentStatus &&
+      (userRecord.paymentStatus === 'active' ||
+        userRecord.paymentStatus === 'trialing')
+    ) {
+      const pricePlan = resolvePlan(userRecord.priceId);
+      if (pricePlan?.isLifetime && pricePlan?.credits?.enable) {
+        lifetimeUsers.push({
+          userId: userRecord.userId,
+          priceId: userRecord.priceId,
+        });
+      } else if (!pricePlan?.isFree && pricePlan?.credits?.enable) {
+        const yearlyPrice = pricePlan?.prices?.find(
+          (p) =>
+            p.priceId === userRecord.priceId &&
+            p.interval === PlanIntervals.YEAR
+        );
+        if (yearlyPrice) {
+          yearlyUsers.push({
+            userId: userRecord.userId,
+            priceId: userRecord.priceId,
+          });
+        } else {
+          misconfiguredPaidUsers.push({
+            userId: userRecord.userId,
+            priceId: userRecord.priceId,
+          });
+          freeUserIds.push(userRecord.userId);
+        }
+      }
+    } else {
+      freeUserIds.push(userRecord.userId);
+    }
+  });
+
+  return { freeUserIds, lifetimeUsers, yearlyUsers, misconfiguredPaidUsers };
+}
+
+async function distributeForFreeUsers({
+  freeUserIds,
+  freePlan,
+  periodKey,
+  monthLabel,
+  batchSize,
+  deps,
+  log,
+}: {
+  freeUserIds: string[];
+  freePlan: ReturnType<typeof getAllPricePlans>[number] | undefined;
+  periodKey: number;
+  monthLabel: string;
+  batchSize: number;
+  deps: DistributeCreditsDeps;
+  log: typeof baseLogger;
+}) {
+  let processedDelta = 0;
+  let errorDelta = 0;
+
+  if (!freePlan || freeUserIds.length === 0) {
+    return { processedDelta, errorDelta };
+  }
+
+  for (let i = 0; i < freeUserIds.length; i += batchSize) {
+    const batch = freeUserIds.slice(i, i + batchSize);
+    const commands = deps.creditDistributionService.generateFreeCommands({
+      userIds: batch,
+      plan: freePlan,
+      periodKey,
+      monthLabel,
+    });
+    if (commands.length === 0) {
+      continue;
+    }
+    const result = await deps.creditDistributionService.execute(commands);
+    processedDelta += result.processed;
+    errorDelta += result.errors.length;
+    if (result.errors.length > 0) {
+      log.error(
+        {
+          errors: result.errors,
+          batch: i / batchSize + 1,
+          flagEnabled: result.flagEnabled,
+        },
+        'Failed to distribute monthly free credits for some users'
+      );
+    }
+    if (freeUserIds.length > batchSize * 10) {
+      log.debug(
+        {
+          processed: Math.min(i + batchSize, freeUserIds.length),
+          total: freeUserIds.length,
+          segment: 'free',
+          flagEnabled: result.flagEnabled,
+        },
+        'Progress distributing credits'
+      );
+    }
+  }
+
+  return { processedDelta, errorDelta };
+}
+
+async function distributeForLifetimeUsers({
+  lifetimeUsers,
+  periodKey,
+  monthLabel,
+  batchSize,
+  deps,
+  log,
+}: {
+  lifetimeUsers: PlanUserRecord[];
+  periodKey: number;
+  monthLabel: string;
+  batchSize: number;
+  deps: DistributeCreditsDeps;
+  log: typeof baseLogger;
+}) {
+  let processedDelta = 0;
+  let errorDelta = 0;
+
+  for (let i = 0; i < lifetimeUsers.length; i += batchSize) {
+    const batch = lifetimeUsers.slice(i, i + batchSize);
+    const commands = deps.creditDistributionService.generateLifetimeCommands({
+      users: batch,
+      periodKey,
+      monthLabel,
+    });
+    if (commands.length === 0) {
+      continue;
+    }
+    const result = await deps.creditDistributionService.execute(commands);
+    processedDelta += result.processed;
+    errorDelta += result.errors.length;
+    if (result.errors.length > 0) {
+      log.error(
+        {
+          errors: result.errors,
+          batch: i / batchSize + 1,
+          flagEnabled: result.flagEnabled,
+        },
+        'Failed to distribute lifetime monthly credits'
+      );
+    }
+
+    if (lifetimeUsers.length > batchSize * 10) {
+      log.debug(
+        {
+          processed: Math.min(i + batchSize, lifetimeUsers.length),
+          total: lifetimeUsers.length,
+          segment: 'lifetime',
+          flagEnabled: result.flagEnabled,
+        },
+        'Progress distributing credits'
+      );
+    }
+  }
+
+  return { processedDelta, errorDelta };
+}
+
+async function distributeForYearlyUsers({
+  yearlyUsers,
+  periodKey,
+  monthLabel,
+  batchSize,
+  deps,
+  log,
+}: {
+  yearlyUsers: PlanUserRecord[];
+  periodKey: number;
+  monthLabel: string;
+  batchSize: number;
+  deps: DistributeCreditsDeps;
+  log: typeof baseLogger;
+}) {
+  let processedDelta = 0;
+  let errorDelta = 0;
+
+  for (let i = 0; i < yearlyUsers.length; i += batchSize) {
+    const batch = yearlyUsers.slice(i, i + batchSize);
+    const commands = deps.creditDistributionService.generateYearlyCommands({
+      users: batch,
+      periodKey,
+      monthLabel,
+    });
+    if (commands.length === 0) {
+      continue;
+    }
+    const result = await deps.creditDistributionService.execute(commands);
+    processedDelta += result.processed;
+    errorDelta += result.errors.length;
+    if (result.errors.length > 0) {
+      log.error(
+        {
+          errors: result.errors,
+          batch: i / batchSize + 1,
+          flagEnabled: result.flagEnabled,
+        },
+        'Failed to distribute yearly monthly credits'
+      );
+    }
+
+    if (yearlyUsers.length > batchSize * 10) {
+      log.debug(
+        {
+          processed: Math.min(i + batchSize, yearlyUsers.length),
+          total: yearlyUsers.length,
+          segment: 'yearly',
+          flagEnabled: result.flagEnabled,
+        },
+        'Progress distributing credits'
+      );
+    }
+  }
+
+  return { processedDelta, errorDelta };
+}
+
+export async function distributeCreditsToAllUsers(
+  options?: {
+    refDate?: Date;
+  },
+  deps: DistributeCreditsDeps = defaultDeps
+) {
+  const log = baseLogger.child({ span: 'distributeCreditsToAllUsers' });
+  log.info('Starting credit distribution job');
+
+  // Process expired credits first before distributing new credits
+  log.debug('Processing expired credits before distribution');
+  const expiredResult = await runExpirationJob();
+  log.debug({ expiredResult }, 'Finished processing expired credits');
+
+  const db = await getDb();
+  const latestPaymentQuery = createLatestPaymentSubquery(db);
 
   const now = options?.refDate ?? new Date();
   const monthLabel = `${now.getFullYear()}-${now.getMonth() + 1}`;
@@ -140,41 +471,15 @@ export async function distributeCreditsToAllUsers(options?: {
     log.info('Free plan credits disabled, skipping free users');
   }
 
-  const fetchUsersBatch = async (
-    lastUserId: string | null,
-    limit: number
-  ): Promise<UserWithPayment[]> => {
-    const baseCondition = or(isNull(user.banned), eq(user.banned, false));
-    const paginationCondition = lastUserId
-      ? and(baseCondition, gt(user.id, lastUserId))
-      : baseCondition;
-
-    return await db
-      .select({
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        priceId: latestPaymentQuery.priceId,
-        paymentStatus: latestPaymentQuery.status,
-        paymentCreatedAt: latestPaymentQuery.createdAt,
-      })
-      .from(user)
-      .leftJoin(
-        latestPaymentQuery,
-        and(
-          eq(user.id, latestPaymentQuery.userId),
-          eq(latestPaymentQuery.rowNumber, 1)
-        )
-      )
-      .where(paginationCondition)
-      .orderBy(user.id)
-      .limit(limit);
-  };
-
   const resolvePlan = createCachedPlanResolver(findPlanByPriceId);
 
   do {
-    const userBatch = await fetchUsersBatch(lastProcessedUserId, userBatchSize);
+    const userBatch = await fetchUsersBatch(
+      db,
+      latestPaymentQuery,
+      lastProcessedUserId,
+      userBatchSize
+    );
     if (userBatch.length === 0) {
       break;
     }
@@ -182,193 +487,73 @@ export async function distributeCreditsToAllUsers(options?: {
     usersCount += userBatch.length;
 
     const userIdsInBatch = userBatch.map((record) => record.userId);
-    const membershipsInBatch =
-      await lifetimeMembershipRepository.findActiveByUserIds(
-        userIdsInBatch,
-        db
+    const perUserMembershipResults = await resolveLifetimeMemberships(
+      userIdsInBatch,
+      db,
+      deps,
+      resolvePlan
+    );
+
+    // log invalid memberships
+    for (const [userId, result] of perUserMembershipResults.entries()) {
+      if (result.invalidMemberships.length > 0) {
+        log.warn(
+          {
+            userId,
+            priceIds: result.invalidMemberships.map(
+              (membership) => membership.priceId
+            ),
+          },
+          'Lifetime membership missing valid plan configuration, falling back to free credits'
+        );
+      }
+    }
+
+    const { freeUserIds, lifetimeUsers, yearlyUsers, misconfiguredPaidUsers } =
+      classifyUsersByPlan(userBatch, perUserMembershipResults, resolvePlan);
+
+    if (misconfiguredPaidUsers.length > 0) {
+      log.warn(
+        {
+          users: misconfiguredPaidUsers,
+        },
+        'Paid users missing yearly pricing configuration, falling back to free credits'
       );
-    const membershipsByUser = membershipsInBatch.reduce<
-      Map<string, LifetimeMembershipRecord[]>
-    >((acc, membership) => {
-      const existing = acc.get(membership.userId);
-      if (existing) {
-        existing.push(membership);
-      } else {
-        acc.set(membership.userId, [membership]);
-      }
-      return acc;
-    }, new Map());
+    }
 
-    const freeUserIds: string[] = [];
-    const lifetimeUsers: PlanUserRecord[] = [];
-    const yearlyUsers: PlanUserRecord[] = [];
-
-    userBatch.forEach((userRecord) => {
-      const membershipsForUser = membershipsByUser.get(userRecord.userId);
-      if (membershipsForUser && membershipsForUser.length > 0) {
-        const { validMemberships, invalidMemberships, shouldFallbackToFree } =
-          collectValidLifetimeMemberships(membershipsForUser, resolvePlan);
-        if (validMemberships.length > 0) {
-          lifetimeUsers.push(...validMemberships);
-        }
-        if (invalidMemberships.length > 0) {
-          log.warn(
-            {
-              userId: userRecord.userId,
-              priceIds: invalidMemberships.map(
-                (membership) => membership.priceId
-              ),
-            },
-            'Lifetime membership missing valid plan configuration, falling back to free credits'
-          );
-        }
-        if (shouldFallbackToFree) {
-          freeUserIds.push(userRecord.userId);
-        }
-        return;
-      }
-      if (
-        userRecord.priceId &&
-        userRecord.paymentStatus &&
-        (userRecord.paymentStatus === 'active' ||
-          userRecord.paymentStatus === 'trialing')
-      ) {
-        const pricePlan = resolvePlan(userRecord.priceId);
-        if (pricePlan?.isLifetime && pricePlan?.credits?.enable) {
-          lifetimeUsers.push({
-            userId: userRecord.userId,
-            priceId: userRecord.priceId,
-          });
-        } else if (!pricePlan?.isFree && pricePlan?.credits?.enable) {
-          const yearlyPrice = pricePlan?.prices?.find(
-            (p) =>
-              p.priceId === userRecord.priceId &&
-              p.interval === PlanIntervals.YEAR
-          );
-          if (yearlyPrice) {
-            yearlyUsers.push({
-              userId: userRecord.userId,
-              priceId: userRecord.priceId,
-            });
-          }
-        }
-      } else {
-        freeUserIds.push(userRecord.userId);
-      }
+    const freeResult = await distributeForFreeUsers({
+      freeUserIds,
+      freePlan,
+      periodKey,
+      monthLabel,
+      batchSize,
+      deps,
+      log,
     });
+    processedCount += freeResult.processedDelta;
+    errorCount += freeResult.errorDelta;
 
-    if (freePlan && freeUserIds.length > 0) {
-      for (let i = 0; i < freeUserIds.length; i += batchSize) {
-        const batch = freeUserIds.slice(i, i + batchSize);
-        const commands = creditDistributionService.generateFreeCommands({
-          userIds: batch,
-          plan: freePlan,
-          periodKey,
-          monthLabel,
-        });
-        if (commands.length === 0) {
-          continue;
-        }
-        const result = await creditDistributionService.execute(commands);
-        processedCount += result.processed;
-        errorCount += result.errors.length;
-        if (result.errors.length > 0) {
-          log.error(
-            {
-              errors: result.errors,
-              batch: i / batchSize + 1,
-              flagEnabled: result.flagEnabled,
-            },
-            'Failed to distribute monthly free credits for some users'
-          );
-        }
-        if (freeUserIds.length > batchSize * 10) {
-          log.debug(
-            {
-              processed: Math.min(i + batchSize, freeUserIds.length),
-              total: freeUserIds.length,
-              segment: 'free',
-              flagEnabled: result.flagEnabled,
-            },
-            'Progress distributing credits'
-          );
-        }
-      }
-    }
+    const lifetimeResult = await distributeForLifetimeUsers({
+      lifetimeUsers,
+      periodKey,
+      monthLabel,
+      batchSize,
+      deps,
+      log,
+    });
+    processedCount += lifetimeResult.processedDelta;
+    errorCount += lifetimeResult.errorDelta;
 
-    for (let i = 0; i < lifetimeUsers.length; i += batchSize) {
-      const batch = lifetimeUsers.slice(i, i + batchSize);
-      const commands = creditDistributionService.generateLifetimeCommands({
-        users: batch,
-        periodKey,
-        monthLabel,
-      });
-      if (commands.length === 0) {
-        continue;
-      }
-      const result = await creditDistributionService.execute(commands);
-      processedCount += result.processed;
-      errorCount += result.errors.length;
-      if (result.errors.length > 0) {
-        log.error(
-          {
-            errors: result.errors,
-            batch: i / batchSize + 1,
-            flagEnabled: result.flagEnabled,
-          },
-          'Failed to distribute lifetime monthly credits'
-        );
-      }
-
-      if (lifetimeUsers.length > batchSize * 10) {
-        log.debug(
-          {
-            processed: Math.min(i + batchSize, lifetimeUsers.length),
-            total: lifetimeUsers.length,
-            segment: 'lifetime',
-            flagEnabled: result.flagEnabled,
-          },
-          'Progress distributing credits'
-        );
-      }
-    }
-
-    for (let i = 0; i < yearlyUsers.length; i += batchSize) {
-      const batch = yearlyUsers.slice(i, i + batchSize);
-      const commands = creditDistributionService.generateYearlyCommands({
-        users: batch,
-        periodKey,
-        monthLabel,
-      });
-      if (commands.length === 0) {
-        continue;
-      }
-      const result = await creditDistributionService.execute(commands);
-      processedCount += result.processed;
-      errorCount += result.errors.length;
-      if (result.errors.length > 0) {
-        log.error(
-          {
-            errors: result.errors,
-            batch: i / batchSize + 1,
-            flagEnabled: result.flagEnabled,
-          },
-          'Failed to distribute yearly monthly credits'
-        );
-      }
-
-      if (yearlyUsers.length > batchSize * 10) {
-        log.debug(
-          {
-            processed: Math.min(i + batchSize, yearlyUsers.length),
-            total: yearlyUsers.length,
-            segment: 'yearly',
-            flagEnabled: result.flagEnabled,
-          },
-          'Progress distributing credits'
-        );
-      }
-    }
+    const yearlyResult = await distributeForYearlyUsers({
+      yearlyUsers,
+      periodKey,
+      monthLabel,
+      batchSize,
+      deps,
+      log,
+    });
+    processedCount += yearlyResult.processedDelta;
+    errorCount += yearlyResult.errorDelta;
 
     lastProcessedUserId = userBatch[userBatch.length - 1]?.userId ?? null;
   } while (lastProcessedUserId);

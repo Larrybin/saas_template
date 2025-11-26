@@ -147,24 +147,36 @@ export function unwrapEnvelopeOrThrowDomainError<TSuccess>(
     throw new Error(defaultErrorMessage);
   }
 
-  if (!('success' in data) || data.success) {
+  // Only treat envelopes with an explicit success === true as success.
+  // Any other shape (missing success flag or success === false) is handled
+  // as a failure and passed through the domain-error path.
+  const successFlag = (data as { success?: boolean }).success;
+  if (successFlag === true) {
     return data as TSuccess & { success: true };
   }
 
-  handleAuthEnvelope?.({ code: data.code, error: data.error });
+  const errorEnvelope = data as {
+    success?: boolean;
+    error?: string;
+  } & DomainErrorLike;
+
+  handleAuthEnvelope?.({
+    code: errorEnvelope.code,
+    error: errorEnvelope.error,
+  });
   // From here on, the error is treated as a domain error and converted
   // into an Error instance with an optional `code` / `retryable` flag.
 
   const resolvedMessage =
-    data.error ??
-    getDomainErrorMessage(data.code, undefined, defaultErrorMessage);
+    errorEnvelope.error ??
+    getDomainErrorMessage(errorEnvelope.code, undefined, defaultErrorMessage);
 
   const error = new Error(resolvedMessage) as Error & DomainErrorLike;
-  if (typeof data.code === 'string') {
-    error.code = data.code;
+  if (typeof errorEnvelope.code === 'string') {
+    error.code = errorEnvelope.code;
   }
-  if (typeof data.retryable === 'boolean') {
-    error.retryable = data.retryable;
+  if (typeof errorEnvelope.retryable === 'boolean') {
+    error.retryable = errorEnvelope.retryable;
   }
 
   throw error;

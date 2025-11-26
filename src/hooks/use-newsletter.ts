@@ -53,6 +53,7 @@ export function useNewsletterStatus(email: string | undefined) {
 // Hook to subscribe to newsletter
 export function useSubscribeNewsletter() {
   const queryClient = useQueryClient();
+  const handleAuthError = useAuthErrorHandler();
 
   return useMutation({
     mutationFn: async (email: string) => {
@@ -61,6 +62,8 @@ export function useSubscribeNewsletter() {
         success: true;
       }>(result?.data as Envelope<{ success: true }> | undefined, {
         defaultErrorMessage: 'Failed to subscribe to newsletter',
+        handleAuthEnvelope: (payload) =>
+          handleAuthFromEnvelope(handleAuthError, payload),
       });
       return data;
     },
@@ -76,6 +79,7 @@ export function useSubscribeNewsletter() {
 // Hook to unsubscribe from newsletter
 export function useUnsubscribeNewsletter() {
   const queryClient = useQueryClient();
+  const handleAuthError = useAuthErrorHandler();
 
   return useMutation({
     mutationFn: async (email: string) => {
@@ -84,6 +88,8 @@ export function useUnsubscribeNewsletter() {
         success: true;
       }>(result?.data as Envelope<{ success: true }> | undefined, {
         defaultErrorMessage: 'Failed to unsubscribe from newsletter',
+        handleAuthEnvelope: (payload) =>
+          handleAuthFromEnvelope(handleAuthError, payload),
       });
       return data;
     },

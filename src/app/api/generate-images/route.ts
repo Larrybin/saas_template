@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
 
   const authResult = await ensureApiUser(req);
   if (!authResult.ok) {
+    logger.warn('Unauthorized image generation request');
     return authResult.response;
   }
 
@@ -36,6 +37,10 @@ export async function POST(req: NextRequest) {
   });
 
   if (!rateLimitResult.ok) {
+    logger.warn(
+      { userId: authResult.user.id },
+      'Image generation rate limit exceeded'
+    );
     return rateLimitResult.response;
   }
 

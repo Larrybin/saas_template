@@ -11,10 +11,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { getCreditPackages } from '@/config/credits-config';
-import { websiteConfig } from '@/config/website';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useCurrentPlan } from '@/hooks/use-payment';
 import { authClient } from '@/lib/auth-client';
+import {
+  getCreditsGlobalConfig,
+  isCreditsEnabled,
+} from '@/lib/credits-settings';
 import { formatPrice } from '@/lib/formatter';
 import { cn } from '@/lib/utils';
 import { CreditCheckoutButton } from './credit-checkout-button';
@@ -24,7 +27,7 @@ import { CreditCheckoutButton } from './credit-checkout-button';
  */
 export function CreditPackages() {
   // Check if credits are enabled - move this check before any hooks
-  if (!websiteConfig.credits.enableCredits) {
+  if (!isCreditsEnabled()) {
     return null;
   }
 
@@ -49,7 +52,8 @@ function CreditPackagesContent() {
   const isFreePlan = currentPlan?.isFree === true;
 
   // Check if user is on free plan and enablePackagesForFreePlan is false
-  if (isFreePlan && !websiteConfig.credits.enablePackagesForFreePlan) {
+  const creditsConfig = getCreditsGlobalConfig();
+  if (isFreePlan && !creditsConfig.enablePackagesForFreePlan) {
     return null;
   }
 

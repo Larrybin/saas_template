@@ -8,7 +8,11 @@ import { createCreditCheckoutSession } from '@/actions/create-credit-checkout-se
 import { Button } from '@/components/ui/button';
 import { websiteConfig } from '@/config/website';
 import { clientLogger } from '@/lib/client-logger';
-import { getDomainErrorMessage } from '@/lib/domain-error-utils';
+import { getErrorUiStrategy } from '@/lib/domain-error-ui-registry';
+import {
+  type DomainErrorLike,
+  getDomainErrorMessage,
+} from '@/lib/domain-error-utils';
 
 interface CreditCheckoutButtonProps {
   userId: string;
@@ -135,17 +139,20 @@ export function CreditCheckoutButton({
         );
         const code =
           payload && 'code' in payload
-            ? (payload as { code?: string }).code
+            ? (payload as DomainErrorLike).code
             : undefined;
-        const fallbackKey =
-          code === 'PAYMENT_SECURITY_VIOLATION'
-            ? 'Dashboard.settings.credits.packages.purchaseFailed'
-            : 'Dashboard.settings.credits.packages.checkoutFailed';
+
+        const strategy = getErrorUiStrategy(code);
+
+        // i18n 映射统一交给 getDomainErrorMessage，
+        // 仅在没有注册错误码映射时使用「checkoutFailed」作为兜底。
         const message = getDomainErrorMessage(
           code,
           translate,
-          translate(fallbackKey)
+          strategy?.defaultFallbackMessage ??
+            translate('Dashboard.settings.credits.packages.checkoutFailed')
         );
+
         toast.error(message);
       }
     } catch (error) {

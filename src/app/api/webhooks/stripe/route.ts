@@ -28,14 +28,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Validate inputs
     if (!payload) {
       return NextResponse.json(
-        { error: 'Missing webhook payload' },
+        {
+          success: false,
+          error: 'Missing webhook payload',
+          code: ErrorCodes.UnexpectedError,
+          retryable: false,
+        },
         { status: 400 }
       );
     }
 
     if (!signature) {
       return NextResponse.json(
-        { error: 'Missing Stripe signature' },
+        {
+          success: false,
+          error: 'Missing Stripe signature',
+          code: ErrorCodes.UnexpectedError,
+          retryable: false,
+        },
         { status: 400 }
       );
     }
@@ -60,7 +70,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             : 400;
 
       return NextResponse.json(
-        { error: error.message, code: error.code, retryable: error.retryable },
+        {
+          success: false,
+          error: error.message,
+          code: error.code,
+          retryable: error.retryable,
+        },
         { status }
       );
     }
@@ -69,7 +84,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Return generic error
     return NextResponse.json(
-      { error: 'Webhook handler failed' },
+      {
+        success: false,
+        error: 'Webhook handler failed',
+        code: ErrorCodes.UnexpectedError,
+        retryable: true,
+      },
       { status: 400 }
     );
   }

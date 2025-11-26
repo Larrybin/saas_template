@@ -8,6 +8,7 @@ import {
   useAuthErrorHandler,
 } from '@/hooks/use-auth-error-handler';
 import { useLocaleRouter } from '@/i18n/navigation';
+import { getErrorUiStrategy } from '@/lib/domain-error-ui-registry';
 import {
   type DomainErrorLike,
   getDomainErrorMessage,
@@ -60,7 +61,9 @@ export function useCreditsErrorUi() {
         return;
       }
 
-      // 积分不足：toast + 跳转 Credits 页面
+      const strategy = getErrorUiStrategy(code);
+
+      // 积分不足：toast + 跳转 Credits 页面（沿用原有行为）
       if (code === 'CREDITS_INSUFFICIENT_BALANCE') {
         const resolved = getDomainErrorMessage(
           code,
@@ -73,7 +76,13 @@ export function useCreditsErrorUi() {
       }
 
       const fallback = message ?? 'Failed to process credits request';
-      const resolved = getDomainErrorMessage(code, translate, fallback);
+      const resolved = getDomainErrorMessage(
+        code,
+        translate,
+        strategy?.defaultFallbackMessage ?? fallback
+      );
+
+      // 其余 Credits 错误统一降级为 error toast
       toast.error(resolved);
     },
     [handleAuthError, router, translate]

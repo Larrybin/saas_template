@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import { getErrorUiStrategy } from '@/lib/domain-error-ui-registry';
 import type { DomainErrorLike } from '@/lib/domain-error-utils';
 import { getDomainErrorMessage } from '@/lib/domain-error-utils';
 
@@ -49,41 +50,37 @@ export function useAiErrorUi() {
       const fallback =
         rawMessage ?? 'Failed to process AI request. Please try again later.';
 
-      const message = getDomainErrorMessage(code, translate, fallback);
+      const strategy = getErrorUiStrategy(code);
+      const message = getDomainErrorMessage(
+        code,
+        translate,
+        strategy?.defaultFallbackMessage ?? fallback
+      );
+      const toastOptions = { description: message };
 
-      const toastOptions = {
-        description: message,
-      };
+      const severity = strategy?.severity;
 
-      // 粗粒度区分错误级别，优先覆盖常见 AI 场景
-      if (
-        code === 'AI_CONTENT_TIMEOUT' ||
-        code === 'AI_IMAGE_TIMEOUT' ||
-        code === 'AI_CONTENT_RATE_LIMIT'
-      ) {
-        toast.warning('AI request delayed', toastOptions);
-        return;
-      }
-
-      if (
-        code === 'AI_CONTENT_SERVICE_UNAVAILABLE' ||
-        code === 'AI_IMAGE_PROVIDER_ERROR' ||
-        code === 'AI_CONTENT_NETWORK_ERROR'
-      ) {
-        toast.error('AI service unavailable', toastOptions);
-        return;
-      }
-
-      if (
-        code === 'AI_CONTENT_VALIDATION_ERROR' ||
-        code === 'AI_IMAGE_INVALID_PARAMS' ||
-        code === 'AI_IMAGE_INVALID_JSON'
-      ) {
+      if (severity === 'info') {
         toast.info('Invalid AI request', toastOptions);
         return;
       }
 
-      // 默认降级为 error
+      if (severity === 'warning') {
+        toast.warning('AI request delayed', toastOptions);
+        return;
+      }
+
+      if (severity === 'error') {
+        toast.error(
+          context.source === 'image'
+            ? 'Image generation failed'
+            : 'AI request failed',
+          toastOptions
+        );
+        return;
+      }
+
+      // 没有命中策略时降级为 error
       toast.error(
         context.source === 'image'
           ? 'Image generation failed'

@@ -158,6 +158,9 @@
 - Action 层只负责参数校验和用户上下文注入，所有业务规则在 domain/service 层。
 - domain 层通过 DomainError 与上层通信，具体文案/i18n 由前端通过 `getDomainErrorMessage` 决定。
 
+> 关于 Credits 从创建、发放、消费到过期的完整生命周期，以及与 Billing / Payment / Auth / Job 边界的更细致说明，可参考 `docs/credits-lifecycle.md`。  
+> Credits 相关错误的前端消费统一通过 `useCreditsErrorUi`（`src/hooks/use-credits-error-ui.ts`）与 `domain-error-ui-registry.ts`，与 `docs/error-logging.md` 中的错误模型保持一致。
+
 ---
 
 ## 5. AI 模块（文本分析 / 图片生成）

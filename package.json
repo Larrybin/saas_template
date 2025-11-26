@@ -161,7 +161,8 @@
   "pnpm": {
     "overrides": {
       "brace-expansion": "^4.0.1",
-      "esbuild": "^0.25.12"
+      "esbuild": "^0.25.12",
+      "glob": "^11.1.0"
     }
   }
 }

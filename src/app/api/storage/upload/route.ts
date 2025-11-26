@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { websiteConfig } from '@/config/website';
 import { ensureApiUser } from '@/lib/server/api-auth';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders, resolveRequestId } from '@/lib/server/logger';
 import { enforceRateLimit } from '@/lib/server/rate-limit';
 import { uploadFile } from '@/storage';
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Content-Type must be multipart/form-data',
-        code: 'STORAGE_INVALID_CONTENT_TYPE',
+        code: ErrorCodes.StorageInvalidContentType,
         retryable: false,
       },
       { status: 400 }
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'No file provided',
-          code: 'STORAGE_NO_FILE',
+          code: ErrorCodes.StorageNoFile,
           retryable: false,
         },
         { status: 400 }
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'File size exceeds the 10MB limit',
-          code: 'STORAGE_FILE_TOO_LARGE',
+          code: ErrorCodes.StorageFileTooLarge,
           retryable: false,
         },
         { status: 400 }
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'File type not supported',
-          code: 'STORAGE_UNSUPPORTED_TYPE',
+          code: ErrorCodes.StorageUnsupportedType,
           retryable: false,
         },
         { status: 400 }
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: resolvedFolder.error,
-          code: 'STORAGE_INVALID_FOLDER',
+          code: ErrorCodes.StorageInvalidFolder,
           retryable: false,
         },
         { status: 400 }
@@ -210,7 +211,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: error.message,
-          code: 'STORAGE_PROVIDER_ERROR',
+          code: ErrorCodes.StorageProviderError,
           retryable: true,
         },
         { status: 500 }
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Something went wrong while uploading the file',
-        code: 'STORAGE_UNKNOWN_ERROR',
+        code: ErrorCodes.StorageUnknownError,
         retryable: true,
       },
       { status: 500 }

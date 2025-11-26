@@ -1,7 +1,12 @@
 import { DomainError } from '@/lib/domain-errors';
+import { type AuthErrorCode, ErrorCodes } from '@/lib/server/error-codes';
 
-export class AuthError extends DomainError {
-  constructor(message: string, code = 'AUTH_ERROR', retryable = false) {
+export class AuthError extends DomainError<AuthErrorCode> {
+  constructor(
+    message: string,
+    code: AuthErrorCode = ErrorCodes.AuthError,
+    retryable = false
+  ) {
     super({
       code,
       message,
@@ -13,7 +18,7 @@ export class AuthError extends DomainError {
 
 export class UnauthorizedError extends AuthError {
   constructor(message = 'Unauthorized') {
-    super(message, 'AUTH_UNAUTHORIZED', false);
+    super(message, ErrorCodes.AuthUnauthorized, false);
     this.name = 'UnauthorizedError';
   }
 }

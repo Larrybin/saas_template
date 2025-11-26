@@ -15,9 +15,15 @@ export interface StorageConfig {
  * Storage provider error types
  */
 export class StorageError extends Error {
-  constructor(message: string) {
+  readonly code: 'STORAGE_PROVIDER_ERROR' | 'STORAGE_UNKNOWN_ERROR' | undefined;
+
+  constructor(
+    message: string,
+    code?: 'STORAGE_PROVIDER_ERROR' | 'STORAGE_UNKNOWN_ERROR'
+  ) {
     super(message);
     this.name = 'StorageError';
+    this.code = code;
   }
 }
 

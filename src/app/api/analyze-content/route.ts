@@ -10,6 +10,7 @@ import type { AnalyzeContentResponse } from '@/ai/text/utils/web-content-analyze
 import { validateAnalyzeContentRequest } from '@/ai/text/utils/web-content-analyzer';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import {
   createLoggerFromHeaders,
   resolveRequestId,
@@ -162,7 +163,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: 'Internal server error',
-        code: 'UNEXPECTED_ERROR',
+        code: ErrorCodes.UnexpectedError,
         retryable: true,
       } satisfies AnalyzeContentResponse,
       { status: 500 }

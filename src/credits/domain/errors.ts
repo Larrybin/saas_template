@@ -1,9 +1,10 @@
 import { DomainError } from '@/lib/domain-errors';
+import { ErrorCodes } from '@/lib/server/error-codes';
 
 export class InvalidCreditPayloadError extends DomainError {
   constructor(message: string) {
     super({
-      code: 'CREDITS_INVALID_PAYLOAD',
+      code: ErrorCodes.CreditsInvalidPayload,
       message,
       retryable: false,
     });
@@ -14,7 +15,7 @@ export class InvalidCreditPayloadError extends DomainError {
 export class InsufficientCreditsError extends DomainError {
   constructor(message = 'Insufficient credits') {
     super({
-      code: 'CREDITS_INSUFFICIENT_BALANCE',
+      code: ErrorCodes.CreditsInsufficientBalance,
       message,
       retryable: false,
     });
@@ -27,7 +28,7 @@ export class CreditsPlanPolicyMissingError extends DomainError {
     message = 'Credits plan policy is missing for the given plan or price'
   ) {
     super({
-      code: 'CREDITS_PLAN_POLICY_MISSING',
+      code: ErrorCodes.CreditsPlanPolicyMissing,
       message,
       retryable: false,
     });

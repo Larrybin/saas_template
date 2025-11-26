@@ -1,3 +1,5 @@
+import { ErrorCodes } from '@/lib/server/error-codes';
+
 export const AUTH_BANNED_FALLBACK_MESSAGE =
   'Your account has been suspended. Please contact support.';
 
@@ -7,50 +9,62 @@ type DomainErrorMessageDefinition = {
 };
 
 const DOMAIN_ERROR_MESSAGES: Record<string, DomainErrorMessageDefinition> = {
-  CREDITS_INSUFFICIENT_BALANCE: {
+  [ErrorCodes.CreditsInsufficientBalance]: {
     key: 'Dashboard.settings.credits.balance.insufficientCredits',
   },
-  PAYMENT_SECURITY_VIOLATION: {
+  [ErrorCodes.PaymentSecurityViolation]: {
     key: 'Dashboard.settings.credits.packages.purchaseFailed',
   },
-  AUTH_UNAUTHORIZED: {
+  [ErrorCodes.AuthUnauthorized]: {
     key: 'Common.unauthorized',
     fallback: 'Please sign in to continue.',
   },
-  AUTH_BANNED: {
+  [ErrorCodes.AuthBanned]: {
     key: 'Common.accountBanned',
     fallback: AUTH_BANNED_FALLBACK_MESSAGE,
   },
-  AI_CONTENT_VALIDATION_ERROR: {
+  [ErrorCodes.AiContentValidationError]: {
     key: 'AITextPage.analyzer.errors.invalidUrl',
   },
-  AI_CONTENT_NETWORK_ERROR: {
+  [ErrorCodes.AiContentNetworkError]: {
     key: 'AITextPage.analyzer.errors.networkError',
   },
-  AI_CONTENT_TIMEOUT: { key: 'AITextPage.analyzer.errors.timeout' },
-  AI_CONTENT_RATE_LIMIT: {
+  [ErrorCodes.AiContentTimeout]: {
+    key: 'AITextPage.analyzer.errors.timeout',
+  },
+  [ErrorCodes.AiContentRateLimit]: {
     key: 'AITextPage.analyzer.errors.rateLimit',
   },
-  AI_CONTENT_AUTH_ERROR: {
+  [ErrorCodes.AiContentAuthError]: {
     key: 'AITextPage.analyzer.errors.authError',
   },
-  AI_CONTENT_SERVICE_UNAVAILABLE: {
+  [ErrorCodes.AiContentServiceUnavailable]: {
     key: 'AITextPage.analyzer.errors.serviceUnavailable',
   },
-  AI_CONTENT_ANALYSIS_ERROR: {
+  [ErrorCodes.AiContentAnalysisError]: {
     key: 'AITextPage.analyzer.errors.analysisError',
   },
-  AI_CONTENT_SCRAPING_ERROR: {
+  [ErrorCodes.AiContentScrapingError]: {
     key: 'AITextPage.analyzer.errors.scrapingError',
   },
-  AI_CONTENT_UNKNOWN_ERROR: {
+  [ErrorCodes.AiContentUnknownError]: {
     key: 'AITextPage.analyzer.errors.unknownError',
   },
-  AI_IMAGE_INVALID_JSON: { key: 'AIImagePage.errors.invalidRequest' },
-  AI_IMAGE_INVALID_PARAMS: { key: 'AIImagePage.errors.invalidParams' },
-  AI_IMAGE_INVALID_RESPONSE: { key: 'AIImagePage.errors.providerError' },
-  AI_IMAGE_TIMEOUT: { key: 'AIImagePage.errors.timeout' },
-  AI_IMAGE_PROVIDER_ERROR: { key: 'AIImagePage.errors.providerError' },
+  [ErrorCodes.ImageGenerateInvalidJson]: {
+    key: 'AIImagePage.errors.invalidRequest',
+  },
+  [ErrorCodes.ImageGenerateInvalidParams]: {
+    key: 'AIImagePage.errors.invalidParams',
+  },
+  [ErrorCodes.ImageInvalidResponse]: {
+    key: 'AIImagePage.errors.providerError',
+  },
+  [ErrorCodes.ImageTimeout]: {
+    key: 'AIImagePage.errors.timeout',
+  },
+  [ErrorCodes.ImageProviderError]: {
+    key: 'AIImagePage.errors.providerError',
+  },
 };
 
 export type DomainErrorLike = {
@@ -133,24 +147,36 @@ export function unwrapEnvelopeOrThrowDomainError<TSuccess>(
     throw new Error(defaultErrorMessage);
   }
 
-  if (!('success' in data) || data.success) {
+  // Only treat envelopes with an explicit success === true as success.
+  // Any other shape (missing success flag or success === false) is handled
+  // as a failure and passed through the domain-error path.
+  const successFlag = (data as { success?: boolean }).success;
+  if (successFlag === true) {
     return data as TSuccess & { success: true };
   }
 
-  handleAuthEnvelope?.({ code: data.code, error: data.error });
+  const errorEnvelope = data as {
+    success?: boolean;
+    error?: string;
+  } & DomainErrorLike;
+
+  handleAuthEnvelope?.({
+    code: errorEnvelope.code,
+    error: errorEnvelope.error,
+  });
   // From here on, the error is treated as a domain error and converted
   // into an Error instance with an optional `code` / `retryable` flag.
 
   const resolvedMessage =
-    data.error ??
-    getDomainErrorMessage(data.code, undefined, defaultErrorMessage);
+    errorEnvelope.error ??
+    getDomainErrorMessage(errorEnvelope.code, undefined, defaultErrorMessage);
 
   const error = new Error(resolvedMessage) as Error & DomainErrorLike;
-  if (typeof data.code === 'string') {
-    error.code = data.code;
+  if (typeof errorEnvelope.code === 'string') {
+    error.code = errorEnvelope.code;
   }
-  if (typeof data.retryable === 'boolean') {
-    error.retryable = data.retryable;
+  if (typeof errorEnvelope.retryable === 'boolean') {
+    error.retryable = errorEnvelope.retryable;
   }
 
   throw error;

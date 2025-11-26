@@ -5,6 +5,7 @@ import {
 } from '@/ai/image/lib/api-types';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import {
   createLoggerFromHeaders,
   resolveRequestId,
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: 'Request body must be valid JSON.',
-        code: 'AI_IMAGE_INVALID_JSON',
+        code: ErrorCodes.ImageGenerateInvalidJson,
         retryable: false,
       } satisfies GenerateImageResponse,
       { status: 400 }
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: 'Invalid image generation parameters.',
-        code: 'AI_IMAGE_INVALID_PARAMS',
+        code: ErrorCodes.ImageGenerateInvalidParams,
         retryable: false,
       } satisfies GenerateImageResponse,
       { status: 400 }
@@ -94,12 +95,12 @@ export async function POST(req: NextRequest) {
     if (!result.success) {
       return NextResponse.json(result satisfies GenerateImageResponse, {
         status:
-          result.code === 'AI_IMAGE_INVALID_JSON' ||
-          result.code === 'AI_IMAGE_INVALID_PARAMS'
+          result.code === ErrorCodes.ImageGenerateInvalidJson ||
+          result.code === ErrorCodes.ImageGenerateInvalidParams
             ? 400
-            : result.code === 'AI_IMAGE_TIMEOUT'
+            : result.code === ErrorCodes.ImageTimeout
               ? 504
-              : result.code === 'AI_IMAGE_INVALID_RESPONSE'
+              : result.code === ErrorCodes.ImageInvalidResponse
                 ? 502
                 : 500,
       });
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: 'Failed to generate image. Please try again later.',
-        code: 'AI_IMAGE_PROVIDER_ERROR',
+        code: ErrorCodes.ImageProviderError,
         retryable: true,
       } satisfies GenerateImageResponse,
       { status: 500 }

@@ -1,39 +1,9 @@
 import { NextResponse } from 'next/server';
 import { serverEnv } from '@/env/server';
-import { createLoggerFromHeaders, type Logger } from '@/lib/server/logger';
+import { ErrorCodes } from '@/lib/server/error-codes';
+import { validateInternalJobBasicAuth } from '@/lib/server/internal-auth';
+import { createLoggerFromHeaders } from '@/lib/server/logger';
 import { runCreditsDistributionJob } from '@/lib/server/usecases/distribute-credits-job';
-
-// Basic authentication middleware
-function validateBasicAuth(request: Request, logger: Logger): boolean {
-  const authHeader = request.headers.get('authorization');
-
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    return false;
-  }
-
-  // Extract credentials from Authorization header
-  const [, base64Credentials] = authHeader.split(' ');
-  if (!base64Credentials) {
-    return false;
-  }
-  const credentials = Buffer.from(base64Credentials, 'base64').toString(
-    'utf-8'
-  );
-  const [username, password] = credentials.split(':');
-
-  // Validate against environment variables
-  const expectedUsername = serverEnv.cronJobs.username;
-  const expectedPassword = serverEnv.cronJobs.password;
-
-  if (!expectedUsername || !expectedPassword) {
-    logger.error(
-      'Basic auth credentials not configured in environment variables'
-    );
-    return false;
-  }
-
-  return username === expectedUsername && password === expectedPassword;
-}
 
 /**
  * distribute credits to all users daily
@@ -44,7 +14,15 @@ export async function GET(request: Request) {
     span: 'api.credits.distribute',
   });
   // Validate basic authentication
-  if (!validateBasicAuth(request, log)) {
+  const expectedUsername = serverEnv.cronJobs.username;
+  const expectedPassword = serverEnv.cronJobs.password;
+
+  const expectedCredentials =
+    expectedUsername && expectedPassword
+      ? { username: expectedUsername, password: expectedPassword }
+      : {};
+
+  if (!validateInternalJobBasicAuth(request, log, expectedCredentials)) {
     log.warn('Unauthorized attempt to distribute credits');
     return new NextResponse('Unauthorized', {
       status: 401,
@@ -79,7 +57,7 @@ export async function GET(request: Request) {
       {
         success: false,
         error: 'Distribute credits job failed',
-        code: 'CREDITS_DISTRIBUTION_FAILED',
+        code: ErrorCodes.CreditsDistributionFailed,
         retryable: true,
       },
       { status: 500 }

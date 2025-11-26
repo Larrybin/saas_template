@@ -1,5 +1,5 @@
 import { distributeCreditsToAllUsers } from '@/credits/distribute';
-import { getLogger } from '@/lib/server/logger';
+import { createJobLogger } from '@/lib/server/job-logger';
 
 export type CreditsDistributionJobResult = {
   usersCount: number;
@@ -8,16 +8,18 @@ export type CreditsDistributionJobResult = {
 };
 
 export async function runCreditsDistributionJob(): Promise<CreditsDistributionJobResult> {
-  const logger = getLogger({
+  const { logger, jobRunId } = createJobLogger({
     span: 'usecase.credits.distribute',
+    job: 'credits.distribute',
   });
 
-  logger.info('Starting credits distribution job');
+  logger.info({ jobRunId }, 'Starting credits distribution job');
 
   const result = await distributeCreditsToAllUsers();
 
   logger.info(
     {
+      jobRunId,
       ...result,
     },
     'Finished credits distribution job'

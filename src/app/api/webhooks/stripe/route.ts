@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { DomainError } from '@/lib/domain-errors';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders } from '@/lib/server/logger';
 import { handleWebhookEvent } from '@/payment';
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
 
       const status =
-        error.code === 'PAYMENT_SECURITY_VIOLATION'
+        error.code === ErrorCodes.PaymentSecurityViolation
           ? 400
           : error.retryable
             ? 500

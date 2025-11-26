@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { chatRequestSchema } from '@/ai/chat/lib/api-schema';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import {
   createLoggerFromHeaders,
   resolveRequestId,
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
       {
         success: false,
         error: 'Request body must be valid JSON.',
-        code: 'AI_CHAT_INVALID_JSON',
+        code: ErrorCodes.AiChatInvalidJson,
         retryable: false,
       },
       { status: 400 }
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
       {
         success: false,
         error: 'Invalid chat request parameters',
-        code: 'AI_CHAT_INVALID_PARAMS',
+        code: ErrorCodes.AiChatInvalidParams,
         retryable: false,
       },
       { status: 400 }
@@ -132,7 +133,7 @@ export async function POST(req: Request) {
       {
         success: false,
         error: 'Internal server error',
-        code: 'UNEXPECTED_ERROR',
+        code: ErrorCodes.UnexpectedError,
         retryable: true,
       },
       { status: 500 }

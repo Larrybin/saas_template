@@ -20,6 +20,7 @@ import {
 } from '@/ai/usage/ai-usage-service';
 import { consumeCredits } from '@/credits/credits';
 import { serverEnv } from '@/env/server';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
 const TIMEOUT_MILLIS = 55 * 1000;
@@ -114,7 +115,7 @@ export async function generateImageWithCredits(
     return {
       success: false,
       error: 'Invalid request parameters',
-      code: 'AI_IMAGE_INVALID_PARAMS',
+      code: ErrorCodes.ImageGenerateInvalidParams,
       retryable: false,
     };
   }
@@ -212,7 +213,7 @@ export async function generateImageWithCredits(
         success: false,
         error:
           'Image generation failed due to an unexpected provider response.',
-        code: 'AI_IMAGE_INVALID_RESPONSE',
+        code: ErrorCodes.ImageInvalidResponse,
         retryable: true,
       };
     }
@@ -240,7 +241,7 @@ export async function generateImageWithCredits(
       return {
         success: false,
         error: 'Image generation timed out. Please try again.',
-        code: 'AI_IMAGE_TIMEOUT',
+        code: ErrorCodes.ImageTimeout,
         retryable: true,
       };
     }
@@ -250,7 +251,7 @@ export async function generateImageWithCredits(
     return {
       success: false,
       error: 'Failed to generate image. Please try again later.',
-      code: 'AI_IMAGE_PROVIDER_ERROR',
+      code: ErrorCodes.ImageProviderError,
       retryable: true,
     };
   }

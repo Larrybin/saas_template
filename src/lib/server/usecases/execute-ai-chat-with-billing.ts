@@ -8,6 +8,7 @@ import {
 } from '@/ai/usage/ai-usage-service';
 import { consumeCredits } from '@/credits/credits';
 import { DomainError } from '@/lib/domain-errors';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
 export type ExecuteAiChatWithBillingInput = {
@@ -75,7 +76,7 @@ export async function executeAiChatWithBilling(
     );
 
     throw new DomainError({
-      code: 'AI_CHAT_INVALID_PARAMS',
+      code: ErrorCodes.AiChatInvalidParams,
       message: 'Invalid chat request parameters',
       retryable: false,
     });

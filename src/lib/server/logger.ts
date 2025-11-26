@@ -10,6 +10,8 @@ export type LogContext = {
   span?: string;
   route?: string;
   provider?: string;
+  job?: string;
+  jobRunId?: string;
 };
 
 const level =

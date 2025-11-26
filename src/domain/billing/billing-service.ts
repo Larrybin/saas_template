@@ -6,6 +6,7 @@ import {
   resolveExecutor,
 } from '@/credits/services/transaction-context';
 import { DomainError } from '@/lib/domain-errors';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { UserLifetimeMembershipRepository } from '@/payment/data-access/user-lifetime-membership-repository';
 import type {
@@ -173,7 +174,7 @@ export class DefaultBillingService implements BillingService {
     const plan = this.planPolicy.getPlanById(planId);
     if (!plan || plan.disabled) {
       throw new DomainError({
-        code: 'BILLING_PLAN_NOT_FOUND',
+        code: ErrorCodes.BillingPlanNotFound,
         message: 'Price plan not found or disabled',
       });
     }
@@ -182,7 +183,7 @@ export class DefaultBillingService implements BillingService {
     );
     if (!price) {
       throw new DomainError({
-        code: 'BILLING_PRICE_NOT_FOUND',
+        code: ErrorCodes.BillingPriceNotFound,
         message: 'Price not found for plan',
       });
     }

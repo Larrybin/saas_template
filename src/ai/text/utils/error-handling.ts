@@ -6,6 +6,7 @@
 import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
 import { clientLogger } from '@/lib/client-logger';
 import { DomainError } from '@/lib/domain-errors';
+import { ErrorCodes, type WebContentErrorCode } from '@/lib/server/error-codes';
 
 // Error types for different failure scenarios
 export enum ErrorType {
@@ -29,19 +30,19 @@ export enum ErrorSeverity {
 }
 
 // Custom error class for web content analyzer
-const AI_ERROR_CODE_MAP: Record<ErrorType, string> = {
-  [ErrorType.VALIDATION]: 'AI_CONTENT_VALIDATION_ERROR',
-  [ErrorType.NETWORK]: 'AI_CONTENT_NETWORK_ERROR',
-  [ErrorType.SCRAPING]: 'AI_CONTENT_SCRAPING_ERROR',
-  [ErrorType.ANALYSIS]: 'AI_CONTENT_ANALYSIS_ERROR',
-  [ErrorType.TIMEOUT]: 'AI_CONTENT_TIMEOUT',
-  [ErrorType.RATE_LIMIT]: 'AI_CONTENT_RATE_LIMIT',
-  [ErrorType.AUTHENTICATION]: 'AI_CONTENT_AUTH_ERROR',
-  [ErrorType.SERVICE_UNAVAILABLE]: 'AI_CONTENT_SERVICE_UNAVAILABLE',
-  [ErrorType.UNKNOWN]: 'AI_CONTENT_UNKNOWN_ERROR',
+const AI_ERROR_CODE_MAP: Record<ErrorType, WebContentErrorCode> = {
+  [ErrorType.VALIDATION]: ErrorCodes.AiContentValidationError,
+  [ErrorType.NETWORK]: ErrorCodes.AiContentNetworkError,
+  [ErrorType.SCRAPING]: ErrorCodes.AiContentScrapingError,
+  [ErrorType.ANALYSIS]: ErrorCodes.AiContentAnalysisError,
+  [ErrorType.TIMEOUT]: ErrorCodes.AiContentTimeout,
+  [ErrorType.RATE_LIMIT]: ErrorCodes.AiContentRateLimit,
+  [ErrorType.AUTHENTICATION]: ErrorCodes.AiContentAuthError,
+  [ErrorType.SERVICE_UNAVAILABLE]: ErrorCodes.AiContentServiceUnavailable,
+  [ErrorType.UNKNOWN]: ErrorCodes.AiContentUnknownError,
 };
 
-export class WebContentAnalyzerError extends DomainError {
+export class WebContentAnalyzerError extends DomainError<WebContentErrorCode> {
   public readonly type: ErrorType;
   public readonly severity: ErrorSeverity;
   public readonly userMessage: string;

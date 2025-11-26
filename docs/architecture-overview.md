@@ -86,3 +86,4 @@ The route stays thin and focuses on HTTP concerns (auth, rate-limit, request val
 
 The job usecase keeps the API route focused on authentication and HTTP response shape, while centralizing the job orchestration concerns (logging, tracing, and the call into the credits domain) in a reusable server-side entry point that could later be reused by CLI or background worker triggers.
 
+For a complete list of error codes used across APIs and domain services, see `docs/error-codes.md`.

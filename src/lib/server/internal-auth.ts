@@ -45,7 +45,13 @@ export function parseBasicAuthHeader(
   const credentials = Buffer.from(base64Credentials, 'base64').toString(
     'utf-8'
   );
-  const [username, password] = credentials.split(':');
+  const separatorIndex = credentials.indexOf(':');
+  if (separatorIndex === -1) {
+    return null;
+  }
+
+  const username = credentials.slice(0, separatorIndex);
+  const password = credentials.slice(separatorIndex + 1);
 
   if (!username || !password) {
     return null;

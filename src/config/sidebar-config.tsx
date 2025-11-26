@@ -12,10 +12,10 @@ import {
   UsersRoundIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { getCreditsGlobalConfig } from '@/lib/credits-settings';
 import { isDemoWebsite } from '@/lib/demo';
 import { Routes } from '@/routes';
 import type { NestedMenuItem } from '@/types';
-import { websiteConfig } from './website';
 
 /**
  * Get sidebar config with translations
@@ -32,6 +32,7 @@ export function getSidebarLinks(): NestedMenuItem[] {
 
   // if is demo website, allow user to access admin and user pages, but data is fake
   const isDemo = isDemoWebsite();
+  const creditsConfig = getCreditsGlobalConfig();
 
   return [
     {
@@ -69,7 +70,7 @@ export function getSidebarLinks(): NestedMenuItem[] {
           href: Routes.SettingsBilling,
           external: false,
         },
-        ...(websiteConfig.credits.enableCredits
+        ...(creditsConfig.enableCredits
           ? [
               {
                 title: t('settings.credits.title'),

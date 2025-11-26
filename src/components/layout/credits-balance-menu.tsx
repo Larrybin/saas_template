@@ -2,14 +2,14 @@
 
 import { CoinsIcon, Loader2Icon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { websiteConfig } from '@/config/website';
 import { useCreditBalance } from '@/hooks/use-credits';
 import { useLocaleRouter } from '@/i18n/navigation';
+import { isCreditsEnabled } from '@/lib/credits-settings';
 import { Routes } from '@/routes';
 
 export function CreditsBalanceMenu() {
   // If credits are not enabled, return null
-  if (!websiteConfig.credits.enableCredits) {
+  if (!isCreditsEnabled()) {
     return null;
   }
 

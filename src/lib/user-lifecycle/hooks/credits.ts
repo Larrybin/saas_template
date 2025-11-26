@@ -1,8 +1,11 @@
-import { websiteConfig } from '@/config/website';
 import {
   addMonthlyFreeCredits,
   addRegisterGiftCredits,
 } from '@/credits/credits';
+import {
+  getCreditsGlobalConfig,
+  isCreditsEnabled,
+} from '@/lib/credits-settings';
 import { getAllPricePlans } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
 import type { UserLifecycleHook } from '../types';
@@ -11,10 +14,13 @@ const logger = getLogger({ span: 'user-lifecycle.credits' });
 
 export function createRegisterGiftCreditsHook(): UserLifecycleHook<'user.created'> {
   return async ({ user }) => {
+    const creditsConfig = getCreditsGlobalConfig();
+
     if (
-      !websiteConfig.credits.enableCredits ||
-      !websiteConfig.credits.registerGiftCredits.enable ||
-      websiteConfig.credits.registerGiftCredits.amount <= 0
+      !creditsConfig.enableCredits ||
+      !creditsConfig.registerGift ||
+      !creditsConfig.registerGift.enabled ||
+      creditsConfig.registerGift.amount <= 0
     ) {
       return;
     }
@@ -30,7 +36,7 @@ export function createRegisterGiftCreditsHook(): UserLifecycleHook<'user.created
 
 export function createMonthlyFreeCreditsHook(): UserLifecycleHook<'user.created'> {
   return async ({ user }) => {
-    if (!websiteConfig.credits.enableCredits) {
+    if (!isCreditsEnabled()) {
       return;
     }
 

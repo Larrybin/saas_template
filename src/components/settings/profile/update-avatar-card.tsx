@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { websiteConfig } from '@/config/website';
+import { useStorageErrorUi } from '@/hooks/use-storage-error-ui';
 import { authClient } from '@/lib/auth-client';
 import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,7 @@ function UpdateAvatarCardContent({ className }: UpdateAvatarCardProps) {
   const { data: session, refetch } = authClient.useSession();
   const [avatarUrl, setAvatarUrl] = useState('');
   const [tempAvatarUrl, setTempAvatarUrl] = useState('');
+  const { handleStorageError } = useStorageErrorUi();
 
   useEffect(() => {
     if (session?.user?.image) {
@@ -123,7 +125,8 @@ function UpdateAvatarCardContent({ className }: UpdateAvatarCardProps) {
       );
     } catch (error) {
       clientLogger.error('update avatar error:', error);
-      setError(error instanceof Error ? error.message : t('avatar.fail'));
+      const message = handleStorageError(error as Error, t('avatar.fail'));
+      setError(message);
       // Restore the previous avatar if there was an error
       if (session?.user?.image) {
         setAvatarUrl(session.user.image);

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import CreditsPageClient from '@/components/settings/credits/credits-page-client';
-import { websiteConfig } from '@/config/website';
+import { isCreditsEnabled } from '@/lib/credits-settings';
 import { Routes } from '@/routes';
 
 /**
@@ -8,7 +8,7 @@ import { Routes } from '@/routes';
  */
 export default function CreditsPage() {
   // If credits are disabled, redirect to billing page
-  if (!websiteConfig.credits.enableCredits) {
+  if (!isCreditsEnabled()) {
     redirect(Routes.SettingsBilling);
   }
 

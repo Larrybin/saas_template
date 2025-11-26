@@ -12,6 +12,15 @@
   - 不改变对外 HTTP API 的路径、方法、状态码与错误 `code` 字符串值。
   - 不在本轮引入新的领域行为，仅重构错误处理路径与补充文档。
 
+### 与现有错误码相关计划的关系
+
+- 本计划建立在以下两份计划的基础之上：
+  - `.codex/plan/internal-job-and-error-codes.md`：已抽象 `internal-auth` / `job-logger`，并为部分核心 API 引入 `ErrorCodes` registry。
+  - `.codex/plan/error-codes-expansion.md`：已定义 `ErrorCodes` 的整体策略与首批迁移步骤（核心 API 路由与 billing/credits 强类型约束）。
+- 本计划不重新设计或扩展 `ErrorCodes` 体系，而是在既有 registry 与工具到位的前提下：
+  - 将 `/api/*` 路由全部收敛到统一错误 envelope 与日志模型；
+  - 补齐 Credits 生命周期与边界文档，用于支撑后续领域重构与排障。
+
 ---
 
 ## 二、范围
@@ -42,6 +51,7 @@
   - 输出一份本地清单（可在本文件结尾或单独 `.md` 草稿中记录），按路由分类：
     - ✅ 已符合规范。
     - ⚠️ 需要补充 envelope / 日志 / ErrorCodes 的路由。
+  - 建议在本文件末尾预留一个“API 路由检查清单”小节，执行时逐个勾选；当清单中所有路由均标记为“已符合规范”且测试通过时，可视为任务 A 完成。
 
 ### A2. 统一错误 envelope 结构
 
@@ -137,6 +147,13 @@
     - `src/credits/services/credit-ledger-service.ts` 中 `consumeCredits`
     - `src/lib/server/usecases/*with-credits.ts`
 - 在文档中对每个阶段给出“事件 → 调用链 → 持久化影响”的端到端说明（可借鉴 `docs/feature-modules.md` 的描述风格）。
+  - 最低完成标准：生命周期章节至少覆盖以下入口场景的端到端路径，并明确说明其调用链与持久化影响：
+    - 用户注册（注册赠送积分）。
+    - 订阅续费（周期性积分发放）。
+    - 积分套餐购买或人工调整（如有）。
+    - Lifetime 用户月度发放。
+    - 积分过期 Job（包括幂等性与失败重试的基本约束）。
+    - AI 调用消费（chat/analyze/image 任一代表场景）。
 
 ### B3. 描述边界与依赖方向
 
@@ -164,6 +181,7 @@
 - 人工检查：
   - 文档中的路径和函数名与当前实现一致。
   - 生命周期描述覆盖了主要入口（注册、订阅续费、积分购买、lifetime、过期处理、AI 调用消费）。
+  - 文档中至少列出 3–5 条 Credits 领域不变式（例如：余额不得为负、同一 jobRunId 不得重复入账、过期任务幂等约束等）。
   - 描述与 `docs/error-codes.md` / `docs/error-logging.md` 在错误模型部分保持一致，不产生冲突。
 
 ---
@@ -183,3 +201,10 @@
   - API route 专注于 HTTP 语义与 envelope；业务错误交由 usecase/domain 产生。
   - 文档帮助稳定领域边界的认知，不推翻现有分层，而是强化其可理解性。
 
+---
+
+## 六、风险与注意事项
+
+- 前端兼容性：在调整 API 错误 envelope 和 `code` 字段时，需要排查所有调用方（包括 `fetch('/api/...')`、前端 hooks 与 SDK），确保不会因字段结构或命名变更导致运行时错误。
+- 测试覆盖：若某些 `/api/*` 路由缺乏现成测试，应在重构前后补充至少一条 smoke test，用于验证基本错误路径与 `code` 字段。
+- 渐进式落地：建议按路由组（如 AI、storage、webhooks、credits）分批收敛并在每批次后运行测试，避免一次性修改所有路由导致回归面过大。

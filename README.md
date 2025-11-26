@@ -166,12 +166,24 @@ pnpm start
   - 针对单个 `event_id` 使用数据库事务与加锁（幂等处理）。
   - 为重复事件记录跳过日志，确保每个事件只生效一次。
 - `expireDays` 省略或设置为 `undefined/0` 表示“不过期”；开启自动过期时需设置为正整数。积分 FIFO 会优先扣除即将到期的额度。
+- 支付 / 积分 / 存储 / AI 等核心路径的环境变量与运维实践（Stripe Webhook、Cron、日志等）见 `docs/env-and-ops.md`。
 
 ## Testing
 
 - 单元/集成测试：`pnpm test`
 - 覆盖率报告：`pnpm test:coverage`
 - 端到端浏览器测试：`pnpm test:e2e`（需要运行中的应用与 Playwright 配置）
+- 测试分层与现有覆盖说明：见 `docs/testing-strategy.md`
+
+## Error codes & UI Handling
+
+- 新增或调整错误码时：
+  - 在 `src/lib/server/error-codes.ts` 中声明常量；
+  - 在 `docs/error-codes.md` 中补充文档条目；
+  - 如需前端 i18n 文案，更新 `src/lib/domain-error-utils.ts` 中的 `DOMAIN_ERROR_MESSAGES` 映射。
+- 新增或调整错误 UI（toast / 跳转等）时：
+  - 在 `src/lib/domain-error-ui-registry.ts` 中定义或修改对应 `ErrorUiStrategy`（severity / fallback / action / source）；
+  - 优先通过对应领域 Hook（如 `useAuthErrorHandler`、`useCreditsErrorUi`、`useAiErrorUi`、`useStorageErrorUi`）消费错误，而不是在组件里直接写 `if (code === '...')`。
 
 ## Contributing
 

@@ -182,6 +182,41 @@ toast.error(message);
 - 组件尽量不要硬编码英文错误文案，而是通过 `getDomainErrorMessage` + i18n key 输出。
 - 若代码中需要根据 `code` 做行为分支（跳转/重试），请使用枚举式字符串常量，并保持与 DomainError 子类中的 `code` 一致。
 
+### 5.1 错误 UI 策略 Registry 与领域 Hook
+
+为避免在多个特性模块中重复编写 `if (code === ...) toast.*` 分支，前端对常见错误码的 UI 行为统一通过以下模块管理：
+
+- 策略 Registry：`src/lib/domain-error-ui-registry.ts`
+  - 定义 `ErrorUiStrategy`：`{ severity, defaultFallbackMessage?, action, source }`。
+  - 维护一个集中表，将错误 `code` 映射到 UI 策略，例如：
+    - `AUTH_UNAUTHORIZED` / `AUTH_BANNED` → `severity: warning/error`，`action: redirectToLogin`。
+    - `CREDITS_INSUFFICIENT_BALANCE` → `severity: warning`，`action: openCreditsPage`。
+    - `AI_CONTENT_TIMEOUT` / `AI_IMAGE_TIMEOUT` / `AI_CONTENT_RATE_LIMIT` → `severity: warning`。
+    - `AI_IMAGE_PROVIDER_ERROR` / `AI_CONTENT_SERVICE_UNAVAILABLE` / `AI_CONTENT_NETWORK_ERROR` → `severity: error`。
+  - 提供 `getErrorUiStrategy(code)`，供各领域 Hook 调用。
+
+- 领域 Hook：
+  - Auth：`useAuthErrorHandler`（`src/hooks/use-auth-error-handler.ts`）
+    - 专门处理 `AUTH_UNAUTHORIZED` / `AUTH_BANNED`，通过 `getDomainErrorMessage` + `toast.error` + 跳转登录页。
+  - Credits：`useCreditsErrorUi`（`src/hooks/use-credits-error-ui.ts`）
+    - 统一处理 Credits 相关错误：  
+      - `AUTH_UNAUTHORIZED` → 复用 `useAuthErrorHandler`。  
+      - `CREDITS_INSUFFICIENT_BALANCE` → toast + 跳转 Credits 设置页。  
+      - 其他错误 → 使用 `getErrorUiStrategy` + `getDomainErrorMessage` 决定文案与 toast 级别。
+  - AI：`useAiErrorUi`（`src/hooks/use-ai-error-ui.ts`）
+    - 统一处理 AI 文本/图片错误：  
+      - 通过 `getErrorUiStrategy` 选择 `info` / `warning` / `error` 级别。  
+      - 使用 `getDomainErrorMessage` 结合策略中的 `defaultFallbackMessage` 输出文案。  
+      - 组件层只需调用 `handleAiError(error, { source: 'text' | 'image' })`，不再关心具体 code。
+  - Payment / Storage（示例）：  
+    - Payment：Credits 购买按钮在处理 `PAYMENT_SECURITY_VIOLATION` 时，通过 registry + `getDomainErrorMessage` 决定 toast 文案。  
+    - Storage：上传场景（如头像上传）通过 `useStorageErrorUi`（`src/hooks/use-storage-error-ui.ts`）消费 `uploadFileFromBrowser` 抛出的带 `code` 的错误，并统一 toast。
+
+约定：
+
+- 新增或调整错误码时，若需要特定 UI 行为（例如跳转、特殊文案），应优先在 `domain-error-ui-registry.ts` 中补充策略，而不是在各个组件里散落判断逻辑。
+- 页面/组件尽量只通过领域 Hook（`useAuthErrorHandler` / `useCreditsErrorUi` / `useAiErrorUi`）消费错误，避免直接在 UI 层做 `switch(code)`。
+
 ## 6. Auth 未登录错误（AUTH_UNAUTHORIZED）
 
 ### 后端约定
@@ -289,10 +324,26 @@ toast.error(message);
   - 建议将这类行为封装为小的 UI helper（例如 `useCreditsErrorUi`），由页面/卡片组件调用。
   - 积分额度与过期策略由 `src/credits/config.ts` 适配器从 `websiteConfig` / price plan 中抽取，对错误模型和前端消费透明，未来若改为从数据库或后台配置读取，只需调整适配器即可。
 
-以上 UI 级行为在编码前，应先统一约定：
+ 以上 UI 级行为在编码前，应先统一约定：
 
 - 每个 `code` 对应的 UX 目标（仅提示 / 引导跳转 / 提供重试入口）；
 - 行为应集中在少量 hooks 或 UI helper 中实现，组件层尽量只做调用，避免逻辑分散。
+
+## 9. API 路由错误模型合规表
+
+结合 `.codex/plan/api-error-envelope-and-credits-lifecycle.md` 的要求，以下表格追踪 `/api/*` 路由与统一错误 envelope 的对齐状态，便于后续迭代：
+
+| Route | Span | Envelope / 日志状态 | 说明 |
+| --- | --- | --- | --- |
+| `/api/chat` | `api.ai.chat` | ✅ 已符合 | 使用 `DomainError` + `{ success, error, code, retryable }`。 |
+| `/api/analyze-content` | `api.ai.text.analyze` | ✅ 已符合 | 依赖 `AnalyzeContentInvalidJson/Params` 与 Web Content 错误码。 |
+| `/api/generate-images` | `api.ai.image.generate` | ✅ 已符合 | 根据 provider 错误码映射 HTTP status。 |
+| `/api/distribute-credits` | `api.credits.distribute` | ✅ 已符合 | Basic Auth 失败日志由 `validateInternalJobBasicAuth` 记录。 |
+| `/api/storage/upload` | `api.storage.upload` | ✅ 已符合 | 对齐 `Storage*` 错误码并强制 multipart 检查。 |
+| `/api/webhooks/stripe` | `api.webhooks.stripe` | ✅ 已符合 | Webhook 中 `DomainError` 与未知异常均返回统一 envelope。 |
+| `/api/search` | `api.docs.search` | ⚠️ 待复查 | 需确认是否返回 `{ success, error, code }` 或回落到 provider 原始结构。 |
+
+当新增或重构路由时，请在此表中更新状态，保持文档与实现一致。
 
 ### 8.1 AI 错误 UI 统一处理（useAiErrorUi）
 

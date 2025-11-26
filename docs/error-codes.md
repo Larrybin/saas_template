@@ -72,6 +72,8 @@
 | `AI_CONTENT_ANALYSIS_ERROR`      | `AiContentAnalysisError`   | AI     | 分析过程内部错误。                        |
 | `AI_CONTENT_SCRAPING_ERROR`      | `AiContentScrapingError`   | AI     | 抓取网页内容失败。                        |
 | `AI_CONTENT_UNKNOWN_ERROR`       | `AiContentUnknownError`    | AI     | 未分类的内容分析错误。                    |
+| `ANALYZE_CONTENT_INVALID_JSON`   | `AnalyzeContentInvalidJson`| AI     | `/api/analyze-content` 请求体不是合法 JSON。|
+| `ANALYZE_CONTENT_INVALID_PARAMS` | `AnalyzeContentInvalidParams`| AI   | `/api/analyze-content` 参数校验失败。     |
 
 ## Storage / 存储
 

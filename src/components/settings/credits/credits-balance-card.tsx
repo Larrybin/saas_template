@@ -15,11 +15,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { websiteConfig } from '@/config/website';
 import { useCreditBalance, useCreditStats } from '@/hooks/use-credits';
 import { useMounted } from '@/hooks/use-mounted';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { CREDITS_EXPIRATION_DAYS } from '@/lib/constants';
+import { isCreditsEnabled } from '@/lib/credits-settings';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
 
@@ -28,7 +28,7 @@ import { Routes } from '@/routes';
  */
 export default function CreditsBalanceCard() {
   // Don't render if credits are disabled - move this check before any hooks
-  if (!websiteConfig.credits.enableCredits) {
+  if (!isCreditsEnabled()) {
     return null;
   }
 

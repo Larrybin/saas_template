@@ -14,10 +14,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { getAvatarLinks } from '@/config/avatar-config';
-import { websiteConfig } from '@/config/website';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
 import { clientLogger } from '@/lib/client-logger';
+import { isCreditsEnabled } from '@/lib/credits-settings';
 import { CreditsBalanceMenu } from './credits-balance-menu';
 
 interface UserButtonProps {
@@ -68,7 +68,7 @@ export function UserButton({ user }: UserButtonProps) {
         <DropdownMenuSeparator />
 
         {/* show credits balance button if credits are enabled */}
-        {websiteConfig.credits.enableCredits && (
+        {isCreditsEnabled() && (
           <>
             <DropdownMenuItem className="cursor-pointer">
               <CreditsBalanceMenu />

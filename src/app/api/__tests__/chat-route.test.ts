@@ -62,6 +62,26 @@ describe('/api/chat route', () => {
     expect(executeAiChatWithBillingMock).not.toHaveBeenCalled();
   });
 
+  it('returns 400 and AI_CHAT_INVALID_JSON when body is invalid JSON', async () => {
+    const req = new Request('http://localhost/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: 'not-json',
+    });
+
+    const res = await chatPost(req);
+    const json = (await res.json()) as {
+      success: boolean;
+      code?: string;
+      error?: string;
+    };
+
+    expect(res.status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.code).toBe('AI_CHAT_INVALID_JSON');
+    expect(executeAiChatWithBillingMock).not.toHaveBeenCalled();
+  });
+
   it('invokes use case and returns streaming response for valid body', async () => {
     const req = new Request('http://localhost/api/chat', {
       method: 'POST',

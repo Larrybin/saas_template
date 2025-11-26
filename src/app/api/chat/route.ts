@@ -40,7 +40,23 @@ export async function POST(req: Request) {
     return rateLimitResult.response;
   }
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    logger.warn({ error, requestId }, 'Invalid JSON body for chat request');
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Request body must be valid JSON.',
+        code: 'AI_CHAT_INVALID_JSON',
+        retryable: false,
+      },
+      { status: 400 }
+    );
+  }
+
   const parseResult = chatRequestSchema.safeParse(body);
 
   if (!parseResult.success) {

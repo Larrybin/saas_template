@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { distributeCreditsToAllUsers } from '@/credits/distribute';
 import { serverEnv } from '@/env/server';
 import { createLoggerFromHeaders, type Logger } from '@/lib/server/logger';
+import { runCreditsDistributionJob } from '@/lib/server/usecases/distribute-credits-job';
 
 // Basic authentication middleware
 function validateBasicAuth(request: Request, logger: Logger): boolean {
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
   log.info('Distribute credits job triggered');
   try {
     const { usersCount, processedCount, errorCount } =
-      await distributeCreditsToAllUsers();
+      await runCreditsDistributionJob();
     log.info(
       { usersCount, processedCount, errorCount },
       'Distribute credits completed'

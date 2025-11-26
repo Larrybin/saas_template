@@ -1,18 +1,21 @@
-import { and, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import { featureFlags } from '@/config/feature-flags';
 import { getDb } from '@/db';
-import { payment, user } from '@/db/schema';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
 import {
   type LifetimeMembershipRecord,
   UserLifetimeMembershipRepository,
 } from '@/payment/data-access/user-lifetime-membership-repository';
-import { PlanIntervals } from '@/payment/types';
+import { createUserBillingReader } from './data-access/user-billing-view';
+import { CreditDistributionService } from './distribution/credit-distribution-service';
 import {
-  CreditDistributionService,
+  collectValidLifetimeMemberships,
+  createCachedPlanResolver,
+  type LifetimeMembershipResolution,
+  type PlanResolver,
   type PlanUserRecord,
-} from './distribution/credit-distribution-service';
+} from './domain/lifetime-membership';
+import { classifyUsersByPlan } from './domain/plan-classifier';
 import { runExpirationJob } from './expiry-job';
 import { getPeriodKey } from './utils/period-key';
 
@@ -32,138 +35,24 @@ const defaultDeps: DistributeCreditsDeps = {
   lifetimeMembershipRepository: new UserLifetimeMembershipRepository(),
 };
 
-type UserWithPayment = {
-  userId: string;
-  email: string | null;
-  name: string | null;
-  priceId: string | null;
-  paymentStatus: string | null;
-  paymentCreatedAt: Date | null;
-};
-
-export type LifetimeMembershipResolution = {
-  validMemberships: PlanUserRecord[];
-  invalidMemberships: LifetimeMembershipRecord[];
-  shouldFallbackToFree: boolean;
-};
-
-export type MisconfiguredPaidUser = {
-  userId: string;
-  priceId: string;
-};
-
-export type PlanResolver = (
-  priceId: string | null | undefined
-) => ReturnType<typeof findPlanByPriceId>;
-
-export function createCachedPlanResolver(
-  resolver: typeof findPlanByPriceId
-): PlanResolver {
-  const cache = new Map<string, ReturnType<typeof findPlanByPriceId>>();
-  return (priceId) => {
-    if (!priceId) {
-      return undefined;
-    }
-    if (cache.has(priceId)) {
-      return cache.get(priceId);
-    }
-    const plan = resolver(priceId);
-    cache.set(priceId, plan);
-    return plan;
-  };
-}
-
-export function collectValidLifetimeMemberships(
-  memberships: LifetimeMembershipRecord[] | undefined,
-  resolvePlan: PlanResolver
-): LifetimeMembershipResolution {
-  if (!memberships || memberships.length === 0) {
-    return {
-      validMemberships: [],
-      invalidMemberships: [],
-      shouldFallbackToFree: false,
-    };
-  }
-
-  const validMemberships: PlanUserRecord[] = [];
-  const invalidMemberships: LifetimeMembershipRecord[] = [];
-
-  memberships.forEach((membership) => {
-    const plan = resolvePlan(membership.priceId);
-    if (plan?.isLifetime && plan.credits?.enable) {
-      validMemberships.push({
-        userId: membership.userId,
-        priceId: membership.priceId,
-      });
-      return;
-    }
-
-    invalidMemberships.push(membership);
-  });
-
-  return {
-    validMemberships,
-    invalidMemberships,
-    shouldFallbackToFree: validMemberships.length === 0,
-  };
-}
-
-function createLatestPaymentSubquery(db: Awaited<ReturnType<typeof getDb>>) {
-  return db
-    .select({
-      userId: payment.userId,
-      priceId: payment.priceId,
-      status: payment.status,
-      createdAt: payment.createdAt,
-      rowNumber:
-        sql<number>`ROW_NUMBER() OVER (PARTITION BY ${payment.userId} ORDER BY ${payment.createdAt} DESC)`.as(
-          'row_number'
-        ),
-    })
-    .from(payment)
-    .where(or(eq(payment.status, 'active'), eq(payment.status, 'trialing')))
-    .as('latest_payment');
-}
-
-async function fetchUsersBatch(
-  db: Awaited<ReturnType<typeof getDb>>,
-  latestPaymentQuery: ReturnType<typeof createLatestPaymentSubquery>,
-  lastUserId: string | null,
-  limit: number
-): Promise<UserWithPayment[]> {
-  const baseCondition = or(isNull(user.banned), eq(user.banned, false));
-  const paginationCondition = lastUserId
-    ? and(baseCondition, gt(user.id, lastUserId))
-    : baseCondition;
-
-  return await db
-    .select({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      priceId: latestPaymentQuery.priceId,
-      paymentStatus: latestPaymentQuery.status,
-      paymentCreatedAt: latestPaymentQuery.createdAt,
-    })
-    .from(user)
-    .leftJoin(
-      latestPaymentQuery,
-      and(
-        eq(user.id, latestPaymentQuery.userId),
-        eq(latestPaymentQuery.rowNumber, 1)
-      )
-    )
-    .where(paginationCondition)
-    .orderBy(user.id)
-    .limit(limit);
-}
+export type {
+  LifetimeMembershipResolution,
+  PlanResolver,
+  PlanUserRecord,
+} from './domain/lifetime-membership';
+export {
+  collectValidLifetimeMemberships,
+  createCachedPlanResolver,
+} from './domain/lifetime-membership';
+export type { MisconfiguredPaidUser } from './domain/plan-classifier';
+export { classifyUsersByPlan } from './domain/plan-classifier';
 
 async function resolveLifetimeMemberships(
   userIds: string[],
   db: Awaited<ReturnType<typeof getDb>>,
   deps: DistributeCreditsDeps,
   resolvePlan: PlanResolver
-) {
+): Promise<Map<string, LifetimeMembershipResolution>> {
   const membershipsInBatch =
     await deps.lifetimeMembershipRepository.findActiveByUserIds(userIds, db);
   const membershipsByUser = membershipsInBatch.reduce<
@@ -188,70 +77,6 @@ async function resolveLifetimeMemberships(
   }
 
   return perUserResults;
-}
-
-export function classifyUsersByPlan(
-  userBatch: UserWithPayment[],
-  membershipsByUser: Map<string, LifetimeMembershipResolution>,
-  resolvePlan: PlanResolver
-) {
-  const freeUserIds: string[] = [];
-  const lifetimeUsers: PlanUserRecord[] = [];
-  const yearlyUsers: PlanUserRecord[] = [];
-  const misconfiguredPaidUsers: MisconfiguredPaidUser[] = [];
-
-  userBatch.forEach((userRecord) => {
-    const membershipResult = membershipsByUser.get(userRecord.userId);
-    if (membershipResult) {
-      if (membershipResult.validMemberships.length > 0) {
-        lifetimeUsers.push(...membershipResult.validMemberships);
-      }
-      if (
-        membershipResult.invalidMemberships.length > 0 &&
-        membershipResult.shouldFallbackToFree
-      ) {
-        freeUserIds.push(userRecord.userId);
-      }
-      return;
-    }
-
-    if (
-      userRecord.priceId &&
-      userRecord.paymentStatus &&
-      (userRecord.paymentStatus === 'active' ||
-        userRecord.paymentStatus === 'trialing')
-    ) {
-      const pricePlan = resolvePlan(userRecord.priceId);
-      if (pricePlan?.isLifetime && pricePlan?.credits?.enable) {
-        lifetimeUsers.push({
-          userId: userRecord.userId,
-          priceId: userRecord.priceId,
-        });
-      } else if (!pricePlan?.isFree && pricePlan?.credits?.enable) {
-        const yearlyPrice = pricePlan?.prices?.find(
-          (p) =>
-            p.priceId === userRecord.priceId &&
-            p.interval === PlanIntervals.YEAR
-        );
-        if (yearlyPrice) {
-          yearlyUsers.push({
-            userId: userRecord.userId,
-            priceId: userRecord.priceId,
-          });
-        } else {
-          misconfiguredPaidUsers.push({
-            userId: userRecord.userId,
-            priceId: userRecord.priceId,
-          });
-          freeUserIds.push(userRecord.userId);
-        }
-      }
-    } else {
-      freeUserIds.push(userRecord.userId);
-    }
-  });
-
-  return { freeUserIds, lifetimeUsers, yearlyUsers, misconfiguredPaidUsers };
 }
 
 async function distributeForFreeUsers({
@@ -449,7 +274,7 @@ export async function distributeCreditsToAllUsers(
   log.debug({ expiredResult }, 'Finished processing expired credits');
 
   const db = await getDb();
-  const latestPaymentQuery = createLatestPaymentSubquery(db);
+  const billingReader = createUserBillingReader(db);
 
   const now = options?.refDate ?? new Date();
   const monthLabel = `${now.getFullYear()}-${now.getMonth() + 1}`;
@@ -474,9 +299,7 @@ export async function distributeCreditsToAllUsers(
   const resolvePlan = createCachedPlanResolver(findPlanByPriceId);
 
   do {
-    const userBatch = await fetchUsersBatch(
-      db,
-      latestPaymentQuery,
+    const userBatch = await billingReader.fetchBatch(
       lastProcessedUserId,
       userBatchSize
     );

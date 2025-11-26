@@ -47,22 +47,31 @@
      ) { ... }
      ```
 
-2. **数据访问 helper**
+2. **数据访问与视图 helper**
 
-   - `createLatestPaymentSubquery(db)`：构造 current latest payment 子查询。
-   - `fetchUsersBatch(db, latestPaymentQuery, lastUserId, limit): Promise<UserWithPayment[]>`：
-     - 抽出当前批量查询用户的逻辑，主循环只负责传入 `lastUserId` 和 `limit`。
+   - 新增 `src/credits/data-access/user-billing-view.ts`：
+     - `createUserBillingReader(db)`：基于 Drizzle `db` 创建只读视图访问器。
+     - 内部封装 `createLatestPaymentSubquery(db)` 与 `fetchUsersBatch(...)`：
+       - `fetchUsersBatch` 返回 `UserBillingSnapshot[]`（用户 + 最近一次有效支付快照）。
+     - `distributeCreditsToAllUsers` 不再直接感知 SQL/Drizzle 细节，仅依赖 reader 接口。
    - `resolveLifetimeMemberships(userIds, deps.lifetimeMembershipRepository, resolvePlan)`：
-     - 内部使用 `findByUserIds` + `collectValidLifetimeMemberships`；
-     - 返回 `{ validMemberships, invalidMemberships, shouldFallbackToFree }`；
-     - 主函数负责对 `invalidMemberships` 写日志。
+     - 保留在 `distribute.ts` 中作为应用层 helper；
+     - 内部使用 `findActiveByUserIds` + `collectValidLifetimeMemberships`；
+     - 返回 `Map<string, LifetimeMembershipResolution>`，主函数负责对 `invalidMemberships` 写日志。
 
 3. **纯业务 helper（不依赖 logger/IO）**
 
-   - `classifyUsersByPlan(params): { freeUserIds: string[]; lifetimeUsers: PlanUserRecord[]; yearlyUsers: PlanUserRecord[] }`：
-     - 入参包括 `userBatch`、`resolvePlan`、`freePlan`、`validMemberships`、`shouldFallbackToFree`；
-     - 封装现有按照 plan / paymentStatus / interval 分类用户的业务规则；
-     - 不写日志、不访问外部服务，便于单测。
+   - 抽取到 `src/credits/domain` 下，形成可复用领域模块：
+     - `src/credits/domain/lifetime-membership.ts`：
+       - 暴露 `PlanUserRecord` / `PlanResolver` / `LifetimeMembershipResolution`；
+       - `createCachedPlanResolver`：基于 `(priceId) => PricePlan | undefined` 的通用 resolver 做缓存；
+       - `collectValidLifetimeMemberships`：聚合 per-user membership 记录，区分 valid/invalid/fallback。
+     - `src/credits/domain/plan-classifier.ts`：
+       - 定义 `UserBillingSnapshot` 与 `MisconfiguredPaidUser`；
+       - `classifyUsersByPlan(userBatch, membershipsByUser, resolvePlan)`：
+         - 封装现有按 membership / plan / paymentStatus / interval 分类 free/lifetime/yearly 的规则；
+         - 不写日志、不访问外部服务，便于单测和复用。
+   - `src/credits/distribute.ts` 通过 type/export 重新导出这些领域 helper，保持原有测试与调用方 import 路径不变。
 
 4. **分发 + 日志 helper**
 

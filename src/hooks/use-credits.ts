@@ -11,13 +11,11 @@ import {
 } from '@/hooks/use-auth-error-handler';
 import { clientLogger } from '@/lib/client-logger';
 import {
-  type DomainErrorLike,
-  getDomainErrorMessage,
+  type EnvelopeWithDomainError,
+  unwrapEnvelopeOrThrowDomainError,
 } from '@/lib/domain-error-utils';
 
 type CreditBalanceSuccess = { success: true; credits: number };
-type CreditBalanceError = { success: false; error?: string } & DomainErrorLike;
-type CreditBalanceData = CreditBalanceSuccess | CreditBalanceError;
 
 type CreditStatsSuccess = {
   success: true;
@@ -27,8 +25,6 @@ type CreditStatsSuccess = {
     };
   };
 };
-type CreditStatsError = { success: false; error?: string } & DomainErrorLike;
-type CreditStatsData = CreditStatsSuccess | CreditStatsError;
 
 type CreditTransactionsSuccess = {
   success: true;
@@ -37,63 +33,7 @@ type CreditTransactionsSuccess = {
     total: number;
   };
 };
-type CreditTransactionsError = {
-  success: false;
-  error?: string;
-} & DomainErrorLike;
-type CreditTransactionsData =
-  | CreditTransactionsSuccess
-  | CreditTransactionsError;
-
-type AuthErrorHandler = ReturnType<typeof useAuthErrorHandler>;
-
-function unwrapCreditBalance(
-  data: CreditBalanceData | undefined,
-  handleAuthError: AuthErrorHandler
-): CreditBalanceSuccess {
-  if (!data) {
-    throw new Error('Failed to fetch credit balance');
-  }
-
-  if (!data.success) {
-    handleAuthFromEnvelope(handleAuthError, data);
-    throw new Error(data.error || 'Failed to fetch credit balance');
-  }
-
-  return data;
-}
-
-function unwrapCreditStats(
-  data: CreditStatsData | undefined,
-  handleAuthError: AuthErrorHandler
-): CreditStatsSuccess {
-  if (!data) {
-    throw new Error('Failed to fetch credit stats');
-  }
-
-  if (!data.success) {
-    handleAuthFromEnvelope(handleAuthError, data);
-    throw new Error(data.error || 'Failed to fetch credit stats');
-  }
-
-  return data;
-}
-
-function unwrapCreditTransactions(
-  data: CreditTransactionsData | undefined,
-  handleAuthError: AuthErrorHandler
-): CreditTransactionsSuccess {
-  if (!data) {
-    throw new Error('Failed to fetch credit transactions');
-  }
-
-  if (!data.success) {
-    handleAuthFromEnvelope(handleAuthError, data);
-    throw new Error(data.error || 'Failed to fetch credit transactions');
-  }
-
-  return data;
-}
+type Envelope<T> = EnvelopeWithDomainError<T>;
 
 // Query keys
 export const creditsKeys = {
@@ -118,9 +58,13 @@ export function useCreditBalance() {
     queryFn: async () => {
       clientLogger.debug('Fetching credit balance...');
       const result = await getCreditBalanceAction();
-      const data = unwrapCreditBalance(
-        result?.data as CreditBalanceData | undefined,
-        handleAuthError
+      const data = unwrapEnvelopeOrThrowDomainError<CreditBalanceSuccess>(
+        result?.data as Envelope<CreditBalanceSuccess> | undefined,
+        {
+          defaultErrorMessage: 'Failed to fetch credit balance',
+          handleAuthEnvelope: (payload) =>
+            handleAuthFromEnvelope(handleAuthError, payload),
+        }
       );
       clientLogger.debug('Credit balance fetched:', data.credits);
       return data.credits || 0;
@@ -137,9 +81,13 @@ export function useCreditStats() {
     queryFn: async () => {
       clientLogger.debug('Fetching credit stats...');
       const result = await getCreditStatsAction();
-      const data = unwrapCreditStats(
-        result?.data as CreditStatsData | undefined,
-        handleAuthError
+      const data = unwrapEnvelopeOrThrowDomainError<CreditStatsSuccess>(
+        result?.data as Envelope<CreditStatsSuccess> | undefined,
+        {
+          defaultErrorMessage: 'Failed to fetch credit stats',
+          handleAuthEnvelope: (payload) =>
+            handleAuthFromEnvelope(handleAuthError, payload),
+        }
       );
       clientLogger.debug('Credit stats fetched:', data.data);
       return data.data;
@@ -164,25 +112,13 @@ export function useConsumeCredits() {
         amount,
         description,
       });
-      const data = result?.data as
-        | ({ success?: boolean; error?: string } & DomainErrorLike)
-        | undefined;
-      if (!data?.success) {
-        if (data?.code === 'AUTH_UNAUTHORIZED') {
-          handleAuthError({ code: data.code, message: data.error });
-        }
-
-        const resolvedMessage =
-          data?.error ?? getDomainErrorMessage(data?.code);
-        const error = new Error(resolvedMessage) as Error & DomainErrorLike;
-        if (typeof data?.code === 'string') {
-          error.code = data.code;
-        }
-        if (typeof data?.retryable === 'boolean') {
-          error.retryable = data.retryable;
-        }
-        throw error;
-      }
+      const data = unwrapEnvelopeOrThrowDomainError<{
+        success: true;
+      }>(result?.data as Envelope<{ success: true }> | undefined, {
+        defaultErrorMessage: 'Failed to consume credits',
+        handleAuthEnvelope: (payload) =>
+          handleAuthFromEnvelope(handleAuthError, payload),
+      });
       return data;
     },
     onSuccess: () => {
@@ -221,9 +157,13 @@ export function useCreditTransactions(
         sorting,
       });
 
-      const data = unwrapCreditTransactions(
-        result?.data as CreditTransactionsData | undefined,
-        handleAuthError
+      const data = unwrapEnvelopeOrThrowDomainError<CreditTransactionsSuccess>(
+        result?.data as Envelope<CreditTransactionsSuccess> | undefined,
+        {
+          defaultErrorMessage: 'Failed to fetch credit transactions',
+          handleAuthEnvelope: (payload) =>
+            handleAuthFromEnvelope(handleAuthError, payload),
+        }
       );
 
       return {

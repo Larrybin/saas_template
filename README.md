@@ -135,6 +135,27 @@ pnpm start
 - Edge Middleware 仅做基于 Cookie 的轻量检查：
   - 调整 matcher 或重定向前后，建议在 CDN/APM 中对比 P50/P95 延迟。
   - 保留一份基准数据，便于评估变更的影响。
+- **Safe Action / API Envelope 约定**：所有通过 `next-safe-action` 暴露到前端的调用结果都遵循统一的 Envelope 结构：
+  - 成功：`{ success: true, ... }`
+  - 失败：`{ success?: false, error?: string, code?: string, retryable?: boolean }`
+  - 前端 hook 应优先通过 `src/lib/domain-error-utils.ts` 中的 `unwrapEnvelopeOrThrowDomainError` 进行解包，并结合 `useAuthErrorHandler` / `handleAuthFromEnvelope` 统一处理鉴权错误（如 `AUTH_UNAUTHORIZED` / `AUTH_BANNED`），而不是在组件内手写 `if (!result?.data?.success) throw new Error(...)` 逻辑。
+- **AI 错误码与前端 UX 行为**：AI 相关功能（文本分析 / 图片生成 / Chat）返回的部分 `code` 会在前端被映射为统一的 UI 行为：
+
+  | code                               | 典型场景                    | 前端行为（useAiErrorUi / hooks）                                      |
+  | ---------------------------------- | --------------------------- | --------------------------------------------------------------------- |
+  | `AUTH_UNAUTHORIZED` / `AUTH_BANNED`| 任意需要登录的 safe-action  | `useAuthErrorHandler` 触发 toast.error + 跳转登录页                  |
+  | `AI_CONTENT_TIMEOUT`               | 文本分析超时                | `toast.warning('AI request delayed', message)`                        |
+  | `AI_IMAGE_TIMEOUT`                 | 图片生成超时                | 同上                                                                  |
+  | `AI_CONTENT_RATE_LIMIT`           | 文本分析被限流              | 同上                                                                  |
+  | `AI_CONTENT_SERVICE_UNAVAILABLE`   | 文本分析服务不可用          | `toast.error('AI service unavailable', message)`                      |
+  | `AI_IMAGE_PROVIDER_ERROR`          | 图片生成 Provider 报错      | 同上                                                                  |
+  | `AI_CONTENT_NETWORK_ERROR`         | 抓取/调用上游网络错误       | 同上                                                                  |
+  | `AI_CONTENT_VALIDATION_ERROR`      | 文本分析参数/URL 不合法     | `toast.info('Invalid AI request', message)`                           |
+  | `AI_IMAGE_INVALID_PARAMS`          | 图片生成参数不合法          | 同上                                                                  |
+  | `AI_IMAGE_INVALID_JSON`            | 图片生成请求体 JSON 无效    | 同上                                                                  |
+  | 其它 `AI_*` / `AI_CHAT_*`          | 未做细分的 AI 级错误        | 默认降级为 `toast.error('AI request failed' / 'Image generation failed', message)` |
+
+  其中 `message` 由 `getDomainErrorMessage(code, t, fallback)` 解析，优先使用 i18n 文案，其次使用后端返回的 `error` 或本地 fallback 文案。
 
 ## Payments
 

@@ -34,15 +34,17 @@ export const uploadFileFromBrowser = async (
 
     const json = (await response.json()) as
       | { success: true; data: UploadFileResult }
-      | ({ success: false; error?: string; retryable?: boolean } & DomainErrorLike);
+      | ({
+          success: false;
+          error?: string;
+          retryable?: boolean;
+        } & DomainErrorLike);
 
     if (!json.success) {
       const { code, error, retryable } = json;
       const strategy = getErrorUiStrategy(code);
       const fallback =
-        error ??
-        strategy?.defaultFallbackMessage ??
-        'Failed to upload file';
+        error ?? strategy?.defaultFallbackMessage ?? 'Failed to upload file';
       const errorMessage = getDomainErrorMessage(code, undefined, fallback);
       const domainError = new Error(errorMessage) as Error & DomainErrorLike;
       if (typeof code === 'string') {
@@ -60,10 +62,9 @@ export const uploadFileFromBrowser = async (
 
     return json.data;
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unknown error occurred during file upload';
-    throw new Error(message);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Unknown error occurred during file upload');
   }
 };

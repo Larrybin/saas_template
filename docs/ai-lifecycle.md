@@ -75,9 +75,7 @@ AI 模块主要职责：
 
 ### 2.2 错误与 UI
 
-- 错误码：
-  - 路由入口请求错误（JSON 解析 / 参数校验）：`docs/error-codes.md` 中的 `ANALYZE_CONTENT_INVALID_JSON` / `ANALYZE_CONTENT_INVALID_PARAMS`。  
-  - 抓取 / 分析 / 网络 / 限流等过程错误：`docs/error-codes.md` 中的 `AI_CONTENT_*` 系列。  
+- 错误码：`docs/error-codes.md` 中的 `AI_CONTENT_*` 系列。  
 - 前端消费：  
   - `useAiErrorUi` + error UI registry 将不同 code 映射为合适的 toast 行为（info/warning/error），细节见 `docs/error-logging.md`。  
   - Hook 本身仍返回结构化 error，供 UI 决定是否显示更丰富的错误信息（如错误面板）。
@@ -220,3 +218,4 @@ AI 模块主要职责：
    - 错误处理统一通过 `useAiErrorUi`，必要时与 `useCreditsErrorUi` 联合使用。
 
 通过上述分层与边界约定，可以在不破坏现有 Credits/Billing/Storage 的前提下，持续扩展 AI 能力并保持错误模型与 UX 一致性。
+

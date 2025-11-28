@@ -1,9 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { websiteConfig } from '@/config/website';
-import {
-  createErrorEnvelope,
-  createSuccessEnvelope,
-} from '@/lib/domain-error-utils';
 import { ensureApiUser } from '@/lib/server/api-auth';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders, resolveRequestId } from '@/lib/server/logger';
@@ -103,11 +99,12 @@ export async function POST(request: NextRequest) {
   if (!contentType.toLowerCase().startsWith('multipart/form-data')) {
     logger.warn('Rejected upload: unsupported content type', { contentType });
     return NextResponse.json(
-      createErrorEnvelope(
-        ErrorCodes.StorageInvalidContentType,
-        'Content-Type must be multipart/form-data',
-        false
-      ),
+      {
+        success: false,
+        error: 'Content-Type must be multipart/form-data',
+        code: ErrorCodes.StorageInvalidContentType,
+        retryable: false,
+      },
       { status: 400 }
     );
   }
@@ -120,11 +117,12 @@ export async function POST(request: NextRequest) {
     if (!file) {
       logger.warn('Upload failed: no file provided');
       return NextResponse.json(
-        createErrorEnvelope(
-          ErrorCodes.StorageNoFile,
-          'No file provided',
-          false
-        ),
+        {
+          success: false,
+          error: 'No file provided',
+          code: ErrorCodes.StorageNoFile,
+          retryable: false,
+        },
         { status: 400 }
       );
     }
@@ -135,11 +133,12 @@ export async function POST(request: NextRequest) {
         size: file.size,
       });
       return NextResponse.json(
-        createErrorEnvelope(
-          ErrorCodes.StorageFileTooLarge,
-          'File size exceeds the 10MB limit',
-          false
-        ),
+        {
+          success: false,
+          error: 'File size exceeds the 10MB limit',
+          code: ErrorCodes.StorageFileTooLarge,
+          retryable: false,
+        },
         { status: 400 }
       );
     }
@@ -150,11 +149,12 @@ export async function POST(request: NextRequest) {
         type: file.type,
       });
       return NextResponse.json(
-        createErrorEnvelope(
-          ErrorCodes.StorageUnsupportedType,
-          'File type not supported',
-          false
-        ),
+        {
+          success: false,
+          error: 'File type not supported',
+          code: ErrorCodes.StorageUnsupportedType,
+          retryable: false,
+        },
         { status: 400 }
       );
     }
@@ -166,11 +166,12 @@ export async function POST(request: NextRequest) {
         'Upload failed: invalid folder'
       );
       return NextResponse.json(
-        createErrorEnvelope(
-          ErrorCodes.StorageInvalidFolder,
-          resolvedFolder.error,
-          false
-        ),
+        {
+          success: false,
+          error: resolvedFolder.error,
+          code: ErrorCodes.StorageInvalidFolder,
+          retryable: false,
+        },
         { status: 400 }
       );
     }
@@ -195,27 +196,35 @@ export async function POST(request: NextRequest) {
       },
       'uploadFile, result'
     );
-    return NextResponse.json(createSuccessEnvelope(result), { status: 200 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: result,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     logger.error({ error }, 'Error uploading file');
 
     if (error instanceof StorageError) {
       return NextResponse.json(
-        createErrorEnvelope(
-          ErrorCodes.StorageProviderError,
-          error.message,
-          true
-        ),
+        {
+          success: false,
+          error: error.message,
+          code: ErrorCodes.StorageProviderError,
+          retryable: true,
+        },
         { status: 500 }
       );
     }
 
     return NextResponse.json(
-      createErrorEnvelope(
-        ErrorCodes.StorageUnknownError,
-        'Something went wrong while uploading the file',
-        true
-      ),
+      {
+        success: false,
+        error: 'Something went wrong while uploading the file',
+        code: ErrorCodes.StorageUnknownError,
+        retryable: true,
+      },
       { status: 500 }
     );
   }

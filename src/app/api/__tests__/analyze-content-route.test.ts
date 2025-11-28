@@ -64,7 +64,7 @@ describe('/api/analyze-content route', () => {
 
     expect(res.status).toBe(400);
     expect(json.success).toBe(false);
-    expect(json.code).toBe('ANALYZE_CONTENT_INVALID_JSON');
+    expect(json.code).toBe('AI_CONTENT_VALIDATION_ERROR');
     expect(analyzeWebContentWithCreditsMock).not.toHaveBeenCalled();
   });
 
@@ -83,7 +83,7 @@ describe('/api/analyze-content route', () => {
 
     expect(res.status).toBe(400);
     expect(json.success).toBe(false);
-    expect(json.code).toBe('ANALYZE_CONTENT_INVALID_PARAMS');
+    expect(json.code).toBe('AI_CONTENT_VALIDATION_ERROR');
     expect(analyzeWebContentWithCreditsMock).not.toHaveBeenCalled();
   });
 

@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
 import { serverEnv } from '@/env/server';
-import {
-  createErrorEnvelope,
-  createSuccessEnvelope,
-} from '@/lib/domain-error-utils';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { validateInternalJobBasicAuth } from '@/lib/server/internal-auth';
 import { createLoggerFromHeaders } from '@/lib/server/logger';
@@ -45,21 +41,25 @@ export async function GET(request: Request) {
       'Distribute credits completed'
     );
     return NextResponse.json(
-      createSuccessEnvelope({
-        usersCount,
-        processedCount,
-        errorCount,
-      }),
+      {
+        success: true,
+        data: {
+          usersCount,
+          processedCount,
+          errorCount,
+        },
+      },
       { status: 200 }
     );
   } catch (error) {
     log.error({ error }, 'Distribute credits job failed');
     return NextResponse.json(
-      createErrorEnvelope(
-        ErrorCodes.CreditsDistributionFailed,
-        'Distribute credits job failed',
-        true
-      ),
+      {
+        success: false,
+        error: 'Distribute credits job failed',
+        code: ErrorCodes.CreditsDistributionFailed,
+        retryable: true,
+      },
       { status: 500 }
     );
   }

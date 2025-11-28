@@ -28,8 +28,7 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "knip": "knip",
-    "check:domain-errors-i18n": "tsx scripts/check-domain-error-messages.ts"
+    "knip": "knip"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^1.0.27",

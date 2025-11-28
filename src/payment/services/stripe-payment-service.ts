@@ -98,7 +98,7 @@ export class StripePaymentService implements PaymentProvider {
   ): StripeCheckoutSessionLike {
     return {
       id: session.id,
-      mode: session.mode ?? 'payment',
+      mode: session.mode ?? null,
       customer: String(session.customer ?? ''),
       amount_total: session.amount_total ?? 0,
       metadata: {

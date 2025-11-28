@@ -3,7 +3,10 @@ import {
   type PlanInterval,
   PlanIntervals,
 } from '../../types';
-import type { StripeSubscriptionLike } from '../stripe-deps';
+import type {
+  StripeSubscriptionLike,
+  StripeSubscriptionStatusLike,
+} from '../stripe-deps';
 
 export function mapStripeIntervalToPlanInterval(
   subscription: StripeSubscriptionLike
@@ -17,7 +20,7 @@ export function mapStripeIntervalToPlanInterval(
 }
 
 export function mapSubscriptionStatusToPaymentStatus(
-  status: string
+  status: StripeSubscriptionStatusLike
 ): PaymentStatus {
   const statusMap: Record<string, PaymentStatus> = {
     active: 'active',

@@ -11,7 +11,6 @@ import type {
   PaymentRepositoryLike,
   StripeClientLike,
   StripeEventRepositoryLike,
-  StripeWebhookEventLike,
   UserRepositoryLike,
 } from '../stripe-deps';
 import { StripePaymentService } from '../stripe-payment-service';
@@ -83,7 +82,7 @@ function createCheckoutCompletedEvent({
     type?: string;
   };
   amountTotal: number;
-}): StripeWebhookEventLike {
+}): Stripe.Event {
   return {
     id: `evt_${sessionId}`,
     type: 'checkout.session.completed',
@@ -97,7 +96,7 @@ function createCheckoutCompletedEvent({
         metadata,
       },
     },
-  };
+  } as unknown as Stripe.Event;
 }
 
 function createSubscriptionUpdatedEvent({
@@ -118,7 +117,7 @@ function createSubscriptionUpdatedEvent({
   priceId: string;
   currentPeriodStart: number;
   currentPeriodEnd: number;
-}): StripeWebhookEventLike {
+}): Stripe.Event {
   return {
     id: eventId,
     type: 'customer.subscription.updated',
@@ -146,7 +145,7 @@ function createSubscriptionUpdatedEvent({
         },
       },
     },
-  };
+  } as unknown as Stripe.Event;
 }
 
 const createStripeStub = (): StripeClientLike => {

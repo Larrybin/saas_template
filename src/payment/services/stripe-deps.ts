@@ -70,7 +70,7 @@ export type StripeEventRepositoryLike = Pick<
 
 export type StripeCheckoutSessionLike = {
   id: string;
-  mode: string;
+  mode: Stripe.Checkout.Session.Mode | null | undefined;
   customer: string;
   amount_total: number;
   metadata: Record<string, string | undefined>;
@@ -87,10 +87,21 @@ export type StripeSubscriptionItemLike = {
   };
 };
 
+export type StripeSubscriptionStatusLike =
+  | 'active'
+  | 'canceled'
+  | 'incomplete'
+  | 'incomplete_expired'
+  | 'past_due'
+  | 'trialing'
+  | 'unpaid'
+  | 'paused'
+  | (string & {});
+
 export type StripeSubscriptionLike = {
   id: string;
   customer: string;
-  status: string;
+  status: StripeSubscriptionStatusLike;
   cancel_at_period_end: boolean;
   metadata: {
     userId?: string;

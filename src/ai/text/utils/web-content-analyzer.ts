@@ -18,6 +18,8 @@ export interface AnalyzeContentRequest {
   modelProvider: ModelProvider;
 }
 
+// AnalyzeContentResponse 既作为 usecase 返回类型，也作为 /api/analyze-content 的 HTTP 协议模型。
+// 其中 success / error / code / retryable 字段遵循统一的 API envelope 约定。
 export interface AnalyzeContentResponse {
   success: boolean;
   data?: {

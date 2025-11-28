@@ -2,6 +2,7 @@ import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import type { LanguageModel } from 'ai';
 
 import {
   ErrorSeverity,
@@ -12,14 +13,8 @@ import type { ModelProvider } from '@/ai/text/utils/web-content-analyzer';
 import { webContentAnalyzerConfig } from '@/ai/text/utils/web-content-config.client';
 import { serverEnv } from '@/env/server';
 
-type ChatModel =
-  | ReturnType<ReturnType<typeof createOpenAI>['chat']>
-  | ReturnType<ReturnType<typeof createGoogleGenerativeAI>['chat']>
-  | ReturnType<ReturnType<typeof createDeepSeek>['chat']>
-  | ReturnType<ReturnType<typeof createOpenRouter>['chat']>;
-
 export type ProviderConfiguration = {
-  model: ChatModel;
+  model: LanguageModel;
   temperature?: number;
   maxTokens?: number;
 };
@@ -61,7 +56,9 @@ export function resolveProviderConfig(
         );
       }
       return {
-        model: openAIClient.chat(webContentAnalyzerConfig.openai.model),
+        model: openAIClient.chat(
+          webContentAnalyzerConfig.openai.model
+        ) as LanguageModel,
         temperature: webContentAnalyzerConfig.openai.temperature,
         maxTokens: webContentAnalyzerConfig.openai.maxTokens,
       };
@@ -77,7 +74,9 @@ export function resolveProviderConfig(
         );
       }
       return {
-        model: geminiClient.chat(webContentAnalyzerConfig.gemini.model),
+        model: geminiClient.chat(
+          webContentAnalyzerConfig.gemini.model
+        ) as LanguageModel,
         temperature: webContentAnalyzerConfig.gemini.temperature,
         maxTokens: webContentAnalyzerConfig.gemini.maxTokens,
       };
@@ -93,7 +92,9 @@ export function resolveProviderConfig(
         );
       }
       return {
-        model: deepseekClient.chat(webContentAnalyzerConfig.deepseek.model),
+        model: deepseekClient.chat(
+          webContentAnalyzerConfig.deepseek.model
+        ) as LanguageModel,
         temperature: webContentAnalyzerConfig.deepseek.temperature,
         maxTokens: webContentAnalyzerConfig.deepseek.maxTokens,
       };
@@ -109,7 +110,9 @@ export function resolveProviderConfig(
         );
       }
       return {
-        model: openRouterClient.chat(webContentAnalyzerConfig.openrouter.model),
+        model: openRouterClient.chat(
+          webContentAnalyzerConfig.openrouter.model
+        ) as LanguageModel,
         temperature: webContentAnalyzerConfig.openrouter.temperature,
         maxTokens: webContentAnalyzerConfig.openrouter.maxTokens,
       };

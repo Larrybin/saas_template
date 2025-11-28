@@ -6,9 +6,7 @@ import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { XTwitterIcon } from '@/components/icons/x';
 import { Logo } from '@/components/layout/logo';
-import { ModeSwitcher } from '@/components/layout/mode-switcher';
 import { websiteConfig } from '@/config/website';
-import { docsI18nConfig } from '@/lib/docs/i18n';
 import { source } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 

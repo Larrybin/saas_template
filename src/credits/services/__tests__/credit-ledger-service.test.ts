@@ -27,8 +27,7 @@ vi.mock('@/lib/server/logger', () => ({
 }));
 
 type GetDbMock = Mock<
-  [],
-  Promise<{
+  () => Promise<{
     transaction: (cb: (tx: undefined) => Promise<void>) => Promise<void>;
   }>
 >;

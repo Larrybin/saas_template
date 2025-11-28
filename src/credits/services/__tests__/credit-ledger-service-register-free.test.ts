@@ -127,7 +127,11 @@ describe('CreditLedgerService register gift and free monthly credits', () => {
     expect(canAddCreditsByTypeMock).toHaveBeenCalledTimes(2);
     expect(addCreditsMock).toHaveBeenCalledTimes(1);
 
-    const [payload, tx] = addCreditsMock.mock.calls[0];
+    const firstCall = addCreditsMock.mock.calls[0];
+    if (!firstCall) {
+      throw new Error('Expected addCreditsMock to have been called');
+    }
+    const [payload, tx] = firstCall;
     expect(tx).toBeUndefined();
     expect(payload).toEqual(
       expect.objectContaining({

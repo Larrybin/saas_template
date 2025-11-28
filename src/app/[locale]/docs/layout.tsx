@@ -44,7 +44,7 @@ export default async function DocsRootLayout({
   const showLocaleSwitch = Object.keys(websiteConfig.i18n.locales).length > 1;
   const githubUrl = websiteConfig.metadata.social?.github;
   const docsOptions: BaseLayoutProps = {
-    i18n: showLocaleSwitch ? docsI18nConfig : false,
+    i18n: showLocaleSwitch,
     ...(githubUrl ? { githubUrl } : {}),
     nav: {
       url: getUrlWithLocale('/docs', locale),
@@ -75,11 +75,6 @@ export default async function DocsRootLayout({
           ]
         : []),
     ],
-    themeSwitch: {
-      enabled: true,
-      mode: 'light-dark-system',
-      component: <ModeSwitcher />,
-    },
   };
 
   const tree = source.pageTree[locale];

@@ -31,12 +31,6 @@ export default function Example() {
       <DynamicCodeBlock
         lang={lang}
         code={code}
-        options={{
-          themes: {
-            light: 'github-light',
-            dark: 'github-dark',
-          },
-        }}
       />
     </div>
   );

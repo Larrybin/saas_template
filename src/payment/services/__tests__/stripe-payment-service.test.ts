@@ -320,7 +320,7 @@ describe('StripePaymentService', () => {
       tx
     );
     expect(creditsGateway.addCredits).toHaveBeenCalled();
-    const txWrapper = creditsGateway.addCredits.mock.calls[0][1];
+    const txWrapper = creditsGateway.addCredits.mock.calls[0]?.[1];
     expect(txWrapper?.unwrap()).toBe(tx);
   });
 
@@ -384,7 +384,7 @@ describe('StripePaymentService', () => {
       service.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('grant failed');
     expect(paymentRepository.insert).toHaveBeenCalled();
-    const txWrapper = creditsGateway.addCredits.mock.calls[0][1];
+    const txWrapper = creditsGateway.addCredits.mock.calls[0]?.[1];
     expect(txWrapper?.unwrap()).toBe(tx);
     expect(stripeEventRepository.withEventProcessingLock).toHaveBeenCalled();
   });

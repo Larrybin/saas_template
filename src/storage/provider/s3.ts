@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import S3mini from 's3mini';
+import { S3mini } from 's3mini';
 import { getLogger } from '@/lib/server/logger';
 import { storageConfig } from '../config/storage-config';
 import {

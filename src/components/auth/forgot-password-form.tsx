@@ -54,7 +54,7 @@ export const ForgotPasswordForm = ({ className }: { className?: string }) => {
   }, [searchParams, form]);
 
   const onSubmit = async (values: z.infer<typeof ForgotPasswordSchema>) => {
-    await authClient.forgetPassword(
+    await authClient.requestPasswordReset(
       {
         email: values.email,
         redirectTo: `${Routes.ResetPassword}`,

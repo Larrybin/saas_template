@@ -61,7 +61,7 @@ export function Providers({ children, locale }: ProvidersProps) {
         disableTransitionOnChange
       >
         <ActiveThemeProvider>
-          <RootProvider theme={theme} i18n={{ locale, locales, translations }}>
+          <RootProvider theme={theme}>
             <TooltipProvider>{children}</TooltipProvider>
           </RootProvider>
         </ActiveThemeProvider>

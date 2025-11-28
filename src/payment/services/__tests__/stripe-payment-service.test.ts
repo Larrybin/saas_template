@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { websiteConfig } from '@/config/website';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { BillingService } from '@/domain/billing';
@@ -14,6 +15,14 @@ import type {
   UserRepositoryLike,
 } from '../stripe-deps';
 import { StripePaymentService } from '../stripe-payment-service';
+
+type EventProcessingMeta = Parameters<
+  StripeEventRepositoryLike['withEventProcessingLock']
+>[0];
+
+type EventProcessingHandler = Parameters<
+  StripeEventRepositoryLike['withEventProcessingLock']
+>[1];
 
 vi.mock('@/lib/server/logger', () => ({
   getLogger: () => ({
@@ -271,10 +280,15 @@ const createService = (
     ({
       withEventProcessingLock: vi
         .fn()
-        .mockImplementation(async (_meta, handler) => {
-          await handler();
-          return { skipped: false };
-        }),
+        .mockImplementation(
+          async (
+            _meta: EventProcessingMeta,
+            handler: EventProcessingHandler
+          ) => {
+            await handler();
+            return { skipped: false };
+          }
+        ),
     } satisfies StripeEventRepositoryLike);
   const billingService =
     overrides.billingService ??
@@ -439,10 +453,15 @@ describe('StripePaymentService', () => {
     const stripeEventRepository = {
       withEventProcessingLock: vi
         .fn()
-        .mockImplementation(async (_meta, handler) => {
-          await handler();
-          return { skipped: false };
-        }),
+        .mockImplementation(
+          async (
+            _meta: EventProcessingMeta,
+            handler: EventProcessingHandler
+          ) => {
+            await handler();
+            return { skipped: false };
+          }
+        ),
     };
     const { service } = createService({
       stripe,
@@ -499,10 +518,15 @@ describe('StripePaymentService', () => {
     const stripeEventRepository = {
       withEventProcessingLock: vi
         .fn()
-        .mockImplementation(async (_meta, handler) => {
-          await handler();
-          return { skipped: false };
-        }),
+        .mockImplementation(
+          async (
+            _meta: EventProcessingMeta,
+            handler: EventProcessingHandler
+          ) => {
+            await handler();
+            return { skipped: false };
+          }
+        ),
     };
     const { service } = createService({
       stripe,
@@ -557,10 +581,15 @@ describe('StripePaymentService', () => {
     const stripeEventRepository = {
       withEventProcessingLock: vi
         .fn()
-        .mockImplementation(async (_meta, handler) => {
-          await handler();
-          return { skipped: false };
-        }),
+        .mockImplementation(
+          async (
+            _meta: EventProcessingMeta,
+            handler: EventProcessingHandler
+          ) => {
+            await handler();
+            return { skipped: false };
+          }
+        ),
     };
     const { service } = createService({
       stripe,
@@ -629,10 +658,15 @@ describe('StripePaymentService', () => {
     const stripeEventRepository = {
       withEventProcessingLock: vi
         .fn()
-        .mockImplementation(async (_meta, handler) => {
-          await handler();
-          return { skipped: false };
-        }),
+        .mockImplementation(
+          async (
+            _meta: EventProcessingMeta,
+            handler: EventProcessingHandler
+          ) => {
+            await handler();
+            return { skipped: false };
+          }
+        ),
     };
     const { service } = createService({
       stripe,
@@ -689,10 +723,15 @@ describe('StripePaymentService', () => {
     const stripeEventRepository = {
       withEventProcessingLock: vi
         .fn()
-        .mockImplementation(async (_meta, handler) => {
-          await handler();
-          return { skipped: false };
-        }),
+        .mockImplementation(
+          async (
+            _meta: EventProcessingMeta,
+            handler: EventProcessingHandler
+          ) => {
+            await handler();
+            return { skipped: false };
+          }
+        ),
     };
     const { service } = createService({
       stripe,

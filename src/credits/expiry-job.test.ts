@@ -19,29 +19,19 @@ vi.mock('@/lib/server/logger', () => ({
   }),
 }));
 
-const { processExpiredCreditsForUsersMock } = vi.hoisted(() => ({
-  processExpiredCreditsForUsersMock: vi.fn(),
-}));
-
-vi.mock('./domain/credit-ledger-domain-service', () => ({
-  CreditLedgerDomainService: vi.fn().mockImplementation(() => ({
-    processExpiredCreditsForUsers: processExpiredCreditsForUsersMock,
-  })),
-}));
-
 import { getDb } from '@/db';
-import { runExpirationJob } from './expiry-job';
+import { createRunExpirationJob, type ExpirationJobDeps } from './expiry-job';
 
 const mockedGetDb = getDb as unknown as ReturnType<typeof vi.fn>;
 
 describe('runExpirationJob', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    processExpiredCreditsForUsersMock.mockReset();
   });
 
   it('processes expirable users in batches via domain service', async () => {
     const tx = {};
+    const processExpiredCreditsForUsersMock = vi.fn();
 
     mockedGetDb.mockResolvedValue({
       selectDistinct: () => ({
@@ -70,6 +60,14 @@ describe('runExpirationJob', () => {
         errorCount: 0,
         totalExpiredCredits: 5,
       });
+
+    const deps: ExpirationJobDeps = {
+      creditLedgerDomainService: {
+        processExpiredCreditsForUsers: processExpiredCreditsForUsersMock,
+      } as unknown as ExpirationJobDeps['creditLedgerDomainService'],
+    };
+
+    const runExpirationJob = createRunExpirationJob(deps);
 
     const result = await runExpirationJob({ batchSize: 2 });
 

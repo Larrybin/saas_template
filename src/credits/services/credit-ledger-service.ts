@@ -1,4 +1,4 @@
-import { getLogger } from '@/lib/server/logger';
+import { getLogger, type Logger } from '@/lib/server/logger';
 import { CreditLedgerRepository } from '../data-access/credit-ledger-repository';
 import type { DbExecutor } from '../data-access/types';
 import { CreditLedgerDomainService } from '../domain/credit-ledger-domain-service';
@@ -14,56 +14,39 @@ import type { CreditsTransaction } from './transaction-context';
 import { resolveExecutor } from './transaction-context';
 
 export const creditLedgerRepository = new CreditLedgerRepository();
-const creditLedgerDomainService = new CreditLedgerDomainService(
+export const creditLedgerDomainService = new CreditLedgerDomainService(
   creditLedgerRepository
 );
 const creditsServiceLogger = getLogger({ span: 'credits.service' });
 const defaultPlanCreditsPolicy = new DefaultPlanCreditsPolicy();
 
 export async function getUserCredits(userId: string): Promise<number> {
-  try {
-    return await creditLedgerDomainService.getUserCredits(userId);
-  } catch (error) {
-    creditsServiceLogger.error(
-      { error, userId },
-      'getUserCredits failed to resolve balance'
-    );
-    throw error;
-  }
+  return defaultCreditLedgerService.getUserCredits(userId);
 }
 
 export async function updateUserCredits(userId: string, credits: number) {
-  try {
-    await creditLedgerDomainService.updateUserCredits(userId, credits);
-  } catch (error) {
-    creditsServiceLogger.error({ error, userId }, 'updateUserCredits failed');
-    throw error;
-  }
+  await defaultCreditLedgerService.updateUserCredits(userId, credits);
 }
 
 export async function addCredits(
   payload: AddCreditsPayload,
   transaction?: CreditsTransaction
 ) {
-  const executor = resolveExecutor(transaction);
-  await creditLedgerDomainService.addCredits(payload, executor);
+  await defaultCreditLedgerService.addCredits(payload, transaction);
 }
 
 export async function addCreditsWithExecutor(
   payload: AddCreditsPayload,
   executor: DbExecutor
 ) {
-  await creditLedgerDomainService.addCredits(payload, executor);
+  await defaultCreditLedgerService.addCreditsWithExecutor(payload, executor);
 }
 
 export async function hasEnoughCredits(options: {
   userId: string;
   requiredCredits: number;
 }) {
-  return creditLedgerDomainService.hasEnoughCredits(
-    options.userId,
-    options.requiredCredits
-  );
+  return defaultCreditLedgerService.hasEnoughCredits(options);
 }
 
 export async function consumeCredits(payload: {
@@ -71,11 +54,11 @@ export async function consumeCredits(payload: {
   amount: number;
   description: string;
 }) {
-  await creditLedgerDomainService.consumeCredits(payload);
+  await defaultCreditLedgerService.consumeCredits(payload);
 }
 
 export async function processExpiredCredits(userId: string) {
-  await creditLedgerDomainService.processExpiredCredits(userId);
+  await defaultCreditLedgerService.processExpiredCredits(userId);
 }
 
 export async function canAddCreditsByType(
@@ -84,29 +67,78 @@ export async function canAddCreditsByType(
   periodKey?: number,
   executor?: DbExecutor
 ) {
-  const effectivePeriodKey = periodKey ?? getCurrentPeriodKey();
-  return creditLedgerDomainService.canAddCreditsByType(
+  return defaultCreditLedgerService.canAddCreditsByType(
     userId,
     creditType,
-    effectivePeriodKey,
+    periodKey,
     executor
   );
 }
 
 export class CreditLedgerService implements CreditsGateway {
   constructor(
-    private readonly policy: PlanCreditsPolicy = defaultPlanCreditsPolicy
+    private readonly policy: PlanCreditsPolicy = defaultPlanCreditsPolicy,
+    private readonly domainService: CreditLedgerDomainService = creditLedgerDomainService,
+    private readonly logger: Pick<
+      Logger,
+      'info' | 'warn' | 'error'
+    > = creditsServiceLogger
   ) {}
 
   async addCredits(
     payload: AddCreditsPayload,
     transaction?: CreditsTransaction
   ): Promise<void> {
-    await addCredits(payload, transaction);
+    const executor = resolveExecutor(transaction);
+    await this.domainService.addCredits(payload, executor);
+  }
+
+  async addCreditsWithExecutor(
+    payload: AddCreditsPayload,
+    executor: DbExecutor
+  ): Promise<void> {
+    await this.domainService.addCredits(payload, executor);
+  }
+
+  async hasEnoughCredits(options: {
+    userId: string;
+    requiredCredits: number;
+  }): Promise<boolean> {
+    return this.domainService.hasEnoughCredits(
+      options.userId,
+      options.requiredCredits
+    );
+  }
+
+  async consumeCredits(payload: {
+    userId: string;
+    amount: number;
+    description: string;
+  }): Promise<void> {
+    await this.domainService.consumeCredits(payload);
+  }
+
+  async processExpiredCredits(userId: string): Promise<void> {
+    await this.domainService.processExpiredCredits(userId);
+  }
+
+  async canAddCreditsByType(
+    userId: string,
+    creditType: string,
+    periodKey?: number,
+    executor?: DbExecutor
+  ): Promise<boolean> {
+    const effectivePeriodKey = periodKey ?? getCurrentPeriodKey();
+    return this.domainService.canAddCreditsByType(
+      userId,
+      creditType,
+      effectivePeriodKey,
+      executor
+    );
   }
 
   async addRegisterGiftCredits(userId: string): Promise<void> {
-    const alreadyGranted = await creditLedgerDomainService.hasTransactionOfType(
+    const alreadyGranted = await this.domainService.hasTransactionOfType(
       userId,
       CREDIT_TRANSACTION_TYPE.REGISTER_GIFT
     );
@@ -115,7 +147,7 @@ export class CreditLedgerService implements CreditsGateway {
     }
     const rule = this.policy.getRegisterGiftRule();
     if (!rule) {
-      creditsServiceLogger.info(
+      this.logger.info(
         { userId, type: CREDIT_TRANSACTION_TYPE.REGISTER_GIFT },
         'Register gift credits rule not found, skipping grant'
       );
@@ -131,7 +163,7 @@ export class CreditLedgerService implements CreditsGateway {
       description: `Register gift credits: ${credits}`,
       ...(expireDays !== undefined ? { expireDays } : {}),
     };
-    await addCredits(payload);
+    await this.addCredits(payload);
   }
 
   async addMonthlyFreeCredits(
@@ -141,14 +173,14 @@ export class CreditLedgerService implements CreditsGateway {
   ): Promise<void> {
     const rule = this.policy.getMonthlyFreeRule(planId);
     if (!rule) {
-      creditsServiceLogger.info(
+      this.logger.info(
         { userId, planId, type: CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH },
         'Monthly free credits rule not found for plan, skipping grant'
       );
       return;
     }
     const periodKey = getCurrentPeriodKey(refDate);
-    const canAdd = await canAddCreditsByType(
+    const canAdd = await this.canAddCreditsByType(
       userId,
       CREDIT_TRANSACTION_TYPE.MONTHLY_REFRESH,
       periodKey
@@ -164,7 +196,7 @@ export class CreditLedgerService implements CreditsGateway {
       periodKey,
       ...(expireDays !== undefined ? { expireDays } : {}),
     };
-    await addCredits(payload);
+    await this.addCredits(payload);
   }
 
   async addSubscriptionCredits(
@@ -175,7 +207,7 @@ export class CreditLedgerService implements CreditsGateway {
   ): Promise<void> {
     const rule = this.policy.getSubscriptionRenewalRule(priceId);
     if (!rule) {
-      creditsServiceLogger.error(
+      this.logger.error(
         { userId, priceId, type: CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL },
         'Subscription renewal credits rule missing for price'
       );
@@ -185,7 +217,7 @@ export class CreditLedgerService implements CreditsGateway {
     }
     const refDate = cycleRefDate ?? new Date();
     const periodKey = getPeriodKey(refDate);
-    const canAdd = await canAddCreditsByType(
+    const canAdd = await this.canAddCreditsByType(
       userId,
       CREDIT_TRANSACTION_TYPE.SUBSCRIPTION_RENEWAL,
       periodKey
@@ -199,7 +231,7 @@ export class CreditLedgerService implements CreditsGateway {
       periodKey,
       ...(rule.expireDays !== undefined ? { expireDays: rule.expireDays } : {}),
     };
-    await addCredits(payload, transaction);
+    await this.addCredits(payload, transaction);
   }
 
   async addLifetimeMonthlyCredits(
@@ -210,7 +242,7 @@ export class CreditLedgerService implements CreditsGateway {
   ): Promise<void> {
     const rule = this.policy.getLifetimeMonthlyRule(priceId);
     if (!rule) {
-      creditsServiceLogger.error(
+      this.logger.error(
         { userId, priceId, type: CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY },
         'Lifetime monthly credits rule missing for price'
       );
@@ -220,7 +252,7 @@ export class CreditLedgerService implements CreditsGateway {
     }
     const refDate = cycleRefDate ?? new Date();
     const periodKey = getPeriodKey(refDate);
-    const canAdd = await canAddCreditsByType(
+    const canAdd = await this.canAddCreditsByType(
       userId,
       CREDIT_TRANSACTION_TYPE.LIFETIME_MONTHLY,
       periodKey
@@ -234,7 +266,28 @@ export class CreditLedgerService implements CreditsGateway {
       periodKey,
       ...(rule.expireDays !== undefined ? { expireDays: rule.expireDays } : {}),
     };
-    await addCredits(payload, transaction);
+    await this.addCredits(payload, transaction);
+  }
+
+  async getUserCredits(userId: string): Promise<number> {
+    try {
+      return await this.domainService.getUserCredits(userId);
+    } catch (error) {
+      this.logger.error(
+        { error, userId },
+        'getUserCredits failed to resolve balance'
+      );
+      throw error;
+    }
+  }
+
+  async updateUserCredits(userId: string, credits: number): Promise<void> {
+    try {
+      await this.domainService.updateUserCredits(userId, credits);
+    } catch (error) {
+      this.logger.error({ error, userId }, 'updateUserCredits failed');
+      throw error;
+    }
   }
 }
 

@@ -5,11 +5,7 @@ import { CreditsTransaction } from '@/credits/services/transaction-context';
 import { DefaultBillingService } from '@/domain/billing/billing-service';
 import type { PlanPolicy } from '@/domain/billing/plan-policy';
 import type { UserLifetimeMembershipRepository } from '@/payment/data-access/user-lifetime-membership-repository';
-import type {
-  CheckoutResult,
-  PaymentProvider,
-  PricePlan,
-} from '@/payment/types';
+import type { PaymentProvider, PricePlan } from '@/payment/types';
 import { PaymentTypes, PlanIntervals } from '@/payment/types';
 
 const mockPlan: PricePlan = {
@@ -41,10 +37,7 @@ const mockPlan: PricePlan = {
 const createPaymentProvider = () => {
   return {
     createCheckout: vi
-      .fn<
-        [Parameters<PaymentProvider['createCheckout']>[0]],
-        Promise<CheckoutResult>
-      >()
+      .fn<PaymentProvider['createCheckout']>()
       .mockResolvedValue({
         url: 'https://checkout.example.com',
         id: 'chk_123',

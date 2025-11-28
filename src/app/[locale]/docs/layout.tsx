@@ -6,9 +6,7 @@ import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { XTwitterIcon } from '@/components/icons/x';
 import { Logo } from '@/components/layout/logo';
-import { ModeSwitcher } from '@/components/layout/mode-switcher';
 import { websiteConfig } from '@/config/website';
-import { docsI18nConfig } from '@/lib/docs/i18n';
 import { source } from '@/lib/source';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 
@@ -44,7 +42,7 @@ export default async function DocsRootLayout({
   const showLocaleSwitch = Object.keys(websiteConfig.i18n.locales).length > 1;
   const githubUrl = websiteConfig.metadata.social?.github;
   const docsOptions: BaseLayoutProps = {
-    i18n: showLocaleSwitch ? docsI18nConfig : false,
+    i18n: showLocaleSwitch,
     ...(githubUrl ? { githubUrl } : {}),
     nav: {
       url: getUrlWithLocale('/docs', locale),
@@ -75,11 +73,6 @@ export default async function DocsRootLayout({
           ]
         : []),
     ],
-    themeSwitch: {
-      enabled: true,
-      mode: 'light-dark-system',
-      component: <ModeSwitcher />,
-    },
   };
 
   const tree = source.pageTree[locale];

@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateObject, type LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -19,9 +19,10 @@ import {
 
 type BaseAnalysis = Omit<AnalysisResults, 'url' | 'analyzedAt'>;
 
-type PromptSchemaArgs = Parameters<typeof generateObject>[0] & {
-  prompt: string;
+type PromptSchemaArgs = {
+  model: LanguageModel;
   schema: typeof analysisSchema;
+  prompt: string;
   temperature?: number;
   maxOutputTokens?: number;
 };

@@ -9,7 +9,9 @@ import { PaymentTypes } from '../types';
 import type { NotificationGateway } from './gateways/notification-gateway';
 import type {
   PaymentRepositoryLike,
+  StripeCheckoutCompletedEventLike,
   StripeCheckoutSessionLike,
+  StripeSubscriptionEventLike,
   StripeSubscriptionLike,
   StripeWebhookEventLike,
 } from './stripe-deps';

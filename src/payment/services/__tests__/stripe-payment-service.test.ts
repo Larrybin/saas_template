@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type Stripe from 'stripe';
 import { websiteConfig } from '@/config/website';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { BillingService } from '@/domain/billing';

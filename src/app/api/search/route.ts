@@ -1,6 +1,5 @@
 import { createTokenizer } from '@orama/tokenizers/mandarin';
 import { createI18nSearchAPI } from 'fumadocs-core/search/server';
-import type { NextRequest } from 'next/server';
 import { docsI18nConfig } from '@/lib/docs/i18n';
 import { createLoggerFromHeaders } from '@/lib/server/logger';
 import { source } from '@/lib/source';
@@ -69,7 +68,7 @@ const searchAPI = createI18nSearchAPI('advanced', {
  * 3. Fumadocs core searchAPI get `locale` from searchParams, and pass it to the search API
  * https://github.com/fuma-nama/fumadocs/blob/dev/packages/core/src/search/orama/create-endpoint.ts#L19
  */
-export const GET = async (request: NextRequest) => {
+export const GET = async (request: Request) => {
   const logger = createLoggerFromHeaders(request.headers, {
     span: 'api.docs.search',
     route: '/api/search',

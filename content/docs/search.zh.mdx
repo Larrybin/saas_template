@@ -23,7 +23,7 @@ Fumadocs UI 为您的文档提供了一个美观的搜索界面，而搜索功�
 当查询为空时，它们会显示为备选项。
 
 ```tsx title="app/layout.tsx"
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -42,7 +42,7 @@ import { RootProvider } from 'fumadocs-ui/root-provider';
 要禁用文档搜索，请在根提供程序中禁用它。
 
 ```tsx
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -58,7 +58,7 @@ import { RootProvider } from 'fumadocs-ui/root-provider';
 自定义触发搜索对话框的热键。
 
 ```tsx
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -80,7 +80,7 @@ import { RootProvider } from 'fumadocs-ui/root-provider';
 确保首先在搜索服务器上配置[标签过滤器](/docs/headless/search/orama#tag-filter)。
 
 ```tsx
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -104,7 +104,7 @@ import { RootProvider } from 'fumadocs-ui/root-provider';
 向搜索客户端传递选项，例如更改 Orama 搜索服务器的 API 端点：
 
 ```tsx
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -136,7 +136,7 @@ export default function CustomDialog(props: SharedProps) {
 
 ```tsx title="provider.tsx"
 'use client';
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 import dynamic from 'next/dynamic';
 import type { ReactNode } from 'react';
 

@@ -1,15 +1,17 @@
 'use client';
 
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 import { ThemeProvider, useTheme } from 'next-themes';
 import type { ReactNode } from 'react';
 import { ActiveThemeProvider } from '@/components/layout/active-theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { websiteConfig } from '@/config/website';
+import { type DocsLocale, getDocsUiI18n } from '@/lib/docs/ui-i18n';
 
 interface ProvidersProps {
   children: ReactNode;
+  locale: DocsLocale;
 }
 
 /**
@@ -24,7 +26,7 @@ interface ProvidersProps {
  * - PaymentProvider: Provides the payment state to the app.
  * - CreditsProvider: Provides the credits state to the app.
  */
-export function Providers({ children }: ProvidersProps) {
+export function Providers({ children, locale }: ProvidersProps) {
   const theme = useTheme();
   const defaultMode = websiteConfig.ui.mode?.defaultMode ?? 'system';
 
@@ -37,7 +39,7 @@ export function Providers({ children }: ProvidersProps) {
         disableTransitionOnChange
       >
         <ActiveThemeProvider>
-          <RootProvider theme={theme}>
+          <RootProvider theme={theme} i18n={getDocsUiI18n(locale)}>
             <TooltipProvider>{children}</TooltipProvider>
           </RootProvider>
         </ActiveThemeProvider>

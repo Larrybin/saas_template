@@ -3,10 +3,6 @@ import {
   type GenerateImageResponse,
   generateImageRequestSchema,
 } from '@/ai/image/lib/api-types';
-import {
-  createErrorEnvelope,
-  createErrorEnvelopeFromDomainError,
-} from '@/lib/domain-error-utils';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
 import { ErrorCodes } from '@/lib/server/error-codes';
@@ -54,11 +50,12 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     logger.warn('Invalid JSON body for image generation request', { error });
     return NextResponse.json(
-      createErrorEnvelope(
-        ErrorCodes.ImageGenerateInvalidJson,
-        'Request body must be valid JSON.',
-        false
-      ) satisfies GenerateImageResponse,
+      {
+        success: false,
+        error: 'Request body must be valid JSON.',
+        code: ErrorCodes.ImageGenerateInvalidJson,
+        retryable: false,
+      } satisfies GenerateImageResponse,
       { status: 400 }
     );
   }
@@ -78,11 +75,12 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json(
-      createErrorEnvelope(
-        ErrorCodes.ImageGenerateInvalidParams,
-        'Invalid image generation parameters.',
-        false
-      ) satisfies GenerateImageResponse,
+      {
+        success: false,
+        error: 'Invalid image generation parameters.',
+        code: ErrorCodes.ImageGenerateInvalidParams,
+        retryable: false,
+      } satisfies GenerateImageResponse,
       { status: 400 }
     );
   }
@@ -126,9 +124,12 @@ export async function POST(req: NextRequest) {
       const status = error.retryable ? 500 : 400;
 
       return NextResponse.json(
-        createErrorEnvelopeFromDomainError(
-          error
-        ) satisfies GenerateImageResponse,
+        {
+          success: false,
+          error: error.message,
+          code: error.code,
+          retryable: error.retryable,
+        } satisfies GenerateImageResponse,
         { status }
       );
     }
@@ -136,11 +137,12 @@ export async function POST(req: NextRequest) {
     logger.error('Unexpected error in generate-images route', { error });
 
     return NextResponse.json(
-      createErrorEnvelope(
-        ErrorCodes.ImageProviderError,
-        'Failed to generate image. Please try again later.',
-        true
-      ) satisfies GenerateImageResponse,
+      {
+        success: false,
+        error: 'Failed to generate image. Please try again later.',
+        code: ErrorCodes.ImageProviderError,
+        retryable: true,
+      } satisfies GenerateImageResponse,
       { status: 500 }
     );
   }

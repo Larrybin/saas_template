@@ -1,8 +1,4 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import {
-  createErrorEnvelope,
-  createErrorEnvelopeFromDomainError,
-} from '@/lib/domain-error-utils';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders } from '@/lib/server/logger';
@@ -32,22 +28,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Validate inputs
     if (!payload) {
       return NextResponse.json(
-        createErrorEnvelope(
-          ErrorCodes.UnexpectedError,
-          'Missing webhook payload',
-          false
-        ),
+        {
+          success: false,
+          error: 'Missing webhook payload',
+          code: ErrorCodes.UnexpectedError,
+          retryable: false,
+        },
         { status: 400 }
       );
     }
 
     if (!signature) {
       return NextResponse.json(
-        createErrorEnvelope(
-          ErrorCodes.UnexpectedError,
-          'Missing Stripe signature',
-          false
-        ),
+        {
+          success: false,
+          error: 'Missing Stripe signature',
+          code: ErrorCodes.UnexpectedError,
+          retryable: false,
+        },
         { status: 400 }
       );
     }
@@ -71,20 +69,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             ? 500
             : 400;
 
-      return NextResponse.json(createErrorEnvelopeFromDomainError(error), {
-        status,
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+          code: error.code,
+          retryable: error.retryable,
+        },
+        { status }
+      );
     }
 
     logger.error({ error }, 'Stripe webhook unexpected error');
 
     // Return generic error
     return NextResponse.json(
-      createErrorEnvelope(
-        ErrorCodes.StripeWebhookUnexpectedError,
-        'Webhook handler failed',
-        true
-      ),
+      {
+        success: false,
+        error: 'Webhook handler failed',
+        code: ErrorCodes.UnexpectedError,
+        retryable: true,
+      },
       { status: 400 }
     );
   }

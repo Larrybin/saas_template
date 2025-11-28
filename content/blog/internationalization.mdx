@@ -77,7 +77,7 @@ Wrap the root provider inside `I18nProvider`, and provide available languages & 
 Note that only English translations are provided by default.
 
 ```tsx title="app/[lang]/layout.tsx"
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 import { I18nProvider, type Translations } from 'fumadocs-ui/i18n';
 
 const cn: Partial<Translations> = {

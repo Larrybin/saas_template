@@ -7,10 +7,10 @@ description: Fumadocs UI 的上下文提供者
 
 ## 使用方法
 
-```jsx
-import { RootProvider } from 'fumadocs-ui/provider';
+```tsx
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
-export default function Layout({ children }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>

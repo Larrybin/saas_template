@@ -1,7 +1,5 @@
-import type { Stripe } from 'stripe';
 import { getCreditPackageById } from '@/credits/server';
 import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
-import type { UserRepository } from '../data-access/user-repository';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
@@ -9,6 +7,7 @@ import type {
 } from '../types';
 import { PaymentTypes } from '../types';
 import { PaymentSecurityError } from './errors';
+import type { StripeClientLike, UserRepositoryLike } from './stripe-deps';
 import { recordPriceMismatchEvent } from './utils/payment-security-monitor';
 import {
   createIdempotencyKey,
@@ -17,13 +16,13 @@ import {
 } from './utils/stripe-metadata';
 
 type StripeCheckoutServiceDeps = {
-  stripeClient: Stripe;
-  userRepository: UserRepository;
+  stripeClient: StripeClientLike;
+  userRepository: UserRepositoryLike;
 };
 
 export class StripeCheckoutService {
-  private readonly stripe: Stripe;
-  private readonly userRepository: UserRepository;
+  private readonly stripe: StripeClientLike;
+  private readonly userRepository: UserRepositoryLike;
 
   constructor(deps: StripeCheckoutServiceDeps) {
     this.stripe = deps.stripeClient;

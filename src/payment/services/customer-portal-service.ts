@@ -1,16 +1,16 @@
-import type { Stripe } from 'stripe';
 import type { CreatePortalParams, PortalResult } from '../types';
+import type { StripeClientLike } from './stripe-deps';
 import {
   createIdempotencyKey,
   mapLocaleToStripeLocale,
 } from './utils/stripe-metadata';
 
 type CustomerPortalServiceDeps = {
-  stripeClient: Stripe;
+  stripeClient: StripeClientLike;
 };
 
 export class CustomerPortalService {
-  private readonly stripe: Stripe;
+  private readonly stripe: StripeClientLike;
 
   constructor(deps: CustomerPortalServiceDeps) {
     this.stripe = deps.stripeClient;

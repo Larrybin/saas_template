@@ -1,14 +1,18 @@
 import { randomUUID } from 'crypto';
 import type { Logger } from 'pino';
-import type Stripe from 'stripe';
 import { getCreditPackageById } from '@/credits/server';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { createCreditsTransaction } from '@/credits/services/transaction-context';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import type { BillingService } from '@/domain/billing';
-import type { PaymentRepository } from '../data-access/payment-repository';
 import { PaymentTypes } from '../types';
 import type { NotificationGateway } from './gateways/notification-gateway';
+import type {
+  PaymentRepositoryLike,
+  StripeCheckoutSessionLike,
+  StripeSubscriptionLike,
+  StripeWebhookEventLike,
+} from './stripe-deps';
 import {
   getSubscriptionPeriodBounds,
   mapStripeIntervalToPlanInterval,
@@ -16,7 +20,7 @@ import {
 } from './utils/stripe-subscription';
 
 type WebhookDeps = {
-  paymentRepository: PaymentRepository;
+  paymentRepository: PaymentRepositoryLike;
   creditsGateway: CreditsGateway;
   notificationGateway: NotificationGateway;
   logger: Logger;
@@ -24,27 +28,18 @@ type WebhookDeps = {
 };
 
 export async function handleStripeWebhookEvent(
-  event: Stripe.Event,
+  event: StripeWebhookEventLike,
   deps: WebhookDeps
 ): Promise<void> {
   switch (event.type) {
     case 'customer.subscription.created':
-      await onCreateSubscription(
-        event.data.object as Stripe.Subscription,
-        deps
-      );
+      await onCreateSubscription(event.data.object, deps);
       break;
     case 'customer.subscription.updated':
-      await onUpdateSubscription(
-        event.data.object as Stripe.Subscription,
-        deps
-      );
+      await onUpdateSubscription(event.data.object, deps);
       break;
     case 'customer.subscription.deleted':
-      await onDeleteSubscription(
-        event.data.object as Stripe.Subscription,
-        deps
-      );
+      await onDeleteSubscription(event.data.object, deps);
       break;
     case 'checkout.session.completed':
       await handleCheckoutEvent(event, deps);
@@ -54,8 +49,14 @@ export async function handleStripeWebhookEvent(
   }
 }
 
-async function handleCheckoutEvent(event: Stripe.Event, deps: WebhookDeps) {
-  const session = event.data.object as Stripe.Checkout.Session;
+async function handleCheckoutEvent(
+  event: Extract<
+    StripeWebhookEventLike,
+    { type: 'checkout.session.completed' }
+  >,
+  deps: WebhookDeps
+) {
+  const session = event.data.object as StripeCheckoutSessionLike;
   if (session.mode !== 'payment') return;
   if (session.metadata?.type === 'credit_purchase') {
     await onCreditPurchase(session, deps);
@@ -65,7 +66,7 @@ async function handleCheckoutEvent(event: Stripe.Event, deps: WebhookDeps) {
 }
 
 async function onCreateSubscription(
-  subscription: Stripe.Subscription,
+  subscription: StripeSubscriptionLike,
   deps: WebhookDeps
 ) {
   const priceId = subscription.items.data[0]?.price.id;
@@ -109,7 +110,7 @@ async function onCreateSubscription(
 }
 
 async function onUpdateSubscription(
-  subscription: Stripe.Subscription,
+  subscription: StripeSubscriptionLike,
   deps: WebhookDeps
 ) {
   const priceId = subscription.items.data[0]?.price.id;
@@ -165,7 +166,7 @@ async function onUpdateSubscription(
 }
 
 async function onDeleteSubscription(
-  subscription: Stripe.Subscription,
+  subscription: StripeSubscriptionLike,
   deps: WebhookDeps
 ) {
   await deps.paymentRepository.withTransaction(async (tx) => {
@@ -181,7 +182,7 @@ async function onDeleteSubscription(
 }
 
 async function onOnetimePayment(
-  session: Stripe.Checkout.Session,
+  session: StripeCheckoutSessionLike,
   deps: WebhookDeps
 ) {
   const customerId = session.customer as string;
@@ -233,7 +234,7 @@ async function onOnetimePayment(
 }
 
 async function onCreditPurchase(
-  session: Stripe.Checkout.Session,
+  session: StripeCheckoutSessionLike,
   deps: WebhookDeps
 ) {
   const userId = session.metadata?.userId;

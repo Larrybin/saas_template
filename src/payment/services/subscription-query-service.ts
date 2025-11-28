@@ -1,4 +1,3 @@
-import type { PaymentRepository } from '../data-access/payment-repository';
 import type {
   getSubscriptionsParams,
   PaymentStatus,
@@ -6,13 +5,14 @@ import type {
   PlanInterval,
   Subscription,
 } from '../types';
+import type { PaymentRepositoryLike } from './stripe-deps';
 
 type SubscriptionQueryServiceDeps = {
-  paymentRepository: PaymentRepository;
+  paymentRepository: PaymentRepositoryLike;
 };
 
 export class SubscriptionQueryService {
-  private readonly paymentRepository: PaymentRepository;
+  private readonly paymentRepository: PaymentRepositoryLike;
 
   constructor(deps: SubscriptionQueryServiceDeps) {
     this.paymentRepository = deps.paymentRepository;

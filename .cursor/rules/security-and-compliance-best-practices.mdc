@@ -1,0 +1,13 @@
+---
+description: Security and compliance rules for auth, payments, storage and logging
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+
+- Use better-auth and the `ensureApiUser` helper as the single entrypoint for authenticating API requests; do not hand-roll cookie or session parsing.
+- Keep all Stripe secret keys and sensitive configuration on the server; never expose them via `NEXT_PUBLIC_*` or in client-side code.
+- For Stripe webhooks, always verify signatures using the raw request body with `stripe.webhooks.constructEvent` and design idempotent handlers keyed by event id.
+- Use the centralized storage upload API (`/api/storage/upload`) and validate file size, MIME type, and folder paths on the server; ensure paths include user identifiers for isolation.
+- Avoid logging or sending to analytics any sensitive data such as passwords, tokens, full card numbers, or URLs containing secrets.
+- When returning errors to the client, provide structured error codes and user-friendly messages, but avoid leaking stack traces or internal implementation details.
+

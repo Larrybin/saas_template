@@ -8,5 +8,7 @@ alwaysApply: false
 - Implement proper state management using using libraries like Zustand for complex state scenarios
 - Utilize React 19's new features like `use` hook for better data fetching and suspense integration
 - Ensure proper prop type validation using TypeScript for enhanced type safety
-- Utilize `useCallback` and `useMemo` for performance optimization
+- Use `useCallback` and `useMemo` selectively for expensive computations or callbacks passed deep into the tree; avoid over-optimizing every function
 - Leverage `react-hook-form` for efficient form handling and validation
+- Prefer Server Components and data-fetching libraries (like TanStack Query where appropriate) over `useEffect`-driven client-side data loading
+- Compose feature components from shared primitives in `src/components/ui` and `src/components/layout` instead of ad-hoc DOM + styling in each page

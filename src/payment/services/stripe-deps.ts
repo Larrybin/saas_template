@@ -1,4 +1,4 @@
-import type { Stripe } from 'stripe';
+import type Stripe from 'stripe';
 import type { PaymentRepository } from '../data-access/payment-repository';
 import type { StripeEventRepository } from '../data-access/stripe-event-repository';
 import type { UserRepository } from '../data-access/user-repository';
@@ -34,13 +34,7 @@ export type StripeCheckoutSessionLike = {
   mode: string;
   customer: string;
   amount_total: number;
-  metadata: {
-    userId?: string;
-    packageId?: string;
-    credits?: string;
-    priceId?: string;
-    type?: string;
-  };
+  metadata: Record<string, string | undefined>;
 };
 
 export type StripeSubscriptionItemLike = {
@@ -49,7 +43,7 @@ export type StripeSubscriptionItemLike = {
   price: {
     id: string;
     recurring?: {
-      interval?: Stripe.Price.Recurring.Interval;
+      interval?: string;
     };
   };
 };

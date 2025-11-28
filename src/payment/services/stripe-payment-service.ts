@@ -1,4 +1,4 @@
-import { Stripe } from 'stripe';
+import Stripe from 'stripe';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import {
@@ -102,11 +102,11 @@ export class StripePaymentService implements PaymentProvider {
       customer: String(session.customer ?? ''),
       amount_total: session.amount_total ?? 0,
       metadata: {
-        userId: session.metadata?.userId,
-        packageId: session.metadata?.packageId,
-        credits: session.metadata?.credits,
-        priceId: session.metadata?.priceId,
-        type: session.metadata?.type,
+        userId: session.metadata?.userId ?? undefined,
+        packageId: session.metadata?.packageId ?? undefined,
+        credits: session.metadata?.credits ?? undefined,
+        priceId: session.metadata?.priceId ?? undefined,
+        type: session.metadata?.type ?? undefined,
       },
     };
   }

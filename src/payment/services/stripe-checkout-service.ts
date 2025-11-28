@@ -1,3 +1,4 @@
+import type Stripe from 'stripe';
 import { getCreditPackageById } from '@/credits/server';
 import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import type {

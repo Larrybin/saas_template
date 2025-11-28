@@ -144,13 +144,27 @@ const createStripeStub = (): StripeClientLike => {
   const sessionsCreate = vi.fn().mockResolvedValue({
     id: 'sess_123',
     url: 'https://stripe.test/session',
-  });
+  }) as unknown as StripeClientLike['checkout']['sessions']['create'];
+
   const billingPortalCreate = vi.fn().mockResolvedValue({
     url: 'https://stripe.test/portal',
-  });
-  const customersList = vi.fn().mockResolvedValue({ data: [] });
-  const customersCreate = vi.fn().mockResolvedValue({ id: 'cus_123' });
-  const constructEvent = vi.fn();
+  }) as unknown as StripeClientLike['billingPortal']['sessions']['create'];
+
+  const customersList = vi
+    .fn()
+    .mockResolvedValue({
+      data: [],
+    }) as unknown as StripeClientLike['customers']['list'];
+
+  const customersCreate = vi
+    .fn()
+    .mockResolvedValue({
+      id: 'cus_123',
+    }) as unknown as StripeClientLike['customers']['create'];
+
+  const constructEvent =
+    vi.fn() as unknown as StripeClientLike['webhooks']['constructEvent'];
+
   return {
     checkout: {
       sessions: {

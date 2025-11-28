@@ -241,7 +241,7 @@
 - **Request**：
 
   ```bash
-  curl -u cron_user:cron_pass https://app.example.com/api/distribute-credits
+  curl -u "$CRON_USERNAME:$CRON_PASSWORD" https://app.example.com/api/distribute-credits
   ```
 
 - **Success**：

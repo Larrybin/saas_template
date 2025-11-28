@@ -22,6 +22,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { clientLogger } from '@/lib/client-logger';
 import { cn } from '@/lib/utils';
+import {
+  type EnvelopeWithDomainError,
+  unwrapEnvelopeOrThrowDomainError,
+} from '@/lib/domain-error-utils';
+
+type Envelope<T> = EnvelopeWithDomainError<T>;
 
 export function NewsletterForm() {
   const t = useTranslations('Newsletter.form');
@@ -56,17 +62,19 @@ export function NewsletterForm() {
           email: data.email,
         });
 
-        if (result?.data?.success) {
-          toast.success(t('success'));
-          form.reset();
-        } else {
-          const errorMessage = result?.data?.error || t('fail');
-          setError(errorMessage);
-          toast.error(errorMessage);
-        }
+        unwrapEnvelopeOrThrowDomainError<{ success: true }>(
+          result?.data as Envelope<{ success: true }> | undefined,
+          {
+            defaultErrorMessage: t('fail'),
+          }
+        );
+
+        toast.success(t('success'));
+        form.reset();
       } catch (err) {
         clientLogger.error('Newsletter subscription error:', err);
-        const errorMessage = t('fail');
+        const errorMessage =
+          err instanceof Error && err.message ? err.message : t('fail');
         setError(errorMessage);
         toast.error(errorMessage);
       }

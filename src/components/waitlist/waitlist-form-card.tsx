@@ -27,6 +27,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { clientLogger } from '@/lib/client-logger';
+import {
+  type EnvelopeWithDomainError,
+  unwrapEnvelopeOrThrowDomainError,
+} from '@/lib/domain-error-utils';
+
+type Envelope<T> = EnvelopeWithDomainError<T>;
 
 /**
  * Waitlist form card component
@@ -60,18 +66,21 @@ export function WaitlistFormCard() {
           email: values.email,
         });
 
-        if (result?.data?.success) {
-          toast.success(t('success'));
-          form.reset();
-        } else {
-          const errorMessage = result?.data?.error || t('fail');
-          setError(errorMessage);
-          toast.error(errorMessage);
-        }
+        unwrapEnvelopeOrThrowDomainError<{ success: true }>(
+          result?.data as Envelope<{ success: true }> | undefined,
+          {
+            defaultErrorMessage: t('fail'),
+          }
+        );
+
+        toast.success(t('success'));
+        form.reset();
       } catch (err) {
         clientLogger.error('Waitlist form submission error:', err);
-        setError(t('fail'));
-        toast.error(t('fail'));
+        const errorMessage =
+          err instanceof Error && err.message ? err.message : t('fail');
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     });
   };

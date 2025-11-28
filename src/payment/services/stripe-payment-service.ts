@@ -1,3 +1,4 @@
+import type Stripe from 'stripe';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import {

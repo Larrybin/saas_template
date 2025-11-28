@@ -26,6 +26,10 @@ import { clientEnv } from '@/env/client';
 import { LocaleLink } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
 import { clientLogger } from '@/lib/client-logger';
+import {
+  type EnvelopeWithDomainError,
+  unwrapEnvelopeOrThrowDomainError,
+} from '@/lib/domain-error-utils';
 import { getUrlWithLocaleInCallbackUrl } from '@/lib/urls/urls';
 import { cn } from '@/lib/utils';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
@@ -111,16 +115,36 @@ export const LoginForm = ({
       setError('');
       setSuccess('');
 
-      const captchaResult = await validateCaptchaAction({
-        captchaToken: values.captchaToken,
-      });
+      try {
+        const captchaResult = await validateCaptchaAction({
+          captchaToken: values.captchaToken,
+        });
+        type CaptchaSuccess = { success: true; valid: boolean };
+        const data = unwrapEnvelopeOrThrowDomainError<CaptchaSuccess>(
+          captchaResult?.data as
+            | EnvelopeWithDomainError<CaptchaSuccess>
+            | undefined,
+          {
+            defaultErrorMessage: t('captchaInvalid'),
+          }
+        );
 
-      if (!captchaResult?.data?.success || !captchaResult?.data?.valid) {
-        clientLogger.error('login, captcha invalid:', values.captchaToken);
-        const errorMessage = captchaResult?.data?.error || t('captchaInvalid');
+        if (!data.valid) {
+          clientLogger.error('login, captcha invalid:', values.captchaToken);
+          setError(t('captchaInvalid'));
+          setIsPending(false);
+          resetCaptcha();
+          return;
+        }
+      } catch (err) {
+        clientLogger.error('login, captcha error:', err);
+        const errorMessage =
+          err instanceof Error && err.message
+            ? err.message
+            : t('captchaInvalid');
         setError(errorMessage);
         setIsPending(false);
-        resetCaptcha(); // Reset captcha on validation failure
+        resetCaptcha();
         return;
       }
     }

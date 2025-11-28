@@ -281,20 +281,31 @@
 ## Server Actions
 
 ### 调用约定
-- 所有 Action 均返回 `Promise<{ success: boolean; data?; error?; ... }>`。成功时 `success: true`，失败时需检查 `error` 字段。
+- 所有 Action 均返回 `Promise<{ success: true; data?; ... } | { success: false; error: string; code?: string; retryable?: boolean }>`。
+- 成功时 `success: true` 并携带业务数据；失败时 `success: false`，`error` 为人类可读文案，`code` 来自 `ErrorCodes`，`retryable` 表示是否推荐前端提供“重试”操作。
 - `actionClient`：匿名调用；`userActionClient`：强制登录用户；`adminActionClient`：管理员专用。
+- 推荐前端使用 `unwrapEnvelopeOrThrowDomainError` 解包 Envelope，而不是手写 `if (!result.success)` 分支。
 - 示例调用：
 
   ```ts
   import { createCheckoutAction } from '@/actions/create-checkout-session';
+  import { unwrapEnvelopeOrThrowDomainError } from '@/lib/domain-error-utils';
 
-  const result = await createCheckoutAction({
+  const res = await createCheckoutAction({
     userId: session.user.id,
     planId: 'pro',
     priceId: 'price_basic',
     metadata: { coupon: 'SPRING25' },
   });
-  if (!result.success) throw new Error(result.error);
+
+  const data = unwrapEnvelopeOrThrowDomainError<{
+    success: true;
+    data: { url: string; id: string };
+  }>(res.data, {
+    defaultErrorMessage: 'Failed to create checkout session',
+  });
+
+  // data.success === true，data.data 为业务字段
   ```
 
 ### Action 列表
@@ -320,10 +331,15 @@
 ### 说明与示例
 
 #### Billing & Payments
-- **`createCheckoutAction`**：封装 `billingService.startSubscriptionCheckout`，自动注入用户信息、Datafast cookies 与本地化成功/取消回调。失败示例：
+- **`createCheckoutAction`**：封装 `billingService.startSubscriptionCheckout`，自动注入用户信息、Datafast cookies 与本地化成功/取消回调。失败示例（DomainError）：
 
   ```json
-  { "success": false, "error": "Price plan not found" }
+  {
+    "success": false,
+    "error": "Price plan not found or disabled",
+    "code": "BILLING_PLAN_NOT_FOUND",
+    "retryable": false
+  }
   ```
 
 - **`createCreditCheckoutSession`**：用于积分套餐，metadata 固定包含 `type: 'credit_purchase'` 方便 Webhook 识别。

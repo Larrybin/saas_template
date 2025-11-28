@@ -2,7 +2,9 @@
 
 import { getUserCredits } from '@/credits/credits';
 import type { User } from '@/lib/auth-types';
+import { DomainError } from '@/lib/domain-errors';
 import { userActionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
 const logger = getLogger({ span: 'actions.get-credit-balance' });
@@ -12,19 +14,26 @@ const logger = getLogger({ span: 'actions.get-credit-balance' });
  */
 export const getCreditBalanceAction = userActionClient.action(
   async ({ ctx }) => {
+    const currentUser = (ctx as { user: User }).user;
     try {
-      const currentUser = (ctx as { user: User }).user;
       const credits = await getUserCredits(currentUser.id);
       return { success: true, credits };
     } catch (error) {
-      logger.error({ error }, 'get credit balance error');
-      return {
-        success: false,
-        error:
+      logger.error(
+        { error, userId: currentUser.id },
+        'get credit balance error'
+      );
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.UnexpectedError,
+        message:
           error instanceof Error
             ? error.message
             : 'Failed to fetch credit balance',
-      };
+        retryable: true,
+      });
     }
   }
 );

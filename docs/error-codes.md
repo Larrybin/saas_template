@@ -93,6 +93,21 @@
 | -------------------- | ------------------ | ------ | ------------------------------------ |
 | `DOCS_SEARCH_FAILED` | `DocsSearchFailed` | Docs   | 文档搜索失败，参考日志获取更多详情。 |
 
+## Newsletter / 通知订阅
+
+| Code                         | Key                      | Domain      | Description                                   |
+| ---------------------------- | ------------------------ | ----------- | --------------------------------------------- |
+| `NEWSLETTER_SUBSCRIBE_FAILED`   | `NewsletterSubscribeFailed`   | Newsletter | 订阅 Newsletter 失败（包含欢迎邮件发送失败）。 |
+| `NEWSLETTER_UNSUBSCRIBE_FAILED` | `NewsletterUnsubscribeFailed` | Newsletter | 退订 Newsletter 失败。                         |
+| `NEWSLETTER_STATUS_FAILED`      | `NewsletterStatusFailed`      | Newsletter | 查询 Newsletter 订阅状态失败。                 |
+
+## Contact & Captcha / 联系与验证码
+
+| Code                     | Key                 | Domain   | Description                                 |
+| ------------------------ | ------------------- | -------- | ------------------------------------------- |
+| `CONTACT_SEND_FAILED`    | `ContactSendFailed` | Contact  | 联系表单邮件发送失败。                       |
+| `CAPTCHA_VALIDATION_FAILED` | `CaptchaValidationFailed` | Auth / Captcha | 验证 Turnstile Captcha 失败（服务端调用错误）。 |
+
 ## 使用约定
 
 - 所有对外 HTTP API 的响应 `code` 字段必须来自 `ErrorCodes` 常量，不允许直接写字符串字面量。  

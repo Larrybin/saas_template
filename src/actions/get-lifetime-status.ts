@@ -5,8 +5,10 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { payment } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
+import { DomainError } from '@/lib/domain-errors';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { userActionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { PaymentTypes } from '@/payment/types';
 
@@ -40,10 +42,11 @@ export const getLifetimeStatusAction = userActionClient
 
       // Check if there are any lifetime plans defined in the system
       if (lifetimePlanIds.length === 0) {
-        return {
-          success: false,
-          error: 'No lifetime plans defined in the system',
-        };
+        throw new DomainError({
+          code: ErrorCodes.UnexpectedError,
+          message: 'No lifetime plans defined in the system',
+          retryable: false,
+        });
       }
 
       // Query the database for one-time payments with lifetime plans
@@ -74,10 +77,17 @@ export const getLifetimeStatusAction = userActionClient
         isLifetimeMember: hasLifetimePayment,
       };
     } catch (error) {
-      logger.error({ error }, 'get user lifetime status error');
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
+      logger.error({ error, userId }, 'get user lifetime status error');
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.UnexpectedError,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch lifetime status',
+        retryable: true,
+      });
     }
   });

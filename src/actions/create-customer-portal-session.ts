@@ -6,7 +6,9 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
+import { DomainError } from '@/lib/domain-errors';
 import { userActionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { createCustomerPortal } from '@/payment';
@@ -44,10 +46,11 @@ export const createPortalAction = userActionClient
       const customer = customerResult[0];
       if (!customer || !customer.customerId) {
         logger.error({ userId: currentUser.id }, 'No customer found for user');
-        return {
-          success: false,
-          error: 'No customer found for user',
-        };
+        throw new DomainError({
+          code: ErrorCodes.UnexpectedError,
+          message: 'No customer found for user',
+          retryable: false,
+        });
       }
 
       // Get the current locale from the request
@@ -62,10 +65,11 @@ export const createPortalAction = userActionClient
           { userId: currentUser.id },
           'No customer id found for user after validation'
         );
-        return {
-          success: false,
-          error: 'No customer id found for user',
-        };
+        throw new DomainError({
+          code: ErrorCodes.UnexpectedError,
+          message: 'No customer id found for user',
+          retryable: false,
+        });
       }
 
       const params: CreatePortalParams = {
@@ -81,10 +85,20 @@ export const createPortalAction = userActionClient
         data: result,
       };
     } catch (error) {
-      logger.error({ error }, 'create customer portal error');
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
+      logger.error(
+        { error, userId: currentUser.id },
+        'create customer portal error'
+      );
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.UnexpectedError,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to create customer portal session',
+        retryable: true,
+      });
     }
   });

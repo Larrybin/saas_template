@@ -11,17 +11,11 @@ const { getUserCreditsMock, updateUserCreditsMock, errorLogger } = vi.hoisted(
 );
 
 function createService() {
-  const logger: Logger = {
+  const logger: Pick<Logger, 'info' | 'warn' | 'error'> = {
     error: errorLogger as Logger['error'],
     warn: vi.fn() as Logger['warn'],
     info: vi.fn() as Logger['info'],
-    child: () =>
-      ({
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-      }) as Logger,
-  } as Logger;
+  };
 
   const policy = {
     getRegisterGiftRule: vi.fn(),

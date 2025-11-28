@@ -20,10 +20,7 @@ vi.mock('@/lib/server/logger', () => ({
 }));
 
 import { getDb } from '@/db';
-import {
-  createRunExpirationJob,
-  type ExpirationJobDeps,
-} from './expiry-job';
+import { createRunExpirationJob, type ExpirationJobDeps } from './expiry-job';
 
 const mockedGetDb = getDb as unknown as ReturnType<typeof vi.fn>;
 

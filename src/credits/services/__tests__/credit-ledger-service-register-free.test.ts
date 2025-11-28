@@ -3,9 +3,9 @@ import type {
   PlanCreditsPolicy,
   PlanCreditsRule,
 } from '@/credits/domain/plan-credits-policy';
-import type { Logger } from '@/lib/server/logger';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
+import type { Logger } from '@/lib/server/logger';
 
 const { hasTransactionOfTypeMock, addCreditsMock, canAddCreditsByTypeMock } =
   vi.hoisted(() => ({
@@ -38,22 +38,15 @@ function createDomainService() {
   } as any;
 }
 
-function createLogger(): Logger {
+function createLogger(): Pick<Logger, 'info' | 'warn' | 'error'> {
   return {
     info: vi.fn() as Logger['info'],
     warn: vi.fn() as Logger['warn'],
     error: vi.fn() as Logger['error'],
-    child: () =>
-      ({
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-      }) as Logger,
-  } as Logger;
+  };
 }
 
 describe('CreditLedgerService register gift and free monthly credits', () => {
-
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -79,7 +79,10 @@ export class CreditLedgerService implements CreditsGateway {
   constructor(
     private readonly policy: PlanCreditsPolicy = defaultPlanCreditsPolicy,
     private readonly domainService: CreditLedgerDomainService = creditLedgerDomainService,
-    private readonly logger: Logger = creditsServiceLogger
+    private readonly logger: Pick<
+      Logger,
+      'info' | 'warn' | 'error'
+    > = creditsServiceLogger
   ) {}
 
   async addCredits(

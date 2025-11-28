@@ -27,6 +27,8 @@ SaaS Template is an opinionated starter kit for building SaaS applications with:
 - Vitest 单元/集成测试与 Playwright 端到端测试
 - Server / Client 环境变量强类型校验
 
+更多端点与 Server Action 规格请参考 `docs/api-reference.md`。
+
 ## Project Structure & Architecture
 
 ### Directory layout

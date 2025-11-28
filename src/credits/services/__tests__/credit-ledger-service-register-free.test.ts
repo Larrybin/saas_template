@@ -3,6 +3,7 @@ import type {
   PlanCreditsPolicy,
   PlanCreditsRule,
 } from '@/credits/domain/plan-credits-policy';
+import type { Logger } from '@/lib/server/logger';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 
@@ -13,43 +14,45 @@ const { hasTransactionOfTypeMock, addCreditsMock, canAddCreditsByTypeMock } =
     canAddCreditsByTypeMock: vi.fn(),
   }));
 
-vi.mock('@/credits/domain/credit-ledger-domain-service', () => {
+function createPolicy(): PlanCreditsPolicy {
   return {
-    CreditLedgerDomainService: vi.fn().mockImplementation(() => ({
-      getUserCredits: vi.fn(),
-      updateUserCredits: vi.fn(),
-      addCredits: addCreditsMock,
-      hasTransactionOfType: hasTransactionOfTypeMock,
-      processExpiredCredits: vi.fn(),
-      processExpiredCreditsForUsers: vi.fn(),
-      canAddCreditsByType: canAddCreditsByTypeMock,
-      consumeCredits: vi.fn(),
-      hasEnoughCredits: vi.fn(),
-    })),
-  };
-});
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    child: () => ({
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    }),
-  }),
-}));
-
-describe('CreditLedgerService register gift and free monthly credits', () => {
-  const createPolicy = (): PlanCreditsPolicy => ({
     getRegisterGiftRule: vi.fn(),
     getMonthlyFreeRule: vi.fn(),
     getSubscriptionRenewalRule: vi.fn(),
     getLifetimeMonthlyRule: vi.fn(),
     resolveCurrentPlan: vi.fn() as any,
-  });
+  };
+}
+
+function createDomainService() {
+  return {
+    getUserCredits: vi.fn(),
+    updateUserCredits: vi.fn(),
+    addCredits: addCreditsMock,
+    hasTransactionOfType: hasTransactionOfTypeMock,
+    processExpiredCredits: vi.fn(),
+    processExpiredCreditsForUsers: vi.fn(),
+    canAddCreditsByType: canAddCreditsByTypeMock,
+    consumeCredits: vi.fn(),
+    hasEnoughCredits: vi.fn(),
+  } as any;
+}
+
+function createLogger(): Logger {
+  return {
+    info: vi.fn() as Logger['info'],
+    warn: vi.fn() as Logger['warn'],
+    error: vi.fn() as Logger['error'],
+    child: () =>
+      ({
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      }) as Logger,
+  } as Logger;
+}
+
+describe('CreditLedgerService register gift and free monthly credits', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -65,13 +68,15 @@ describe('CreditLedgerService register gift and free monthly credits', () => {
       disabled: false,
     };
     const policy = createPolicy();
+    const domainService = createDomainService();
+    const logger = createLogger();
     policy.getRegisterGiftRule = vi.fn().mockReturnValue(rule);
 
     hasTransactionOfTypeMock
       .mockResolvedValueOnce(false)
       .mockResolvedValueOnce(true);
 
-    const service = new CreditLedgerService(policy);
+    const service = new CreditLedgerService(policy, domainService, logger);
 
     await service.addRegisterGiftCredits('user-1');
     await service.addRegisterGiftCredits('user-1');
@@ -91,11 +96,13 @@ describe('CreditLedgerService register gift and free monthly credits', () => {
 
   it('skips register gift when rule is missing', async () => {
     const policy = createPolicy();
-    policy.getRegisterGiftRule = vi.fn().mockReturnValue(null);
+    const domainService = createDomainService();
+    const logger = createLogger();
 
+    policy.getRegisterGiftRule = vi.fn().mockReturnValue(null);
     hasTransactionOfTypeMock.mockResolvedValue(false);
 
-    const service = new CreditLedgerService(policy);
+    const service = new CreditLedgerService(policy, domainService, logger);
 
     await service.addRegisterGiftCredits('user-1');
 
@@ -112,13 +119,16 @@ describe('CreditLedgerService register gift and free monthly credits', () => {
       disabled: false,
     };
     const policy = createPolicy();
+    const domainService = createDomainService();
+    const logger = createLogger();
+
     policy.getMonthlyFreeRule = vi.fn().mockReturnValue(rule);
 
     canAddCreditsByTypeMock
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false);
 
-    const service = new CreditLedgerService(policy);
+    const service = new CreditLedgerService(policy, domainService, logger);
     const refDate = new Date('2025-03-01T00:00:00Z');
 
     await service.addMonthlyFreeCredits('user-1', 'free-plan', refDate);
@@ -147,11 +157,13 @@ describe('CreditLedgerService register gift and free monthly credits', () => {
 
   it('skips monthly free credits when rule is missing', async () => {
     const policy = createPolicy();
-    policy.getMonthlyFreeRule = vi.fn().mockReturnValue(null);
+    const domainService = createDomainService();
+    const logger = createLogger();
 
+    policy.getMonthlyFreeRule = vi.fn().mockReturnValue(null);
     canAddCreditsByTypeMock.mockResolvedValue(true);
 
-    const service = new CreditLedgerService(policy);
+    const service = new CreditLedgerService(policy, domainService, logger);
 
     await service.addMonthlyFreeCredits('user-1', 'free-plan');
 

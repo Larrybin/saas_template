@@ -1,0 +1,13 @@
+---
+description: Environment variables and configuration management guidelines
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+
+- Access environment variables only through `src/env/server.ts` and `src/env/client.ts`; avoid scattered `process.env.*` reads in feature code.
+- Strictly separate server-only env from `NEXT_PUBLIC_*`; never import server env modules into client components.
+- Keep `env.example` in sync with actual usage in code and document important variables in `docs/env-and-ops.md`.
+- Treat Feature Flags (e.g. `ENABLE_CREDIT_PERIOD_KEY`) as rollout and monitoring switches with a clear lifecycle, not as permanent business logic branches.
+- Prefer code-first configuration via `src/config/*` modules (such as `website.ts`) instead of hardcoding values throughout the codebase.
+- Run environment validation (e.g. `pnpm check:env`) in CI or deployment pipelines to surface missing/invalid configuration early.
+

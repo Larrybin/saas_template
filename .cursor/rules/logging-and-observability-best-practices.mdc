@@ -1,0 +1,13 @@
+---
+description: Structured logging and observability guidelines
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+
+- Use the shared logger utilities from `src/lib/server/logger.ts` (`getLogger`, `createLoggerFromHeaders`, `withLogContext`) instead of raw `console.log` / `console.error`.
+- Include useful context in logs such as `span`, `route`, `requestId`, `userId`, and `jobRunId` to make tracing and debugging easier.
+- In usecases and jobs, log key lifecycle events (start, important decisions, completion) and structured metrics (counts, durations, error codes).
+- Use `info` for normal business events, `warn` for recoverable or unexpected situations, and `error` for failures or data integrity risks.
+- Attach domain error codes to logs whenever possible so monitoring and alerting can group issues by `code` across different routes and environments.
+- Avoid excessively verbose logging on high-traffic paths; keep logs high-signal to maintain performance and observability quality.
+

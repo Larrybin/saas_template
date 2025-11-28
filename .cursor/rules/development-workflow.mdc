@@ -28,6 +28,7 @@ alwaysApply: false
 8. Write tests for new features
 9. Update content collections when adding new content
 10. Use environment variables from `env.example`
+11. Use `pnpm` as the default package manager when running commands in the terminal
 
 ## Code Style
 - Use functional components with hooks

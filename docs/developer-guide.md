@@ -104,5 +104,8 @@
 - 依赖方向：
   - 是否遵守 `app → actions/api → usecases → domain/service → infra` 的依赖方向？  
   - 是否避免在 UI/Action 直接依赖 Repository 或第三方 SDK？
+  - 对外部 SDK（如 Stripe、Next Request）：
+    - ✅ 是否通过 Like 类型 + 适配层暴露给业务（例如 `StripeClientLike` / `StripeWebhookEventLike` / `Request` 封装），而不是在业务/测试中直接依赖大而全的 SDK 类型？
+    - ✅ 测试是否只依赖这些 DTO/Like 类型构造输入，而不是到处 `as any`/`as SomeSdkType`？
 
 这份指南不试图重复所有架构细节，而是提供一个“从哪里开始看”的入口。当你在某个领域进行较大改动时，优先结合本文件与对应领域文档进行检查即可。

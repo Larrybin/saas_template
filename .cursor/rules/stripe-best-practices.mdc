@@ -4,8 +4,11 @@ globs: *.tsx,*.ts
 alwaysApply: false
 ---
 
-- Use the `@stripe/stripe-js` package for client-side Stripe integration.
+- Prefer Stripe Checkout Sessions and Billing Portal for handling payments and subscriptions instead of building custom card forms, to reduce PCI scope and complexity.
 - Implement proper error handling and user feedback for payment flows.
-- Utilize Stripe's Elements for secure, customizable payment inputs.
+- Use the official Stripe Node SDK on the server to create Checkout Sessions and manage subscriptions, treating webhooks as the single source of truth for payment status.
+- Verify webhook signatures using the raw request body with `stripe.webhooks.constructEvent` and design idempotent handlers keyed by event id.
 - Leverage Stripe's Webhooks for real-time payment status updates.
 - Follow Stripe's best practices for PCI compliance and security
+- If you must build custom payment inputs, integrate `@stripe/stripe-js` with Elements and never handle raw card data directly on your own backend.
+- Avoid exposing Stripe secret keys or sensitive identifiers in client-side code, logs, or analytics events.

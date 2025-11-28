@@ -100,6 +100,17 @@
 
 ## 3. 新增测试的推荐策略
 
+### 3.0 外部 SDK 与适配层约定
+
+- 对于 Stripe、Next.js Request 等第三方 SDK：
+  - 生产代码优先通过“窄接口 + 适配层”暴露给业务逻辑：
+    - 例如：`StripeClientLike` / `StripeWebhookEventLike` / `Request` 封装。  
+    - 业务层（usecase / handler）只依赖这些 DTO，不直接依赖 SDK 的大而全类型。
+  - 测试只依赖这些 Like 类型与 DTO：
+    - 构造普通对象 `satisfies StripeWebhookEventLike` / `Request`，通过依赖注入或适配层传入。  
+    - 避免在测试中使用 `as any` 或 `as SomeSdkType` 来伪装大类型。
+  - SDK 直接调用（如 `new Stripe(...)` / `stripe.webhooks.constructEvent`）集中在适配层内，便于替换和测试。
+
 ### 3.1 从“小而精”的单元开始
 
 - 针对新增的领域逻辑（比如 Credits/Billing/AI/Payment 的规则）：
@@ -178,4 +189,3 @@
      - 视需要运行 `pnpm test:e2e`（需要可用的本地或预发布环境）。
 
 通过遵循上述策略，可以在保持测试套件健康的前提下，以较低成本获得对关键路径的良好覆盖。
-

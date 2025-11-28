@@ -1,12 +1,15 @@
-import type Stripe from 'stripe';
 import {
   type PaymentStatus,
   type PlanInterval,
   PlanIntervals,
 } from '../../types';
+import type {
+  StripeSubscriptionLike,
+  StripeSubscriptionStatusLike,
+} from '../stripe-deps';
 
 export function mapStripeIntervalToPlanInterval(
-  subscription: Stripe.Subscription
+  subscription: StripeSubscriptionLike
 ): PlanInterval {
   const interval =
     subscription.items.data[0]?.price.recurring?.interval ?? 'month';
@@ -17,7 +20,7 @@ export function mapStripeIntervalToPlanInterval(
 }
 
 export function mapSubscriptionStatusToPaymentStatus(
-  status: Stripe.Subscription.Status
+  status: StripeSubscriptionStatusLike
 ): PaymentStatus {
   const statusMap: Record<string, PaymentStatus> = {
     active: 'active',
@@ -32,7 +35,9 @@ export function mapSubscriptionStatusToPaymentStatus(
   return statusMap[status] ?? 'failed';
 }
 
-export function getSubscriptionPeriodBounds(subscription: Stripe.Subscription) {
+export function getSubscriptionPeriodBounds(
+  subscription: StripeSubscriptionLike
+) {
   const items = subscription.items.data ?? [];
   if (!items.length) {
     return { periodStart: null, periodEnd: null };

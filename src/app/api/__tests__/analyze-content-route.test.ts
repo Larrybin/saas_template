@@ -59,7 +59,7 @@ describe('/api/analyze-content route', () => {
       body: 'not-json',
     });
 
-    const res = await analyzeContentPost(req as any);
+    const res = await analyzeContentPost(req);
     const json = (await res.json()) as AnalyzeContentResponse;
 
     expect(res.status).toBe(400);
@@ -78,7 +78,7 @@ describe('/api/analyze-content route', () => {
       }),
     });
 
-    const res = await analyzeContentPost(req as any);
+    const res = await analyzeContentPost(req);
     const json = (await res.json()) as AnalyzeContentResponse;
 
     expect(res.status).toBe(400);
@@ -97,7 +97,7 @@ describe('/api/analyze-content route', () => {
       }),
     });
 
-    const res = await analyzeContentPost(req as any);
+    const res = await analyzeContentPost(req);
     const json = (await res.json()) as AnalyzeContentResponse;
 
     expect(res.status).toBe(200);

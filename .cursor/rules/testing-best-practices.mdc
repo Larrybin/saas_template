@@ -1,0 +1,13 @@
+---
+description: Testing strategy and layering guidelines
+globs: tests/**/*.ts,src/**/*.{test,spec}.{ts,tsx}
+alwaysApply: false
+---
+
+- Use Vitest for unit and integration tests, and Playwright for a small set of critical end-to-end flows (e.g. auth, billing, AI usage).
+- Structure tests as a pyramid: many unit tests for pure logic, fewer integration tests for usecases + infra, and very few E2E tests for full user journeys.
+- Place tests close to the code: use `foo.test.ts(x)` / `foo.spec.ts(x)` next to implementation files, and use `tests/` for cross-cutting or top-level scenarios.
+- When testing domains or usecases, prefer calling public APIs (usecases, actions, route handlers) instead of mutating internal state or touching private internals.
+- New or changed core behavior (especially in Credits, Billing, AI flows) should come with or update corresponding unit/integration tests.
+- Keep E2E tests focused on “does the main flow work” and avoid asserting internal implementation details or fragile UI selectors.
+

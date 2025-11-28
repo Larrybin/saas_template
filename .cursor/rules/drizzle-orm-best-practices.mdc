@@ -8,3 +8,5 @@ alwaysApply: false
 - Implement migrations using Drizzle Kit for database schema management.
 - Utilize Drizzle's relation system to define and query relationships.
 - Use Drizzle's transaction API for complex, atomic operations.
+- Prefer a code-first migration workflow: treat your TypeScript schema as the source of truth and use `drizzle-kit generate` + `drizzle-kit migrate` to evolve the database schema.
+- Avoid applying breaking schema changes directly in production without a corresponding Drizzle migration (or `drizzle-kit push` in controlled non-production environments only).

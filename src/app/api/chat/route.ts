@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { chatRequestSchema } from '@/ai/chat/lib/api-schema';
+import {
+  createErrorEnvelope,
+  createErrorEnvelopeFromDomainError,
+} from '@/lib/domain-error-utils';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
 import { ErrorCodes } from '@/lib/server/error-codes';
@@ -48,12 +52,11 @@ export async function POST(req: Request) {
     logger.warn({ error, requestId }, 'Invalid JSON body for chat request');
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Request body must be valid JSON.',
-        code: ErrorCodes.AiChatInvalidJson,
-        retryable: false,
-      },
+      createErrorEnvelope(
+        ErrorCodes.AiChatInvalidJson,
+        'Request body must be valid JSON.',
+        false
+      ),
       { status: 400 }
     );
   }
@@ -73,12 +76,11 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Invalid chat request parameters',
-        code: ErrorCodes.AiChatInvalidParams,
-        retryable: false,
-      },
+      createErrorEnvelope(
+        ErrorCodes.AiChatInvalidParams,
+        'Invalid chat request parameters',
+        false
+      ),
       { status: 400 }
     );
   }
@@ -116,26 +118,19 @@ export async function POST(req: Request) {
 
       const status = error.retryable ? 500 : 400;
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-          code: error.code,
-          retryable: error.retryable,
-        },
-        { status }
-      );
+      return NextResponse.json(createErrorEnvelopeFromDomainError(error), {
+        status,
+      });
     }
 
     logger.error({ error, requestId }, 'Unexpected error in chat route');
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        code: ErrorCodes.UnexpectedError,
-        retryable: true,
-      },
+      createErrorEnvelope(
+        ErrorCodes.UnexpectedError,
+        'Internal server error',
+        true
+      ),
       { status: 500 }
     );
   }

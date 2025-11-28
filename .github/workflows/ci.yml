@@ -77,6 +77,8 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Biome lint
         run: pnpm lint
+      - name: Check DomainError i18n
+        run: pnpm check:domain-errors-i18n
       - name: Type check
         run: pnpm exec tsc --noEmit
 

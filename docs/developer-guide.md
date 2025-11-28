@@ -14,6 +14,7 @@
   - `docs/credits-lifecycle.md`：Credits 生命周期、边界与不变式。
   - `docs/payment-lifecycle.md`：Payment/Billing/Stripe Webhook 与 Credits 的交互与边界。
 - 错误模型与日志：
+  - `docs/api-protocol.md`：HTTP API 的统一 JSON envelope 协议与特例说明。
   - `docs/error-codes.md`：所有对外错误码的权威表。
   - `docs/error-logging.md`：DomainError、API envelope、日志上下文、前端错误消费（hooks + registry）。
 - 测试：
@@ -33,8 +34,8 @@
 2. 在文档中：
    - `docs/error-codes.md`：在对应领域小节补充新的错误码行，说明用途与 Domain。
 3. 在前端 i18n 映射中（如需展示人类可读文案）：
-   - `src/lib/domain-error-utils.ts` 的 `DOMAIN_ERROR_MESSAGES`：为该 code 配置 `key`（i18n key）和可选 `fallback`。
-   - 在 `messages/*.json` 中补充对应 i18n 文案。
+  - `src/lib/domain-error-utils.ts` 的 `DOMAIN_ERROR_MESSAGES`：为该 code 配置 `key`（i18n key）和可选 `fallback`。
+   - 在 `messages/*.json` 中补充对应 i18n 文案，并通过 `pnpm check:domain-errors-i18n` 校验 key 是否完整。
 
 ### 2.2 新增 / 调整错误 UI 行为（toast / 跳转等）
 
@@ -73,8 +74,8 @@
      - 尽量接受简单参数，而不是 `NextRequest`/`NextResponse`。
      - 按顺序 orchestrate：鉴权上下文（由调用侧注入） → Credits 检查/扣费 → 调用下游服务 → 返回领域结果。
 3. API Route / Server Action：
-   - 新建或修改 `src/app/api/foo/route.ts` 或对应 `src/actions/*` 文件：
-     - 统一 envelope：`{ success, error, code?, retryable? }`，错误使用 `DomainError` + `ErrorCodes`（参见 `docs/error-logging.md`）。  
+  - 新建或修改 `src/app/api/foo/route.ts` 或对应 `src/actions/*` 文件：
+     - 统一 envelope：`{ success, error, code?, retryable? }`，推荐使用 `createSuccessEnvelope` / `createErrorEnvelope` 构造 JSON body，错误使用 `DomainError` + `ErrorCodes`（参见 `docs/error-logging.md`）。  
      - 使用 `createLoggerFromHeaders` / `withLogContext` 绑定 `requestId`/`userId` 等上下文。
 4. UI / Hooks：
    - 若存在前端调用逻辑较复杂场景，优先在 `src/hooks/*` 中封装 Hook（包括数据 fetch、错误处理、loading 状态等）。  

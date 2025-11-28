@@ -75,6 +75,12 @@
 | `ANALYZE_CONTENT_INVALID_JSON`   | `AnalyzeContentInvalidJson`| AI     | `/api/analyze-content` 请求体不是合法 JSON。|
 | `ANALYZE_CONTENT_INVALID_PARAMS` | `AnalyzeContentInvalidParams`| AI   | `/api/analyze-content` 参数校验失败。     |
 
+## Webhooks / Provider 回调
+
+| Code                             | Key                         | Domain   | Description                                  |
+| -------------------------------- | --------------------------- | -------- | -------------------------------------------- |
+| `STRIPE_WEBHOOK_UNEXPECTED_ERROR` | `StripeWebhookUnexpectedError` | Webhook | Stripe Webhook 处理中的未预期异常（非 DomainError），用于聚合监控告警。 |
+
 ## Storage / 存储
 
 | Code                        | Key                     | Domain  | Description                                   |

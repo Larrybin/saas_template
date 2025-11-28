@@ -1,11 +1,18 @@
-import type Stripe from 'stripe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { websiteConfig } from '@/config/website';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { BillingService } from '@/domain/billing';
+import { withTestCreditsConfig } from '../../../../tests/utils/credits-config';
 import { PaymentTypes } from '../../types';
 import { PaymentSecurityError } from '../errors';
 import type { NotificationGateway } from '../gateways/notification-gateway';
+import type {
+  PaymentRepositoryLike,
+  StripeClientLike,
+  StripeEventRepositoryLike,
+  StripeWebhookEventLike,
+  UserRepositoryLike,
+} from '../stripe-deps';
 import { StripePaymentService } from '../stripe-payment-service';
 
 vi.mock('@/lib/server/logger', () => ({
@@ -53,7 +60,87 @@ vi.mock('@/credits/server', () => ({
   })),
 }));
 
-const createStripeStub = () => {
+function createCheckoutCompletedEvent({
+  sessionId,
+  metadata,
+  amountTotal,
+}: {
+  sessionId: string;
+  metadata: {
+    userId?: string;
+    packageId?: string;
+    credits?: string;
+    priceId?: string;
+    type?: string;
+  };
+  amountTotal: number;
+}): StripeWebhookEventLike {
+  return {
+    id: `evt_${sessionId}`,
+    type: 'checkout.session.completed',
+    created: 1,
+    data: {
+      object: {
+        id: sessionId,
+        mode: 'payment',
+        customer: 'cus_123',
+        amount_total: amountTotal,
+        metadata,
+      },
+    },
+  };
+}
+
+function createSubscriptionUpdatedEvent({
+  eventId,
+  subscriptionId,
+  customerId,
+  userId,
+  status,
+  priceId,
+  currentPeriodStart,
+  currentPeriodEnd,
+}: {
+  eventId: string;
+  subscriptionId: string;
+  customerId: string;
+  userId: string;
+  status: string;
+  priceId: string;
+  currentPeriodStart: number;
+  currentPeriodEnd: number;
+}): StripeWebhookEventLike {
+  return {
+    id: eventId,
+    type: 'customer.subscription.updated',
+    created: 1,
+    data: {
+      object: {
+        id: subscriptionId,
+        customer: customerId,
+        status,
+        cancel_at_period_end: false,
+        metadata: { userId },
+        trial_start: null,
+        trial_end: null,
+        items: {
+          data: [
+            {
+              price: {
+                id: priceId,
+                recurring: { interval: 'month' },
+              },
+              current_period_start: currentPeriodStart,
+              current_period_end: currentPeriodEnd,
+            },
+          ],
+        },
+      },
+    },
+  };
+}
+
+const createStripeStub = (): StripeClientLike => {
   const sessionsCreate = vi.fn().mockResolvedValue({
     id: 'sess_123',
     url: 'https://stripe.test/session',
@@ -82,17 +169,17 @@ const createStripeStub = () => {
     webhooks: {
       constructEvent,
     },
-  } as unknown as Stripe;
+  };
 };
 
 const createService = (
   overrides: {
-    stripe?: Stripe;
+    stripe?: StripeClientLike;
     creditsGateway?: Partial<CreditsGateway>;
     notificationGateway?: Partial<NotificationGateway>;
-    userRepository?: any;
-    paymentRepository?: any;
-    stripeEventRepository?: any;
+    userRepository?: UserRepositoryLike;
+    paymentRepository?: PaymentRepositoryLike;
+    stripeEventRepository?: StripeEventRepositoryLike;
     billingService?: BillingService;
   } = {}
 ) => {
@@ -114,7 +201,7 @@ const createService = (
     ({
       findUserIdByCustomerId: vi.fn().mockResolvedValue(undefined),
       linkCustomerIdToUser: vi.fn().mockResolvedValue('user-db-id'),
-    } as const);
+    } satisfies UserRepositoryLike);
   const paymentRepository =
     overrides.paymentRepository ??
     ({
@@ -129,7 +216,7 @@ const createService = (
         .mockImplementation(
           async (handler: (tx: unknown) => Promise<unknown>) => handler({})
         ),
-    } as const);
+    } satisfies PaymentRepositoryLike);
   const stripeEventRepository =
     overrides.stripeEventRepository ??
     ({
@@ -139,7 +226,7 @@ const createService = (
           await handler();
           return { skipped: false };
         }),
-    } as const);
+    } satisfies StripeEventRepositoryLike);
   const billingService =
     overrides.billingService ??
     ({
@@ -154,9 +241,9 @@ const createService = (
     webhookSecret: 'whsec_test',
     creditsGateway: creditsGateway as CreditsGateway,
     notificationGateway: notificationGateway as NotificationGateway,
-    userRepository: userRepository as any,
-    paymentRepository: paymentRepository as any,
-    stripeEventRepository: stripeEventRepository as any,
+    userRepository,
+    paymentRepository,
+    stripeEventRepository,
     billingService,
   });
 
@@ -175,92 +262,103 @@ const createService = (
 describe('StripePaymentService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (websiteConfig as any).credits = {
-      ...(websiteConfig.credits ?? {}),
-      enableCredits: true,
-    };
   });
 
   it('attaches plan metadata and idempotency key on checkout', async () => {
-    const stripe = createStripeStub();
-    const { service } = createService({ stripe });
+    await withTestCreditsConfig(
+      { ...(websiteConfig.credits ?? {}), enableCredits: true },
+      async () => {
+        const stripe = createStripeStub();
+        const { service } = createService({ stripe });
 
-    await service.createCheckout({
-      planId: 'pro',
-      priceId: 'price_123',
-      customerEmail: 'user@example.com',
-      successUrl: 'https://app.test/success',
-      cancelUrl: 'https://app.test/cancel',
-      metadata: { userName: 'Jane' },
-      locale: 'en',
-    });
-
-    expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        metadata: expect.objectContaining({
+        await service.createCheckout({
           planId: 'pro',
           priceId: 'price_123',
-        }),
-      }),
-      expect.objectContaining({
-        idempotencyKey: expect.any(String),
-      })
+          customerEmail: 'user@example.com',
+          successUrl: 'https://app.test/success',
+          cancelUrl: 'https://app.test/cancel',
+          metadata: { userName: 'Jane' },
+          locale: 'en',
+        });
+
+        expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            metadata: expect.objectContaining({
+              planId: 'pro',
+              priceId: 'price_123',
+            }),
+          }),
+          expect.objectContaining({
+            idempotencyKey: expect.any(String),
+          })
+        );
+      }
     );
   });
 
   it('creates credit checkout with sanitized metadata', async () => {
-    const stripe = createStripeStub();
-    const { service } = createService({ stripe });
+    await withTestCreditsConfig(
+      { ...(websiteConfig.credits ?? {}), enableCredits: true },
+      async () => {
+        const stripe = createStripeStub();
+        const { service } = createService({ stripe });
 
-    await service.createCreditCheckout({
-      packageId: 'pkg_basic',
-      customerEmail: 'user@example.com',
-      successUrl: 'https://app.test/success',
-      cancelUrl: 'https://app.test/cancel',
-      metadata: { userName: 'Jane', '<script>': 'bad' },
-      locale: 'en',
-    });
-
-    expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        line_items: [{ price: 'price_credit', quantity: 1 }],
-        metadata: expect.objectContaining({
+        await service.createCreditCheckout({
           packageId: 'pkg_basic',
-          priceId: 'price_credit',
-          type: 'credit_purchase',
-          userName: 'Jane',
-        }),
-      }),
-      expect.objectContaining({
-        idempotencyKey: expect.any(String),
-      })
+          customerEmail: 'user@example.com',
+          successUrl: 'https://app.test/success',
+          cancelUrl: 'https://app.test/cancel',
+          metadata: { userName: 'Jane', '<script>': 'bad' },
+          locale: 'en',
+        });
+
+        expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            line_items: [{ price: 'price_credit', quantity: 1 }],
+            metadata: expect.objectContaining({
+              packageId: 'pkg_basic',
+              priceId: 'price_credit',
+              type: 'credit_purchase',
+              userName: 'Jane',
+            }),
+          }),
+          expect.objectContaining({
+            idempotencyKey: expect.any(String),
+          })
+        );
+      }
     );
   });
 
   it('rejects credit checkout when client price mismatches package', async () => {
-    const stripe = createStripeStub();
-    const { service } = createService({ stripe });
+    await withTestCreditsConfig(
+      { ...(websiteConfig.credits ?? {}), enableCredits: true },
+      async () => {
+        const stripe = createStripeStub();
+        const { service } = createService({ stripe });
 
-    await expect(
-      service.createCreditCheckout({
-        packageId: 'pkg_basic',
-        priceId: 'price_other',
-        customerEmail: 'user@example.com',
-        successUrl: 'https://app.test/success',
-        cancelUrl: 'https://app.test/cancel',
-        metadata: { userName: 'Jane' },
-        locale: 'en',
-      })
-    ).rejects.toThrowError(PaymentSecurityError);
+        await expect(
+          service.createCreditCheckout({
+            packageId: 'pkg_basic',
+            priceId: 'price_other',
+            customerEmail: 'user@example.com',
+            successUrl: 'https://app.test/success',
+            cancelUrl: 'https://app.test/cancel',
+            metadata: { userName: 'Jane' },
+            locale: 'en',
+          })
+        ).rejects.toThrowError(PaymentSecurityError);
 
-    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+        expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+      }
+    );
   });
 
   it('processes credit purchase inside a transaction and grants credits', async () => {
     const stripe = createStripeStub();
-    const checkoutSession = {
-      id: 'cs_test',
-      mode: 'payment',
+    const event = createCheckoutCompletedEvent({
+      sessionId: 'cs_test',
+      amountTotal: 2500,
       metadata: {
         userId: 'user-1',
         packageId: 'pkg_basic',
@@ -268,15 +366,7 @@ describe('StripePaymentService', () => {
         type: 'credit_purchase',
         priceId: 'price_credit',
       },
-      customer: 'cus_123',
-      amount_total: 2500,
-    } as unknown as Stripe.Checkout.Session;
-    const event = {
-      id: 'evt_checkout',
-      type: 'checkout.session.completed',
-      created: 1,
-      data: { object: checkoutSession },
-    } as Stripe.Event;
+    });
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx' };
     const creditsGateway = {
@@ -326,9 +416,9 @@ describe('StripePaymentService', () => {
 
   it('propagates failures when credit grant throws so webhook can retry', async () => {
     const stripe = createStripeStub();
-    const checkoutSession = {
-      id: 'cs_test',
-      mode: 'payment',
+    const event = createCheckoutCompletedEvent({
+      sessionId: 'cs_test',
+      amountTotal: 2500,
       metadata: {
         userId: 'user-1',
         packageId: 'pkg_basic',
@@ -336,15 +426,7 @@ describe('StripePaymentService', () => {
         type: 'credit_purchase',
         priceId: 'price_credit',
       },
-      customer: 'cus_123',
-      amount_total: 2500,
-    } as unknown as Stripe.Checkout.Session;
-    const event = {
-      id: 'evt_checkout',
-      type: 'checkout.session.completed',
-      created: 1,
-      data: { object: checkoutSession },
-    } as Stripe.Event;
+    });
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx' };
     const creditsGateway = {
@@ -391,22 +473,14 @@ describe('StripePaymentService', () => {
 
   it('grants lifetime monthly credits for standard checkout sessions', async () => {
     const stripe = createStripeStub();
-    const checkoutSession = {
-      id: 'cs_one_time',
-      mode: 'payment',
+    const event = createCheckoutCompletedEvent({
+      sessionId: 'cs_one_time',
+      amountTotal: 9900,
       metadata: {
         userId: 'user-1',
         priceId: 'price_lifetime',
       },
-      customer: 'cus_123',
-      amount_total: 9900,
-    } as unknown as Stripe.Checkout.Session;
-    const event = {
-      id: 'evt_checkout_onetime',
-      type: 'checkout.session.completed',
-      created: 1,
-      data: { object: checkoutSession },
-    } as Stripe.Event;
+    });
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx-onetime' };
     const billingService = {
@@ -469,32 +543,16 @@ describe('StripePaymentService', () => {
 
   it('handles subscription renewal and awards credits', async () => {
     const stripe = createStripeStub();
-    const event = {
-      id: 'evt_123',
-      type: 'customer.subscription.updated',
-      created: 1,
-      data: {
-        object: {
-          id: 'sub_123',
-          customer: 'cus_456',
-          status: 'active',
-          cancel_at_period_end: false,
-          metadata: { userId: 'user-1' },
-          items: {
-            data: [
-              {
-                price: {
-                  id: 'price_123',
-                  recurring: { interval: 'month' },
-                },
-                current_period_start: 1,
-                current_period_end: 2,
-              },
-            ],
-          },
-        },
-      },
-    } as unknown as Stripe.Event;
+    const event = createSubscriptionUpdatedEvent({
+      eventId: 'evt_123',
+      subscriptionId: 'sub_123',
+      customerId: 'cus_456',
+      userId: 'user-1',
+      status: 'active',
+      priceId: 'price_123',
+      currentPeriodStart: 1,
+      currentPeriodEnd: 2,
+    });
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const billingService = {
       startSubscriptionCheckout: vi.fn(),
@@ -545,32 +603,16 @@ describe('StripePaymentService', () => {
 
   it('bubbles failures when subscription credit grant fails', async () => {
     const stripe = createStripeStub();
-    const event = {
-      id: 'evt_124',
-      type: 'customer.subscription.updated',
-      created: 1,
-      data: {
-        object: {
-          id: 'sub_456',
-          customer: 'cus_789',
-          status: 'active',
-          cancel_at_period_end: false,
-          metadata: { userId: 'user-1' },
-          items: {
-            data: [
-              {
-                price: {
-                  id: 'price_123',
-                  recurring: { interval: 'month' },
-                },
-                current_period_start: 1,
-                current_period_end: 2,
-              },
-            ],
-          },
-        },
-      },
-    } as unknown as Stripe.Event;
+    const event = createSubscriptionUpdatedEvent({
+      eventId: 'evt_124',
+      subscriptionId: 'sub_456',
+      customerId: 'cus_789',
+      userId: 'user-1',
+      status: 'active',
+      priceId: 'price_123',
+      currentPeriodStart: 1,
+      currentPeriodEnd: 2,
+    });
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx-sub-fail' };
     const billingService = {

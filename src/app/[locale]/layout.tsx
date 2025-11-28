@@ -14,6 +14,7 @@ import AffonsoScript from '@/components/affiliate/affonso';
 import PromotekitScript from '@/components/affiliate/promotekit';
 import { TailwindIndicator } from '@/components/layout/tailwind-indicator';
 import { routing } from '@/i18n/routing';
+import type { DocsLocale } from '@/lib/docs/ui-i18n';
 import { cn } from '@/lib/utils';
 import { Providers } from './providers';
 
@@ -60,7 +61,7 @@ export default async function LocaleLayout({
       >
         <NuqsAdapter>
           <NextIntlClientProvider>
-            <Providers locale={locale}>
+            <Providers locale={locale as DocsLocale}>
               {children}
 
               <Toaster richColors position="top-right" offset={64} />

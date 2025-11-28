@@ -7,11 +7,11 @@ import { ActiveThemeProvider } from '@/components/layout/active-theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { websiteConfig } from '@/config/website';
-import { getDocsUiI18n } from '@/lib/docs/ui-i18n';
+import { type DocsLocale, getDocsUiI18n } from '@/lib/docs/ui-i18n';
 
 interface ProvidersProps {
   children: ReactNode;
-  locale: string;
+  locale: DocsLocale;
 }
 
 /**

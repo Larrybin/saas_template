@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import {
   type GenerateImageResponse,
   generateImageRequestSchema,
@@ -14,7 +14,7 @@ import {
 import { enforceRateLimit } from '@/lib/server/rate-limit';
 import { generateImageWithCredits } from '@/lib/server/usecases/generate-image-with-credits';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const requestId = resolveRequestId(req.headers);
   const logger = createLoggerFromHeaders(req.headers, {
     span: 'api.ai.image.generate',

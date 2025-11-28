@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import {
   ErrorSeverity,
@@ -19,7 +19,7 @@ import {
 import { enforceRateLimit } from '@/lib/server/rate-limit';
 import { analyzeWebContentWithCredits } from '@/lib/server/usecases/analyze-web-content-with-credits';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const requestId = resolveRequestId(req.headers);
   const logger = createLoggerFromHeaders(req.headers, {
     span: 'api.ai.text.analyze',

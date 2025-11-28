@@ -19,6 +19,7 @@ vi.mock('@/lib/server/usecases/generate-image-with-credits', () => ({
 
 import type { GenerateImageResponse } from '@/ai/image/lib/api-types';
 import { POST as generateImagesPost } from '@/app/api/generate-images/route';
+import { createJsonPost } from '../../../../tests/utils/requests';
 
 describe('/api/generate-images route', () => {
   beforeEach(() => {
@@ -48,7 +49,7 @@ describe('/api/generate-images route', () => {
       body: 'not-json',
     });
 
-    const res = await generateImagesPost(req as any);
+    const res = await generateImagesPost(req);
     const json = (await res.json()) as GenerateImageResponse;
 
     expect(res.status).toBe(400);
@@ -58,15 +59,11 @@ describe('/api/generate-images route', () => {
   });
 
   it('returns AI_IMAGE_INVALID_PARAMS when required fields are missing', async () => {
-    const req = new Request('http://localhost/api/generate-images', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        // missing prompt/provider/modelId
-      }),
+    const req = createJsonPost('http://localhost/api/generate-images', {
+      // missing prompt/provider/modelId
     });
 
-    const res = await generateImagesPost(req as any);
+    const res = await generateImagesPost(req);
     const json = (await res.json()) as GenerateImageResponse;
 
     expect(res.status).toBe(400);
@@ -83,17 +80,13 @@ describe('/api/generate-images route', () => {
       retryable: true,
     } satisfies GenerateImageResponse);
 
-    const req = new Request('http://localhost/api/generate-images', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: 'test',
-        provider: 'openai',
-        modelId: 'dall-e-3',
-      }),
+    const req = createJsonPost('http://localhost/api/generate-images', {
+      prompt: 'test',
+      provider: 'openai',
+      modelId: 'dall-e-3',
     });
 
-    const res = await generateImagesPost(req as any);
+    const res = await generateImagesPost(req);
     const json = (await res.json()) as GenerateImageResponse;
 
     expect(res.status).toBe(502);
@@ -102,17 +95,13 @@ describe('/api/generate-images route', () => {
   });
 
   it('returns 200 with successful image generation', async () => {
-    const req = new Request('http://localhost/api/generate-images', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: 'test',
-        provider: 'openai',
-        modelId: 'dall-e-3',
-      }),
+    const req = createJsonPost('http://localhost/api/generate-images', {
+      prompt: 'test',
+      provider: 'openai',
+      modelId: 'dall-e-3',
     });
 
-    const res = await generateImagesPost(req as any);
+    const res = await generateImagesPost(req);
     const json = (await res.json()) as GenerateImageResponse;
 
     expect(res.status).toBe(200);

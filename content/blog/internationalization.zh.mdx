@@ -77,7 +77,7 @@ export function baseOptions(locale: string): BaseLayoutProps {
 请注意，默认情况下只提供英文翻译。
 
 ```tsx title="app/[lang]/layout.tsx"
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 import { I18nProvider, type Translations } from 'fumadocs-ui/i18n';
 
 const cn: Partial<Translations> = {

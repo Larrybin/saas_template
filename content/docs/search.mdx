@@ -23,7 +23,7 @@ Add custom link items to search dialog.
 They are shown as fallbacks when the query is empty.
 
 ```tsx title="app/layout.tsx"
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -42,7 +42,7 @@ import { RootProvider } from 'fumadocs-ui/root-provider';
 To opt-out of document search, disable it from root provider.
 
 ```tsx
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -58,7 +58,7 @@ import { RootProvider } from 'fumadocs-ui/root-provider';
 Customise the hot keys to trigger search dialog.
 
 ```tsx
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -80,7 +80,7 @@ Add UI to change filters.
 Make sure to configure [Tag Filter](/docs/headless/search/orama#tag-filter) on search server first.
 
 ```tsx
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -104,7 +104,7 @@ import { RootProvider } from 'fumadocs-ui/root-provider';
 Pass options to the search client, like changing the API endpoint for Orama search server:
 
 ```tsx
-import { RootProvider } from 'fumadocs-ui/root-provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 <RootProvider
   search={{
@@ -136,7 +136,7 @@ To pass it to the Root Provider, you need a wrapper with `use client` directive.
 
 ```tsx title="provider.tsx"
 'use client';
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 import dynamic from 'next/dynamic';
 import type { ReactNode } from 'react';
 

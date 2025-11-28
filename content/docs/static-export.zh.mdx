@@ -30,7 +30,7 @@ Orama 搜索的默认搜索配置使用路由处理器，静态导出不支持�
 并从 Root Provider 在搜索客户端上启用静态模式：
 
 ```tsx title="app/layout.tsx"
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { ReactNode } from 'react';
 
 export default function RootLayout({ children }: { children: ReactNode }) {

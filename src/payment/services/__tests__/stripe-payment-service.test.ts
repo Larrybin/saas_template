@@ -141,44 +141,79 @@ function createSubscriptionUpdatedEvent({
 }
 
 const createStripeStub = (): StripeClientLike => {
-  const sessionsCreate = vi.fn().mockResolvedValue({
-    id: 'sess_123',
-    url: 'https://stripe.test/session',
-  }) as unknown as StripeClientLike['checkout']['sessions']['create'];
+  const sessionsCreate: StripeClientLike['checkout']['sessions']['create'] =
+    async (params, options) => {
+      void params;
+      void options;
+      return {
+        id: 'sess_123',
+        url: 'https://stripe.test/session',
+      };
+    };
 
-  const billingPortalCreate = vi.fn().mockResolvedValue({
-    url: 'https://stripe.test/portal',
-  }) as unknown as StripeClientLike['billingPortal']['sessions']['create'];
+  const billingPortalCreate: StripeClientLike['billingPortal']['sessions']['create'] =
+    async (params, options) => {
+      void params;
+      void options;
+      return {
+        url: 'https://stripe.test/portal',
+      };
+    };
 
-  const customersList = vi
-    .fn()
-    .mockResolvedValue({
+  const customersList: StripeClientLike['customers']['list'] = async (
+    params,
+    options
+  ) => {
+    void params;
+    void options;
+    return {
       data: [],
-    }) as unknown as StripeClientLike['customers']['list'];
+    };
+  };
 
-  const customersCreate = vi
-    .fn()
-    .mockResolvedValue({
+  const customersCreate: StripeClientLike['customers']['create'] = async (
+    params,
+    options
+  ) => {
+    void params;
+    void options;
+    return {
       id: 'cus_123',
-    }) as unknown as StripeClientLike['customers']['create'];
+    };
+  };
 
-  const constructEvent =
-    vi.fn() as unknown as StripeClientLike['webhooks']['constructEvent'];
+  const constructEvent: StripeClientLike['webhooks']['constructEvent'] = vi.fn(
+    (
+      payload: string | Buffer,
+      header: string | string[] | Buffer,
+      secret: string
+    ) => {
+      void payload;
+      void header;
+      void secret;
+      return {
+        id: 'evt_test',
+        type: 'checkout.session.completed',
+        created: Date.now() / 1000,
+        data: { object: {} },
+      } as Stripe.Event;
+    }
+  );
 
   return {
     checkout: {
       sessions: {
-        create: sessionsCreate,
+        create: vi.fn(sessionsCreate),
       },
     },
     billingPortal: {
       sessions: {
-        create: billingPortalCreate,
+        create: vi.fn(billingPortalCreate),
       },
     },
     customers: {
-      list: customersList,
-      create: customersCreate,
+      list: vi.fn(customersList),
+      create: vi.fn(customersCreate),
     },
     webhooks: {
       constructEvent,

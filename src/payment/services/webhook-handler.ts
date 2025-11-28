@@ -34,43 +34,25 @@ export async function handleStripeWebhookEvent(
   switch (event.type) {
     case 'customer.subscription.created':
       await onCreateSubscription(
-        (
-          event as Extract<
-            StripeWebhookEventLike,
-            { type: 'customer.subscription.created' }
-          >
-        ).data.object,
+        (event as StripeSubscriptionEventLike).data.object,
         deps
       );
       break;
     case 'customer.subscription.updated':
       await onUpdateSubscription(
-        (
-          event as Extract<
-            StripeWebhookEventLike,
-            { type: 'customer.subscription.updated' }
-          >
-        ).data.object,
+        (event as StripeSubscriptionEventLike).data.object,
         deps
       );
       break;
     case 'customer.subscription.deleted':
       await onDeleteSubscription(
-        (
-          event as Extract<
-            StripeWebhookEventLike,
-            { type: 'customer.subscription.deleted' }
-          >
-        ).data.object,
+        (event as StripeSubscriptionEventLike).data.object,
         deps
       );
       break;
     case 'checkout.session.completed':
       await handleCheckoutEvent(
-        event as Extract<
-          StripeWebhookEventLike,
-          { type: 'checkout.session.completed' }
-        >,
+        event as StripeCheckoutCompletedEventLike,
         deps
       );
       break;
@@ -80,10 +62,7 @@ export async function handleStripeWebhookEvent(
 }
 
 async function handleCheckoutEvent(
-  event: Extract<
-    StripeWebhookEventLike,
-    { type: 'checkout.session.completed' }
-  >,
+  event: StripeCheckoutCompletedEventLike,
   deps: WebhookDeps
 ) {
   const session = event.data.object as StripeCheckoutSessionLike;

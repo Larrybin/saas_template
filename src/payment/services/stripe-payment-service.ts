@@ -84,9 +84,9 @@ export class StripePaymentService implements PaymentProvider {
             current_period_end: item.current_period_end,
             price: {
               id: item.price?.id ?? '',
-              recurring: {
-                interval: item.price?.recurring?.interval,
-              },
+              ...(item.price?.recurring?.interval
+                ? { recurring: { interval: item.price.recurring.interval } }
+                : {}),
             },
           })) ?? [],
       },

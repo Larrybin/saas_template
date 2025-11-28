@@ -3,10 +3,49 @@ import type { PaymentRepository } from '../data-access/payment-repository';
 import type { StripeEventRepository } from '../data-access/stripe-event-repository';
 import type { UserRepository } from '../data-access/user-repository';
 
-export type StripeClientLike = Pick<
-  Stripe,
-  'checkout' | 'billingPortal' | 'customers' | 'webhooks'
->;
+export type StripeCheckoutSessionsLike = {
+  create: (
+    params: Stripe.Checkout.SessionCreateParams,
+    options?: Stripe.RequestOptions
+  ) => Promise<{ id: string; url: string | null }>;
+};
+
+export type StripeBillingPortalSessionsLike = {
+  create: (
+    params: Stripe.BillingPortal.SessionCreateParams,
+    options?: Stripe.RequestOptions
+  ) => Promise<{ url: string | null }>;
+};
+
+export type StripeCustomersLike = {
+  list: (
+    params?: Stripe.CustomerListParams,
+    options?: Stripe.RequestOptions
+  ) => Promise<{ data: Array<{ id: string }> }>;
+  create: (
+    params: Stripe.CustomerCreateParams,
+    options?: Stripe.RequestOptions
+  ) => Promise<{ id: string }>;
+};
+
+export type StripeWebhooksLike = {
+  constructEvent: (
+    payload: string | Buffer,
+    header: string | string[] | Buffer,
+    secret: string
+  ) => Stripe.Event;
+};
+
+export type StripeClientLike = {
+  checkout: {
+    sessions: StripeCheckoutSessionsLike;
+  };
+  billingPortal: {
+    sessions: StripeBillingPortalSessionsLike;
+  };
+  customers: StripeCustomersLike;
+  webhooks: StripeWebhooksLike;
+};
 
 export type UserRepositoryLike = Pick<
   UserRepository,

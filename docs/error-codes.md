@@ -87,6 +87,12 @@
 | `STORAGE_PROVIDER_ERROR`    | `StorageProviderError`  | Storage | 存储提供商内部错误（如 S3/兼容实现异常）。 |
 | `STORAGE_UNKNOWN_ERROR`     | `StorageUnknownError`   | Storage | 未分类的存储错误兜底。                       |
 
+## Docs Search / 文档搜索
+
+| Code                 | Key                | Domain | Description                          |
+| -------------------- | ------------------ | ------ | ------------------------------------ |
+| `DOCS_SEARCH_FAILED` | `DocsSearchFailed` | Docs   | 文档搜索失败，参考日志获取更多详情。 |
+
 ## 使用约定
 
 - 所有对外 HTTP API 的响应 `code` 字段必须来自 `ErrorCodes` 常量，不允许直接写字符串字面量。  

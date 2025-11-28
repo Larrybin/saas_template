@@ -341,7 +341,7 @@ toast.error(message);
 | `/api/distribute-credits` | `api.credits.distribute` | ✅ 已符合 | Basic Auth 失败日志由 `validateInternalJobBasicAuth` 记录。 |
 | `/api/storage/upload` | `api.storage.upload` | ✅ 已符合 | 对齐 `Storage*` 错误码并强制 multipart 检查。 |
 | `/api/webhooks/stripe` | `api.webhooks.stripe` | ✅ 已符合 | Webhook 中 `DomainError` 与未知异常均返回统一 envelope。 |
-| `/api/search` | `api.docs.search` | ⚠️ 待复查 | 需确认是否返回 `{ success, error, code }` 或回落到 provider 原始结构。 |
+| `/api/search` | `api.docs.search` | ✅ 已符合 | 返回 `{ success, data }` / `{ success: false, error, code }` 的统一 envelope。 |
 
 当新增或重构路由时，请在此表中更新状态，保持文档与实现一致。
 

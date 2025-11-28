@@ -65,6 +65,10 @@ const DOMAIN_ERROR_MESSAGES: Record<string, DomainErrorMessageDefinition> = {
   [ErrorCodes.ImageProviderError]: {
     key: 'AIImagePage.errors.providerError',
   },
+  [ErrorCodes.DocsSearchFailed]: {
+    key: 'Docs.search.error',
+    fallback: 'Docs search failed. Please try again later.',
+  },
 };
 
 export type DomainErrorLike = {

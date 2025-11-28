@@ -10,6 +10,7 @@ export const ErrorCodes = {
   AnalyzeContentInvalidJson: 'ANALYZE_CONTENT_INVALID_JSON',
   AnalyzeContentInvalidParams: 'ANALYZE_CONTENT_INVALID_PARAMS',
   CreditsDistributionFailed: 'CREDITS_DISTRIBUTION_FAILED',
+  DocsSearchFailed: 'DOCS_SEARCH_FAILED',
   StorageInvalidContentType: 'STORAGE_INVALID_CONTENT_TYPE',
   StorageNoFile: 'STORAGE_NO_FILE',
   StorageFileTooLarge: 'STORAGE_FILE_TOO_LARGE',

@@ -1,6 +1,8 @@
 import { createTokenizer } from '@orama/tokenizers/mandarin';
 import { createI18nSearchAPI } from 'fumadocs-core/search/server';
+import { NextResponse } from 'next/server';
 import { docsI18nConfig } from '@/lib/docs/i18n';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders } from '@/lib/server/logger';
 import { source } from '@/lib/source';
 
@@ -77,15 +79,59 @@ export const GET = async (request: Request) => {
   const url = new URL(request.url);
   const query = url.searchParams.get('q') ?? undefined;
   const locale = url.searchParams.get('locale') ?? undefined;
+  const queryLength = typeof query === 'string' ? query.length : undefined;
 
   logger.info(
     {
-      queryLength: typeof query === 'string' ? query.length : undefined,
+      queryLength,
       locale,
     },
     'Docs search request'
   );
 
-  const response = await searchAPI.GET(request);
-  return response;
+  try {
+    const response = await searchAPI.GET(request);
+    const payload = await response.json();
+
+    if (!response.ok) {
+      logger.error(
+        { status: response.status, payload, query, queryLength, locale },
+        'Docs search provider error'
+      );
+
+      const retryable = response.status >= 500;
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Docs search failed',
+          code: ErrorCodes.DocsSearchFailed,
+          retryable,
+        },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: payload,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    logger.error(
+      { error, query, queryLength, locale },
+      'Docs search request failed'
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Docs search failed',
+        code: ErrorCodes.DocsSearchFailed,
+        retryable: true,
+      },
+      { status: 500 }
+    );
+  }
 };

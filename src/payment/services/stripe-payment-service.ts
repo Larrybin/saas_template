@@ -1,4 +1,3 @@
-import Stripe from 'stripe';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import {
@@ -6,7 +5,6 @@ import {
   DefaultBillingService,
   DefaultPlanPolicy,
 } from '@/domain/billing';
-import { serverEnv } from '@/env/server';
 import { isCreditsEnabled } from '@/lib/credits-settings';
 import { getLogger } from '@/lib/server/logger';
 import { PaymentRepository } from '../data-access/payment-repository';
@@ -39,8 +37,8 @@ import { SubscriptionQueryService } from './subscription-query-service';
 import { handleStripeWebhookEvent } from './webhook-handler';
 
 type StripePaymentServiceDeps = {
-  stripeClient?: StripeClientLike;
-  webhookSecret?: string;
+  stripeClient: StripeClientLike;
+  webhookSecret: string;
   creditsGateway?: CreditsGateway;
   notificationGateway?: NotificationGateway;
   userRepository?: UserRepositoryLike;
@@ -145,21 +143,15 @@ export class StripePaymentService implements PaymentProvider {
     }
   }
 
-  constructor(deps: StripePaymentServiceDeps = {}) {
-    const webhookSecret = deps.webhookSecret ?? serverEnv.stripeWebhookSecret;
-    if (!webhookSecret) {
-      throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set.');
+  constructor(deps: StripePaymentServiceDeps) {
+    if (!deps.stripeClient) {
+      throw new Error('Stripe client is required');
     }
-    if (deps.stripeClient) {
-      this.stripe = deps.stripeClient;
-    } else {
-      const apiKey = serverEnv.stripeSecretKey;
-      if (!apiKey) {
-        throw new Error('STRIPE_SECRET_KEY environment variable is not set');
-      }
-      this.stripe = new Stripe(apiKey);
+    if (!deps.webhookSecret) {
+      throw new Error('Stripe webhook secret is required');
     }
-    this.webhookSecret = webhookSecret;
+    this.stripe = deps.stripeClient;
+    this.webhookSecret = deps.webhookSecret;
     this.creditsGateway = deps.creditsGateway ?? new CreditLedgerService();
     this.notificationGateway =
       deps.notificationGateway ?? new DefaultNotificationGateway();

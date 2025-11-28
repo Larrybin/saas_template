@@ -1,38 +1,16 @@
-export type AiBillingRule = {
-  enabled: boolean;
-  creditsPerCall: number;
-  /**
-   * 每个周期内的免费调用次数（按用户 + 功能）
-   */
-  freeCallsPerPeriod: number;
-};
-
-const aiBillingConfig = {
-  chat: {
-    enabled: true,
-    creditsPerCall: 1,
-    freeCallsPerPeriod: 8,
-  },
-  analyzeContent: {
-    enabled: true,
-    creditsPerCall: 1,
-    freeCallsPerPeriod: 8,
-  },
-  generateImage: {
-    enabled: true,
-    creditsPerCall: 1,
-    freeCallsPerPeriod: 8,
-  },
-} as const satisfies Record<string, AiBillingRule>;
+import {
+  type AiBillingRule,
+  defaultAiBillingPolicy,
+} from '@/ai/billing-policy';
 
 export function getAiChatBillingRule(): AiBillingRule {
-  return aiBillingConfig.chat;
+  return defaultAiBillingPolicy.getChatRule();
 }
 
 export function getAnalyzeContentBillingRule(): AiBillingRule {
-  return aiBillingConfig.analyzeContent;
+  return defaultAiBillingPolicy.getAnalyzeContentRule();
 }
 
 export function getImageGenerateBillingRule(): AiBillingRule {
-  return aiBillingConfig.generateImage;
+  return defaultAiBillingPolicy.getImageRule();
 }

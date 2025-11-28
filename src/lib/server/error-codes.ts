@@ -35,6 +35,7 @@ export const ErrorCodes = {
   AiContentAnalysisError: 'AI_CONTENT_ANALYSIS_ERROR',
   AiContentScrapingError: 'AI_CONTENT_SCRAPING_ERROR',
   AiContentUnknownError: 'AI_CONTENT_UNKNOWN_ERROR',
+  StripeWebhookUnexpectedError: 'STRIPE_WEBHOOK_UNEXPECTED_ERROR',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

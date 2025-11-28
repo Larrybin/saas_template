@@ -184,6 +184,8 @@ pnpm start
 - 新增或调整错误 UI（toast / 跳转等）时：
   - 在 `src/lib/domain-error-ui-registry.ts` 中定义或修改对应 `ErrorUiStrategy`（severity / fallback / action / source）；
   - 优先通过对应领域 Hook（如 `useAuthErrorHandler`、`useCreditsErrorUi`、`useAiErrorUi`、`useStorageErrorUi`）消费错误，而不是在组件里直接写 `if (code === '...')`。
+- 统一 API 协议与特例：
+  - HTTP JSON envelope 协议（`success` / `error` / `code` / `retryable`）以及 `/api/chat` 流式接口、`/api/webhooks/stripe`、`/api/ping`、`/api/distribute-credits` 等特例说明见 `docs/api-protocol.md`。
 
 ## Contributing
 

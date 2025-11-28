@@ -8,6 +8,10 @@ import {
 import { logAnalyzerErrorServer } from '@/ai/text/utils/error-logging.server';
 import type { AnalyzeContentResponse } from '@/ai/text/utils/web-content-analyzer';
 import { validateAnalyzeContentRequest } from '@/ai/text/utils/web-content-analyzer';
+import {
+  createErrorEnvelope,
+  createErrorEnvelopeFromDomainError,
+} from '@/lib/domain-error-utils';
 import { DomainError } from '@/lib/domain-errors';
 import { ensureApiUser } from '@/lib/server/api-auth';
 import { ErrorCodes } from '@/lib/server/error-codes';
@@ -70,12 +74,11 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json(
-      {
-        success: false,
-        error: validationError.userMessage,
-        code: validationError.code,
-        retryable: validationError.retryable,
-      } satisfies AnalyzeContentResponse,
+      createErrorEnvelope(
+        ErrorCodes.AnalyzeContentInvalidJson,
+        validationError.userMessage,
+        validationError.retryable
+      ) satisfies AnalyzeContentResponse,
       { status: 400 }
     );
   }
@@ -114,12 +117,11 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json(
-      {
-        success: false,
-        error: validationError.userMessage,
-        code: validationError.code,
-        retryable: validationError.retryable,
-      } satisfies AnalyzeContentResponse,
+      createErrorEnvelope(
+        ErrorCodes.AnalyzeContentInvalidParams,
+        validationError.userMessage,
+        validationError.retryable
+      ) satisfies AnalyzeContentResponse,
       { status: 400 }
     );
   }
@@ -147,12 +149,9 @@ export async function POST(req: NextRequest) {
       const status = error.retryable ? 500 : 400;
 
       return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-          code: error.code,
-          retryable: error.retryable,
-        } satisfies AnalyzeContentResponse,
+        createErrorEnvelopeFromDomainError(
+          error
+        ) satisfies AnalyzeContentResponse,
         { status }
       );
     }
@@ -160,12 +159,11 @@ export async function POST(req: NextRequest) {
     logger.error({ error, requestId }, 'Unexpected error in analyze-content');
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        code: ErrorCodes.UnexpectedError,
-        retryable: true,
-      } satisfies AnalyzeContentResponse,
+      createErrorEnvelope(
+        ErrorCodes.UnexpectedError,
+        'Internal server error',
+        true
+      ) satisfies AnalyzeContentResponse,
       { status: 500 }
     );
   }

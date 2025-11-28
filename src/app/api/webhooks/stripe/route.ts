@@ -1,4 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import {
+  createErrorEnvelope,
+  createErrorEnvelopeFromDomainError,
+} from '@/lib/domain-error-utils';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders } from '@/lib/server/logger';
@@ -28,24 +32,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Validate inputs
     if (!payload) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing webhook payload',
-          code: ErrorCodes.UnexpectedError,
-          retryable: false,
-        },
+        createErrorEnvelope(
+          ErrorCodes.UnexpectedError,
+          'Missing webhook payload',
+          false
+        ),
         { status: 400 }
       );
     }
 
     if (!signature) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing Stripe signature',
-          code: ErrorCodes.UnexpectedError,
-          retryable: false,
-        },
+        createErrorEnvelope(
+          ErrorCodes.UnexpectedError,
+          'Missing Stripe signature',
+          false
+        ),
         { status: 400 }
       );
     }
@@ -69,27 +71,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             ? 500
             : 400;
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-          code: error.code,
-          retryable: error.retryable,
-        },
-        { status }
-      );
+      return NextResponse.json(createErrorEnvelopeFromDomainError(error), {
+        status,
+      });
     }
 
     logger.error({ error }, 'Stripe webhook unexpected error');
 
     // Return generic error
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Webhook handler failed',
-        code: ErrorCodes.UnexpectedError,
-        retryable: true,
-      },
+      createErrorEnvelope(
+        ErrorCodes.StripeWebhookUnexpectedError,
+        'Webhook handler failed',
+        true
+      ),
       { status: 400 }
     );
   }

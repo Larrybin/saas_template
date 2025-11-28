@@ -81,8 +81,8 @@ try {
 
 约定：
 
-- 新的 `/api/*` 路由优先采用 `{ success, error, code?, retryable? }` 的 envelope。
-- 现有路由可逐步迁移，在保持兼容前端调用的前提下增加 `success`/`code` 字段。
+- 新的 `/api/*` 路由优先采用 `{ success, error, code?, retryable? }` 的 envelope，具体协议细节参考 `docs/api-protocol.md`。
+- 现有路由可逐步迁移，在保持兼容前端调用的前提下增加 `success`/`code` 字段；对于像 `/api/ping`、`/api/webhooks/stripe`、`/api/distribute-credits` 这类健康检查 / Provider Webhook / cron-only 接口，可在文档中明确标注为特例，不强行套用统一 envelope。
 
 ## 4. 日志上下文
 

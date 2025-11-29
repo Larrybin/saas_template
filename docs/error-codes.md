@@ -25,11 +25,12 @@
 
 ## Billing / 计费
 
-| Code                    | Key                 | Domain  | Description                            |
-| ----------------------- | ------------------- | ------- | -------------------------------------- |
-| `BILLING_PLAN_NOT_FOUND`| `BillingPlanNotFound`| Billing | 计费计划不存在或已禁用。              |
-| `BILLING_PRICE_NOT_FOUND`| `BillingPriceNotFound`| Billing | 计费计划下找不到对应价格。           |
-| `PAYMENT_SECURITY_VIOLATION` | `PaymentSecurityViolation` | Billing / Payment | 支付安全校验失败（如签名/密钥错误）。 |
+| Code                    | Key                   | Domain  | Description                                     |
+| ----------------------- | --------------------- | ------- | ----------------------------------------------- |
+| `BILLING_PLAN_NOT_FOUND`| `BillingPlanNotFound` | Billing | 计费计划不存在或已禁用。                       |
+| `BILLING_PRICE_NOT_FOUND`| `BillingPriceNotFound`| Billing | 计费计划下找不到对应价格。                    |
+| `PAYMENT_SECURITY_VIOLATION` | `PaymentSecurityViolation` | Billing / Payment | 支付安全校验失败（如签名/密钥错误）。        |
+| `SUBSCRIPTION_FETCH_FAILED` | `SubscriptionFetchFailed` | Billing / Payment | 查询订阅状态失败（Stripe 调用或配置异常）。 |
 
 ## Credits / 积分
 

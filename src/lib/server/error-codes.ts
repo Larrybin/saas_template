@@ -11,6 +11,7 @@ export const ErrorCodes = {
   AnalyzeContentInvalidParams: 'ANALYZE_CONTENT_INVALID_PARAMS',
   CreditsDistributionFailed: 'CREDITS_DISTRIBUTION_FAILED',
   DocsSearchFailed: 'DOCS_SEARCH_FAILED',
+  SubscriptionFetchFailed: 'SUBSCRIPTION_FETCH_FAILED',
   NewsletterSubscribeFailed: 'NEWSLETTER_SUBSCRIBE_FAILED',
   NewsletterUnsubscribeFailed: 'NEWSLETTER_UNSUBSCRIBE_FAILED',
   NewsletterStatusFailed: 'NEWSLETTER_STATUS_FAILED',

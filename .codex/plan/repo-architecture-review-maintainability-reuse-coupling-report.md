@@ -8,7 +8,7 @@
   - 可维护性：**偏高**。目录结构清晰、领域模块化（credits / payment / billing / storage / ai / newsletter 等），TypeScript 严格（`strict` + `noUncheckedIndexedAccess`），多数复杂逻辑集中在 domain/usecase 层，并有成体系的日志与错误码体系支撑。
   - 复用性：**较好**。`src/lib` / `src/hooks` / `src/components/ui` / `src/lib/server/usecases` 形成了较稳定的复用层，credits / billing / payment / AI 等核心域抽象了 domain service / gateway / usecase 等层次，减少跨域复制。
   - 耦合度：**中等偏好**。路由 / actions 大多只面向 domain/usecase 层；infra 层（db / storage / notification）以接口或 provider 方式暴露。但也存在少量“多责任类”（如 `StripePaymentService`）、配置与业务逻辑耦合（`websiteConfig` / env 与服务实例化混在一起）的情况。
-  - 测试支撑：**关键路径较完备，边缘区域有空洞**。credits / billing / payment / AI usecases / 部分 API Route 都有针对性单测/集成测及 e2e，用例量可观；但某些 action、部分 UI 逻辑、以及少数 API（如 search）测试缺口明显。
+  - 测试支撑：**关键路径较完备，边缘区域有空洞**。credits / billing / payment / AI usecases / 部分 API Route 都有针对性单测/集成测及 e2e，用例量可观；但某些 action、部分 UI 逻辑、以及个别非核心 API（如 `/api/storage/upload`）测试缺口仍然存在。
 
 - **代表性优点**：
   - 清晰的模块地图（README + `src/routes.ts` + `CLAUDE.md`）以及 credits/payment/billing/AI 的领域分层；
@@ -17,7 +17,7 @@
 
 - **主要风险点（跨维度）**：
   - 支付与计费实例化仍然“胖服务 + 直接读 env/配置”，对多 Provider / 多租户 / 多 plan 配置切换不够友好（`src/payment/services/stripe-payment-service.ts`、`src/ai/billing-config.ts`）。
-  - 少数 API / action 没有完全对齐统一 envelope / DomainError 规范，导致错误 UI 策略与日志/指标体系难以完全复用（`src/app/api/search/route.ts`、`src/actions/subscribe-newsletter.ts` 等）。协议层差异的细节分析已在 `protocol-future-techdebt-report.md` 中给出，本报告只保留架构视角。
+  - 少数 API 在特定错误分支上尚未完全对齐统一 envelope / DomainError 规范，例如 `/api/distribute-credits` 的未授权响应仍返回纯文本；协议层差异的细节分析已在 `protocol-future-techdebt-report.md` 中给出，本报告只保留架构视角。
   - 测试覆盖聚焦核心域，对 UI 组件（特别是复杂导航/交互）与部分边缘协议缺乏系统性验证。
 
 ---
@@ -78,13 +78,7 @@
      - `StripePaymentService` 同时承担支付入口（`PaymentProvider`）与 Stripe webhook 处理委托（`handleWebhookEvent`）责任，虽然内部使用 `StripeCheckoutService` / `CustomerPortalService` / `SubscriptionQueryService` 分拆，但整体类仍然较厚。
    - 影响：降低可读性与可扩展性（增加第二支付 Provider 或多租户配置时，需要改动过多逻辑）。
 
-2. **部分 Server Action 的错误处理未完全对齐 DomainError 规范**  
-   - 文件：`src/actions/subscribe-newsletter.ts`  
-   - 问题：
-     - 在失败路径中返回 `{ success: false, error: '...' }`，缺少统一的 `code` / `retryable` 字段，也未使用 `DomainError`，与 `docs/error-codes.md` 和 `src/lib/domain-error-utils.ts` 所建立的错误处理策略不完全一致。
-   - 影响：前端无法使用通用的错误 UI 策略（如 `useAuthErrorHandler` / `useCreditsErrorUi` 等）来处理该 action 的错误，增加未来维护成本。
-
-3. **部分路由的错误 envelope 与文档不一致**  
+2. **部分路由的错误 envelope 与文档不一致**  
    - 文件：`src/app/api/distribute-credits/route.ts`  
    - 问题：
      - 401 分支返回 `NextResponse('Unauthorized', ...)`，与项目“统一 envelope”约定不一致（README / `docs/api-reference.md` / `src/lib/domain-error-utils.ts` 中均强调统一 `success / error / code / retryable` 结构）。
@@ -141,21 +135,14 @@
 
 ### 3.3 可进一步提升复用性的点
 
-1. **Action 错误处理可统一为 DomainError/envelope 模式**  
-   - 文件：`src/actions/subscribe-newsletter.ts` 等  
-   - 现状：有些 action 手动返回 `{ success: false, error: ... }`，没有 `code`，无法复用 `domain-error-utils` 和 UI registry。
-   - 建议：
-     - 将失败情况改为抛出 `DomainError`（带 `code`），或至少补充 `code` 字段并在 `docs/error-codes.md` 注册；
-     - 前端统一通过 `unwrapEnvelopeOrThrowDomainError` 或领域 hooks 处理错误。
-
-2. **StripePaymentService 的 wiring 逻辑可下沉到“factory/config 层”**  
+1. **StripePaymentService 的 wiring 逻辑可下沉到“factory/config 层”**  
    - 文件：`src/payment/services/stripe-payment-service.ts`  
    - 现状：实例化 stripe client、credit gateway、notification gateway、repos 与 billingService 的逻辑都在构造函数内，对所有调用方可见。
    - 建议：
      - 抽出 `createStripePaymentService(config)` 工厂，集中处理 env/websiteConfig 的解析与依赖注入；
      - `StripePaymentService` 自身只关注 PaymentProvider 行为，以及与 Stripe webhook 的映射逻辑。
 
-3. **AI 计费配置的复用维度不足**  
+2. **AI 计费配置的复用维度不足**  
    - 文件：`src/ai/billing-config.ts`（未在本报告全文展示，但在其它 plan/report 已分析）  
    - 现状：计费规则主要是静态常量，缺乏 plan / region 等维度的复用能力。
    - 建议：
@@ -218,7 +205,7 @@
      - 引入 `BillingRuleProvider` 接口，从外部注入；或在 usecase 的参数中加入 `billingRule`，由上层根据当前用户/plan 决定。
 
 3. **部分 API 与统一协议的耦合不完善**  
-   - 文件：`src/app/api/distribute-credits/route.ts` + `src/app/api/search/route.ts`（协议与错误码差异的细节见 `protocol-future-techdebt-report.md`）  
+   - 文件：`src/app/api/distribute-credits/route.ts`（协议与错误码差异的细节见 `protocol-future-techdebt-report.md`）  
    - 问题（架构层概括）：
      - 部分路由在非 2xx 场景返回的 payload 形态与统一 envelope 约定不一致，调用方需要写特例逻辑。
    - 建议：
@@ -270,8 +257,8 @@
      - 板块：`src/actions/**`（如 `subscribe-newsletter.ts`、`consume-credits.ts` 等）与复杂 UI 组件（如 `Navbar`、credits page 的交互组件）目前尚未看到单测/集成测。  
      - 风险：未来调整 envelope 或错误码时，前后端交互可能产生回归；复杂 UI 交互的行为（如 locale 路由、登录状态展示、tab 状态持久化）容易在重构中被破坏。
 
-  2. **部分 API（search 等）未被测试覆盖**  
-     - 虽然 `chat` / `analyze-content` / `generate-images` 等路由有测试，但 `search` route 在 `docs/error-logging.md` 被标记为待复查，且未在 `src/app/api/__tests__` 看到对应测试。
+  2. **部分 API（如存储上传）未被 route 测试覆盖**  
+     - `chat` / `analyze-content` / `generate-images` / `search` / `distribute-credits` 等核心路由已有测试，但类似 `/api/storage/upload` 这类非核心 yet 重要的接口目前尚未看到 route 级测试覆盖。
 
   3. **E2E 覆盖集中在 auth，未覆盖 billing/credits/AI 的关键 happy path**  
      - 当前 `tests/e2e/auth.spec.ts` 专注认证流程，对 settings/credits 页面、Stripe checkout 流程、AI 功能等尚无端到端验证。
@@ -295,17 +282,17 @@
 ### P0（近期建议）
 
 1. **统一 API Route 与 Server Action 的错误 envelope 与 DomainError 使用**  
-   - 涉及：`src/app/api/distribute-credits/route.ts`、`src/app/api/search/route.ts`、`src/actions/subscribe-newsletter.ts` 等。  
+   - 涉及：`src/app/api/distribute-credits/route.ts` 的未授权分支以及可能新增的 API / Actions。  
    - 动作：
      - 将所有 API 400/401/5xx 响应统一包装为 `{ success: false, error, code, retryable }`；
-     - 对 action 中的错误路径使用 DomainError 或至少补充 `code` 字段；
+     - 对 action 中的错误路径统一使用 `DomainError`（或至少补充 `code` 字段并映射到 `ErrorCodes`）；
      - 更新 `docs/api-reference.md` / `docs/error-codes.md` 保持一致。  
    - 收益：提升调用方与前端错误处理的一致性，降低后续改动时的回归风险，增强可维护性与复用性。
 
-2. **为“协议存在差异”的 API 补齐测试**  
-  - 涉及：`/api/search`、`/api/distribute-credits` 等。  
-  - 动作：在 `src/app/api/__tests__` 中增加对应 route 测试，覆盖正常响应与错误 envelope。  
-  - 收益：为未来协议统一/重构提供安全网。
+2. **为“协议敏感”的 API 完善 route 测试**  
+  - 涉及：`/api/distribute-credits`、`/api/storage/upload` 等。  
+  - 动作：在 `src/app/api/__tests__` 中补充或扩展对应 route 测试，特别覆盖错误分支（401/4xx/5xx）与 envelope 形态。  
+  - 收益：为未来协议统一/重构提供安全网，防止协议细节回归。
 
 ### P1（中短期建议）
 
@@ -335,8 +322,8 @@
 
 | 建议编号 | 建议摘要 | 主要涉及模块/文件 | 影响范围 | 复杂度评估 | 风险点 |
 | --- | --- | --- | --- | --- | --- |
-| P0-1 | 统一 API/Action 错误 envelope + DomainError 使用 | `src/app/api/*` 部分路由、`src/actions/subscribe-newsletter.ts` 等 | 前后端错误处理链路、日志/监控解析 | 中等：字段调整 + 局部错误处理重构 | 需确保前端 hooks 与 i18n 文案同步更新，避免打破现有 UI 行为 |
-| P0-2 | 为协议差异 API 补齐 route 测试 | `src/app/api/search/route.ts`、`src/app/api/distribute-credits/route.ts` | 协议回归检测、CI 反馈质量 | 低：新增测试文件 + 少量 mock | 测试需覆盖 2xx/4xx/5xx 及 envelope 形态，避免遗漏主干路径 |
+| P0-1 | 统一 API/Action 错误 envelope + DomainError 使用 | `src/app/api/*` 部分路由（如 `/api/distribute-credits` 未授权分支）及可能新增的 Actions | 前后端错误处理链路、日志/监控解析 | 中等：字段调整 + 局部错误处理重构 | 需确保前端 hooks 与 i18n 文案同步更新，避免打破现有 UI 行为 |
+| P0-2 | 为协议敏感 API 完善 route 测试 | `src/app/api/distribute-credits/route.ts`、`src/app/api/storage/upload/route.ts` 等 | 协议回归检测、CI 反馈质量 | 低：新增或扩展测试 + 少量 mock | 测试需覆盖 2xx/4xx/5xx 及 envelope 形态，避免遗漏主干路径 |
 | P1-3 | 抽离 StripePaymentService 的配置与依赖注入逻辑 | `src/payment/services/stripe-payment-service.ts`、可能新建 factory | 支付域（checkout、webhook、credits 发放） | 中高：需要拆分构造流程并保持现有测试通过 | 需维护现有 `stripe-payment-service.test.ts` 语义，避免打破 webhook/credits side effect |
 | P1-4 | 提升 AI 计费规则的可配置性 | `src/ai/billing-config.ts`、`src/lib/server/usecases/*` | AI chat / analyze / image 路径的计费与免费配额 | 中等：引入 billing rule provider 或配置层 | 需保证现有计费结果不变（或变更可控），并补充针对不同 plan 的测试 |
 | P1-5 | 补齐关键 action 与 UI 测试 | `src/actions/**`、`src/components/layout/navbar.tsx`、settings/credits 页面 | 关键用户流（登录、导航、credits 页面） | 中等：需要挑选代表性 user story 设计用例 | UI 受路由/i18n 影响，测试环境准备（locale、auth 状态）要明确 |

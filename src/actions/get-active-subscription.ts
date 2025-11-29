@@ -3,7 +3,9 @@
 import { getActiveSubscriptionInputSchema } from '@/actions/schemas';
 import { serverEnv } from '@/env/server';
 import type { User } from '@/lib/auth-types';
+import { DomainError } from '@/lib/domain-errors';
 import { userActionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { getSubscriptions } from '@/payment';
 
@@ -66,10 +68,20 @@ export const getActiveSubscriptionAction = userActionClient
         data: subscriptionData,
       };
     } catch (error) {
-      logger.error({ error }, 'get user subscription data error');
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
+      logger.error(
+        { error, userId: currentUser.id },
+        'get user subscription data error'
+      );
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.SubscriptionFetchFailed,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch subscription data',
+        retryable: true,
+      });
     }
   });

@@ -69,6 +69,10 @@ const DOMAIN_ERROR_MESSAGES: Record<string, DomainErrorMessageDefinition> = {
     key: 'Docs.search.error',
     fallback: 'Docs search failed. Please try again later.',
   },
+  [ErrorCodes.SubscriptionFetchFailed]: {
+    key: 'Dashboard.settings.billing.errorMessage',
+    fallback: 'Failed to fetch subscription data',
+  },
   [ErrorCodes.NewsletterSubscribeFailed]: {
     key: 'Dashboard.settings.notification.newsletter.subscribeFail',
     fallback: 'Failed to subscribe to the newsletter',

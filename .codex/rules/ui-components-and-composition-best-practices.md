@@ -49,6 +49,9 @@ description: 基于 MkSaaS 的基础 UI 组件与特性组件组合规范
 3. Feature 组件
    - `src/components/dashboard/*`、`src/components/settings/*`、`src/components/blocks/*` 等：
      - 按领域划分，组合基础组件呈现完整业务 UI。
+   - 社交卡片组件（如 `twitter-card-*`）：
+      - Tweet 数据必须来自可信后端或官方 API 封装，不得直接使用用户自定义 HTML 作为 `entity.text` 或其它可注入内容来源。
+      - 如确需渲染外部 HTML 片段，必须在组件内部增加独立的 HTML sanitize 步骤，仅保留有限的 inline 标签与安全属性，避免将原始 HTML 直接传入 `dangerouslySetInnerHTML`。
 
 ## 反模式（应避免）
 
@@ -73,4 +76,3 @@ description: 基于 MkSaaS 的基础 UI 组件与特性组件组合规范
   - [ ] 新功能开发时是否统一遵循“先看 ui/*、再做组合”的路径，而不是临时写一套新的基础样式。
   - [ ] 是否存在未复用的“局部按钮/输入”，可以回收为基础组件或统一替换为 `ui/*`。
   - [ ] Feature 组件的 props 是否需要进一步瘦身，使其更易于复用与测试。
-

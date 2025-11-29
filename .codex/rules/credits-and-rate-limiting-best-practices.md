@@ -74,6 +74,12 @@ description: 基于 MkSaaS 模板的 Credits 账本设计与 AI 请求限流规�
    - 为 Credits 相关错误定义专门错误码与日志上下文：
      - 例如 `CREDITS_INSUFFICIENT_BALANCE`。
      - 日志中包含 userId、requestId、endpoint 以便排查。
+5. 回调 URL 与重定向安全
+   - 支付 / Credits 相关 Server Actions 与 API（如创建结账会话、客户门户、Credits 购买等）：
+     - **禁止**从请求 body 或 query 中直接接收任意外部 URL 作为 callback/redirect 参数并原样使用。
+     - 如确需支持回调参数，必须先在服务端将其约束/转换为站内相对路径（或受信任 allowlist 中的路径），再通过既有 URL helper（如 `buildSafeCallbackUrl` / `getUrlWithLocaleInCallbackUrl` 等）统一构造最终跳转地址。
+   - 对来自前端的“nextUrl/redirectTo”类字段：
+     - 只能作为“站内路径 hint”使用，严禁允许包含协议/主机等完整外部 URL。
 
 ## 反模式（应避免）
 

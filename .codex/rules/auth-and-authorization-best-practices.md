@@ -46,6 +46,16 @@ description: 基于 MkSaaS 模板、Next.js App Router 与 better-auth 的认证
      - 数据库 hooks（例如用户创建后发放欢迎 Credits、同步 profile）。
      - 插件（admin 插件用于封禁用户、管理额外字段）。
    - 在 `src/lib/auth.ts` 中添加/维护扩展字段，而不是在业务模块里直接扩展 user 对象。
+  - 回调与重定向 URL：
+    - 所有登录/认证相关的回调路径必须通过已有 helper 构造：
+      - Proxy / 登录入口使用 `buildSafeCallbackUrl(nextUrl)`，仅允许站内相对路径，并进行编码。
+      - 邮件中的回调 URL 使用 `getUrlWithLocaleInCallbackUrl(url, locale)`，在现有安全 URL 基础上附加 locale 前缀。
+    - 禁止在任意 Action / API / 组件中手写 `'?callbackUrl=' + someUrl` 这类字符串拼接逻辑，也不得直接信任客户端传入的完整 URL。
+    - 如确需支持自定义回调参数，必须在服务端严格校验并转换为站内相对路径，再交给上述 helper 统一处理。
+  - Auth 错误展示规范：
+    - UI 层展示认证相关错误时，必须通过错误码 + i18n 映射生成用户可见文案（例如复用 `getDomainErrorMessage`、`useAuthErrorHandler` 等已有 helper），保持文案统一可控。
+    - 禁止在前端直接使用后端返回的 `error.message` 作为 toast / banner / dialog 文案，也不得将原始错误对象序列化后暴露给终端用户。
+    - 如需排查底层错误信息，应通过受控的开发日志、调试开关或内部工具查看，而不是在生产环境的用户界面中直接展示。
 
 5. **最小开放原则**
    - 服务端导出给前端使用的 user 类型应是“瘦身版”：

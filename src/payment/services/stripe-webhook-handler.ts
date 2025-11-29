@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { BillingService } from '@/domain/billing';
 import type { Logger } from '@/lib/server/logger';
+import type { NotificationGateway } from './gateways/notification-gateway';
 import type {
   PaymentRepositoryLike,
   StripeClientLike,
@@ -16,9 +17,7 @@ export type StripeWebhookHandlerDeps = {
   stripeEventRepository: StripeEventRepositoryLike;
   paymentRepository: PaymentRepositoryLike;
   creditsGateway: CreditsGateway;
-  notificationGateway: {
-    notifyPurchase: (...args: unknown[]) => Promise<unknown> | unknown;
-  };
+  notificationGateway: NotificationGateway;
   billingService: BillingService;
   logger: Logger;
 };

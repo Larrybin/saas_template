@@ -36,8 +36,13 @@ export const createStripeClientFromSecret = (
   return new Stripe(secretKey);
 };
 
+type StripeSecretsEnv = {
+  stripeSecretKey?: string;
+  stripeWebhookSecret?: string;
+};
+
 const resolveStripeSecrets = (
-  env: { stripeSecretKey?: string | null; stripeWebhookSecret?: string | null },
+  env: StripeSecretsEnv,
   overrides?: StripeProviderOverrides
 ) => {
   const stripeSecretKey =
@@ -55,7 +60,7 @@ const resolveStripeSecrets = (
 };
 
 const createStripeInfra = (
-  env: { stripeSecretKey?: string | null; stripeWebhookSecret?: string | null },
+  env: StripeSecretsEnv,
   overrides?: StripeProviderOverrides
 ) => {
   const { stripeSecretKey, stripeWebhookSecret } = resolveStripeSecrets(
@@ -97,7 +102,7 @@ const createStripeInfra = (
 };
 
 export const createStripePaymentProviderFromEnv = (
-  env: { stripeSecretKey?: string | null; stripeWebhookSecret?: string | null },
+  env: StripeSecretsEnv,
   overrides?: StripeProviderOverrides
 ): PaymentProvider => {
   const { stripeClient, userRepository, paymentRepository } = createStripeInfra(
@@ -115,7 +120,7 @@ export const createStripePaymentProviderFromEnv = (
 };
 
 export const createStripeWebhookHandlerFromEnv = (
-  env: { stripeSecretKey?: string | null; stripeWebhookSecret?: string | null },
+  env: StripeSecretsEnv,
   overrides?: StripeProviderOverrides
 ): StripeWebhookHandler => {
   const {

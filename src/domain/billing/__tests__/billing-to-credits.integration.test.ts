@@ -63,7 +63,6 @@ describe('Billing -> Credits integration (happy path)', () => {
     createCreditCheckout: vi.fn(),
     createCustomerPortal: vi.fn(),
     getSubscriptions: vi.fn(),
-    handleWebhookEvent: vi.fn(),
   });
 
   const createPlanPolicyForBilling = (): PlanPolicy => {

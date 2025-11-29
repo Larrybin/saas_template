@@ -45,7 +45,6 @@ const createPaymentProvider = () => {
     createCreditCheckout: vi.fn(),
     createCustomerPortal: vi.fn(),
     getSubscriptions: vi.fn(),
-    handleWebhookEvent: vi.fn(),
   } satisfies PaymentProvider;
 };
 

@@ -568,8 +568,6 @@ describe('StripePaymentAdapter', () => {
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx-onetime' };
     const billingService = {
-      startSubscriptionCheckout: vi.fn(),
-      startCreditCheckout: vi.fn(),
       handleRenewal: vi.fn(),
       grantLifetimePlan: vi.fn(),
     } satisfies BillingRenewalPort;
@@ -645,8 +643,6 @@ describe('StripePaymentAdapter', () => {
     });
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const billingService = {
-      startSubscriptionCheckout: vi.fn(),
-      startCreditCheckout: vi.fn(),
       handleRenewal: vi.fn(),
       grantLifetimePlan: vi.fn(),
     } satisfies BillingRenewalPort;
@@ -712,9 +708,9 @@ describe('StripePaymentAdapter', () => {
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx-sub-fail' };
     const billingService = {
-      startSubscriptionCheckout: vi.fn(),
-      startCreditCheckout: vi.fn(),
-      handleRenewal: vi.fn().mockRejectedValue(new Error('sub grant fail')),
+      handleRenewal: vi
+        .fn()
+        .mockRejectedValue(new Error('sub grant fail')),
       grantLifetimePlan: vi.fn(),
     } satisfies BillingRenewalPort;
     const paymentRepository = {

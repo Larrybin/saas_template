@@ -159,12 +159,20 @@ export class DefaultBillingService implements BillingService {
       refDate,
       input.transaction
     );
-    await this.membershipService.grantLifetimeMembership({
-      userId: input.userId,
-      priceId: input.priceId,
-      cycleRefDate: refDate,
-      transaction: input.transaction,
-    });
+    const membershipInput =
+      input.transaction !== undefined
+        ? {
+            userId: input.userId,
+            priceId: input.priceId,
+            cycleRefDate: refDate,
+            transaction: input.transaction,
+          }
+        : {
+            userId: input.userId,
+            priceId: input.priceId,
+            cycleRefDate: refDate,
+          };
+    await this.membershipService.grantLifetimeMembership(membershipInput);
   }
 
   private ensurePlanAndPrice(planId: string, priceId: string): PricePlan {

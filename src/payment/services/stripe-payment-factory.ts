@@ -68,11 +68,32 @@ type StripeInfraOptions = {
   requireWebhookSecret?: boolean;
 };
 
-const createStripeInfra = (
+type StripeInfraResultBase = {
+  stripeClient: StripeClientLike;
+  creditsGateway: CreditsGateway;
+  notificationGateway: NotificationGateway;
+  userRepository: UserRepository;
+  paymentRepository: PaymentRepository;
+  stripeEventRepository: StripeEventRepository;
+};
+
+function createStripeInfra(
+  env: StripeSecretsEnv,
+  overrides: StripeProviderOverrides | undefined,
+  options: StripeInfraOptions & { requireWebhookSecret: true }
+): StripeInfraResultBase & { stripeWebhookSecret: string };
+
+function createStripeInfra(
   env: StripeSecretsEnv,
   overrides?: StripeProviderOverrides,
   options?: StripeInfraOptions
-) => {
+): StripeInfraResultBase & { stripeWebhookSecret: string | undefined };
+
+function createStripeInfra(
+  env: StripeSecretsEnv,
+  overrides?: StripeProviderOverrides,
+  options?: StripeInfraOptions
+) {
   const stripeSecretKey = resolveStripeSecretKey(env, overrides);
 
   const stripeClient =

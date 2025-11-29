@@ -343,3 +343,90 @@
 ---
 
 > 本报告聚焦当前代码状态下的架构与代码质量分析，未对未来业务演进做路线图设计。若需要进一步将上述建议拆解为具体重构任务，可在 `.codex/plan` 下新增对应的细化 plan 文档（例如 `credits-billing-payment-refactor.md`），并结合现有 `protocol-future-techdebt-report.md` 统一规划。
+
+## 7. 增量体检（自 v1 报告以来）
+
+> 本节仅覆盖自基线 commit（22b4a723）以来的增量改动，聚焦 Payment / Credits 相关演进，并标记对「可维护性 / 复用性 / 耦合度」的影响。
+
+### 7.1 Payment 域增量：从胖服务到工厂 + Adapter + WebhookHandler
+
+- **变化概览**  
+  - 新增：`src/payment/services/stripe-payment-factory.ts`、`stripe-payment-adapter.ts`、`stripe-webhook-handler.ts`、`stripe-event-mapper.ts`。  
+  - 更新：`src/payment/index.ts`、`src/lib/server/stripe-webhook.ts`、`src/payment/services/__tests__/stripe-payment-service.test.ts`（演进为针对新结构的测试）。  
+  - 旧的胖式 `StripePaymentService` 实现已经移除，职责拆分为：  
+    - **Adapter（业务视角的 PaymentProvider）**：`StripePaymentAdapter` 只负责 checkout / portal / subscription 查询；  
+    - **WebhookHandler（事件视角）**：`StripeWebhookHandler` 只处理 webhook + 事件映射 + credits/billing 协作；  
+    - **Factory（wiring/root）**：`stripe-payment-factory.ts` 从 env/overrides 构建 Stripe client、Repositories、Gateways 与 Handler/Provider。
+
+- **可维护性评价：改善**  
+  - Adapter / WebhookHandler / Factory 的职责边界比原来胖类清晰：  
+    - `StripePaymentAdapter` 的 public surface 完全对齐 `PaymentProvider` 接口，构造函数强制注入 `stripeClient` / `userRepository` / `paymentRepository`，可读性与测试友好度显著提高。  
+    - `StripeWebhookHandler` 限定为 “Stripe Event → 内部 Event + Billing/Credits side effects” 的单一责任；构造函数显式依赖 `StripeClientLike` / `StripeEventRepositoryLike` / `PaymentRepositoryLike` / `CreditsGateway` / `NotificationGateway` / `BillingRenewalPort` / `Logger`，避免隐藏依赖。  
+    - `stripe-payment-factory.ts` 集中处理 env/secret 解析与依赖注入逻辑（`createStripeInfra`），使得 Payment 域内部类可以假设自己的依赖已被正确构造。  
+  - 测试方面：原有针对 `StripePaymentService` 的行为测试被迁移/补充到新的 webhook handler & adapter 测试中，可读性更强，复用程度更高。
+
+- **复用性评价：改善**  
+  - `StripePaymentAdapter` 作为 PaymentProvider 实现，现在可以在不触碰 webhook 逻辑的前提下替换为其他实现（例如不同 Provider 或模拟实现），适合作为 hexagonal architecture 中的 “payment port adapter”。  
+  - `createStripePaymentProviderFromEnv` + `createStripeWebhookHandlerFromEnv` 让 env/wiring 逻辑得以复用：  
+    - 未来如果引入多租户 / 多 Stripe 账号，只需在 Factory 层增加参数/配置，而不需要修改 adapter 或 handler 代码。  
+  - `StripeWebhookHandler` 暴露的 `handleWebhookEvent(payload, signature)`，与 `src/lib/server/stripe-webhook.ts` 中的 `handleStripeWebhook` 组合，使得 Webhook 的处理逻辑对 API Route 来说是一块可替换的 “domain service”。
+
+- **耦合度评价：显著降低**  
+  - 原先支配 Payment 域的环境耦合与 credits/billing 逻辑现已抽离到 Factory 或 BillingService：  
+    - env 读取集中在 `stripe-payment-factory` + `lib/server/stripe-webhook`，Adapter 和 Handler 不再直接依赖 `serverEnv`。  
+    - `DefaultBillingService` 通过 `PaymentProvider` + `CreditsGateway` + `MembershipService` 协作，WebhookHandler 只持有 `BillingRenewalPort`（更窄的接口），降低跨域感知。  
+  - Webhook 事件映射 (`stripe-event-mapper.ts`) 把 Stripe 的原始事件转换为内部统一结构，减少 Handler 对 Stripe SDK 细节的直接依赖，有利于未来替换 provider/版本。
+
+### 7.2 Credits 域增量：统计能力与 hooks 复用
+
+- **新增 Credits 统计服务与 hook**  
+  - 新增：`src/credits/services/credit-stats-service.ts` 提供 `getUserExpiringCreditsAmount(userId)`，封装 Drizzle 查询对 expiring credits 的统计逻辑。  
+  - 新增/增强：  
+    - `src/actions/get-credit-stats.ts`、`get-credit-overview.ts` 暴露积分统计/概览 Action；  
+    - `src/hooks/use-credits.ts` 新增 `useCreditStats` / `useCreditOverview` / `useCreditTransactions` 等 hook，统一通过 `unwrapEnvelopeOrThrowDomainError` + `useAuthErrorHandler` 解耦错误处理与 UI。  
+
+- **可维护性评价：改善**  
+  - 统计逻辑被集中在单一服务文件（`credit-stats-service.ts`），而不是散落在多个 Action 或 hook 中；查询语句集中管理，后续变更表结构/策略时修改点可控。  
+  - hooks 层统一采用 React Query + 通用 envelope 解包 + auth 错误处理模式，相比之前在多个组件内部手写 fetch/错误分支，更利于长期维护。
+
+- **复用性评价：改善**  
+  - `useCreditOverview` 把 “当前余额 + 未来一定时间内即将过期的积分” 组合成单一查询接口，方便在多个页面/组件复用该视图逻辑。  
+  - `creditsKeys` 为 React Query 提供统一的 key 约定，避免重复定义 key 字符串，便于在其它 hook/组件中重用缓存策略。  
+
+- **耦合度评价：健康**  
+  - UI 只通过 Actions/hook 调用 Credits，不直接触达 domain service 或 DB；  
+  - `CreditLedgerDomainService` 与 `credit-stats-service` 仍然通过 `getDb` / Repository 抽象访问数据，未引入新的横向依赖。
+
+### 7.3 Actions 与错误处理增量：DomainError 统一化
+
+- **新增/加强的 DomainError 回归测试**  
+  - 新增：`tests/actions/*-domain-error.test.ts` 系列，覆盖 `create-checkout`、`create-credit-checkout`、`create-customer-portal`、`get-active-subscription`、`get-credit-balance`、`get-credit-stats`、`get-credit-transactions`、`get-lifetime-status`、`get-users`、`send-message`、`subscribe-newsletter`、`unsubscribe-newsletter`、`validate-captcha` 等 Actions。  
+  - 这些测试验证在 `DomainError` 抛出时，safe-action client 会按照 `{ success: false, error, code, retryable }` 的统一 envelope 返回，且 code 来自 `ErrorCodes`。
+
+- **可维护性 / 复用性 / 耦合度评价：显著改善**  
+  - 通过集中的一组测试锁定 Actions 的错误行为，使“错误处理规范”从文档约定升级为可执行契约，降低未来改动破坏 envelope 的风险。  
+  - Actions 继续只依赖 Safe Action client + DomainError + ErrorCodes，不直接耦合 UI 或特定组件，符合单一职责与依赖倒置。
+
+### 7.4 `/api/storage/upload` 与 Credits/Cron 路由增量
+
+- **Storage 上传 API**  
+  - `src/app/api/storage/upload/route.ts` 实现：  
+    - 使用 `ensureApiUser` + `enforceRateLimit` + request logger；  
+    - 对 Content-Type、文件大小、文件类型与目标 folder 做集中校验；  
+    - 所有错误分支均返回 `{ success: false, error, code: Storage*ErrorCode, retryable }` 的统一 envelope；  
+    - 成功时返回 `{ success: true, data: UploadFileResult }`。  
+  - 增量：新增了 `storage-upload-route.test.ts`，验证成功与错误场景的 envelope 形态。  
+  - 评价：协议层完全对齐文档，测试补齐后，该路由不再是“协议敏感但缺测试”的风险点。
+
+- **Credits 分发 API `/api/distribute-credits`**  
+  - 路由仍在 Basic Auth 失败时返回 `NextResponse('Unauthorized', ...)`（纯文本），而 Job 异常分支使用标准 envelope；  
+  - 对照 `docs/error-logging.md`，功能已满足最小需求，但未对齐“所有非流式接口都使用统一 envelope”的严格规范。  
+  - 评价：  
+    - 可维护性：日志与 Job 成功/失败路径清晰，但调用方需要为 401 写特例逻辑。  
+    - 复用性/耦合度：问题集中在协议层，建议按原报告 P0 建议修复。
+
+### 7.5 小结：增量体检结论
+
+- Payment 域：通过引入 Factory + Adapter + WebhookHandler，**从原先的胖服务演进为更符合 hexagonal / SOLID 的结构**，显著改善耦合度与复用性；后续可以围绕 `StripePaymentFactory` 扩展多租户/多 Provider，几乎不需要修改业务代码。  
+- Credits 域：新增统计服务与 hooks，使“积分余额 + 即将过期查询”的逻辑更集中、更易复用；与 Billing / Membership 之间的边界通过 `CreditsGateway` 与 `MembershipService` 进一步明确。  
+- Actions / API：通过新增一批 DomainError 回归测试与 storage upload route 测试，错误 envelope 的统一性从“约定”走向“被测试保护”；仍需修复 `/api/distribute-credits` 的 401 envelope，完成最后一块协议一致性拼图。

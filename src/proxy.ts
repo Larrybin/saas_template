@@ -12,6 +12,7 @@ import {
   evaluateRouteAccess,
   getPathnameWithoutLocale,
   hasBetterAuthSessionCookie,
+  shouldCheckSession,
 } from './proxy/helpers';
 import { DEFAULT_LOGIN_REDIRECT } from './routes';
 
@@ -52,11 +53,16 @@ export default async function proxy(req: NextRequest) {
 
   let isLoggedIn = false;
 
+  const pathnameWithoutLocale = getPathnameWithoutLocale(nextUrl.pathname);
+
   try {
     const cachedSession = await getCookieCache(req);
     if (cachedSession) {
       isLoggedIn = true;
-    } else if (hasBetterAuthSessionCookie(req.cookies.getAll())) {
+    } else if (
+      shouldCheckSession(pathnameWithoutLocale) &&
+      hasBetterAuthSessionCookie(req.cookies.getAll())
+    ) {
       const sessionResponse = await fetch(
         new URL('/api/auth/get-session', nextUrl),
         {
@@ -76,7 +82,6 @@ export default async function proxy(req: NextRequest) {
     isLoggedIn = false;
   }
 
-  const pathnameWithoutLocale = getPathnameWithoutLocale(nextUrl.pathname);
   const routeDecision = evaluateRouteAccess(isLoggedIn, pathnameWithoutLocale);
 
   if (routeDecision === 'redirect-dashboard') {

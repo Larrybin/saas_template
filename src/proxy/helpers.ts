@@ -67,6 +67,21 @@ export function evaluateRouteAccess(
   return 'allow';
 }
 
+/**
+ * 判断当前路径是否需要通过会话 API 进行登录状态检查。
+ *
+ * - 仅对受保护路由执行昂贵的会话检查，以减少对公共/营销页面的多余请求。
+ * - 路由是否受保护的来源统一使用 protectedRoutes，避免在多个地方硬编码路径。
+ */
+export function shouldCheckSession(pathname: string): boolean {
+  const normalizedPath = normalizePathname(pathname);
+
+  return (
+    protectedRouteSet.has(normalizedPath) ||
+    disallowedWhenLoggedInRouteSet.has(normalizedPath)
+  );
+}
+
 export function buildSafeCallbackUrl(nextUrl: URL): string {
   let callbackPath = nextUrl.pathname;
   if (nextUrl.search) {

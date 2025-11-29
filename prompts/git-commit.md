@@ -1,5 +1,5 @@
 ---
-description: 仅用 Git 分析改动并自动生成 conventional commit 信息（可选 emoji）；必要时建议拆分提交，默认运行本地 Git 钩子（可 --no-verify 跳过）
+description: 仅用 Git 分析改动并自动生成 conventional commit 信息（必选 emoji）；必要时建议拆分提交，默认运行本地 Git 钩子（可 --no-verify 跳过）
 allowed-tools: Read(**), Exec(git status, git diff, git add, git restore --staged, git commit, git rev-parse, git config), Write(.git/COMMIT_EDITMSG)
 argument-hint: [--no-verify] [--all] [--amend] [--signoff] [--emoji] [--scope <scope>] [--type <type>]
 # examples:
@@ -11,13 +11,13 @@ argument-hint: [--no-verify] [--all] [--amend] [--signoff] [--emoji] [--scope <s
 #   - /git-commit --amend --signoff         # 修补上次提交并签名
 ---
 
-# Claude Command: Commit (Git-only)
+# Codex Command: Commit (Git-only)
 
 该命令在**不依赖任何包管理器/构建工具**的前提下，仅通过 **Git**：
 
 - 读取改动（staged/unstaged）
 - 判断是否需要**拆分为多次提交**
-- 为每个提交生成 **Conventional Commits** 风格的信息（可选 emoji）
+- 为每个提交生成 **Conventional Commits** 风格的信息（必选 emoji）
 - 按需执行 `git add` 与 `git commit`（默认运行本地 Git 钩子；可 `--no-verify` 跳过）
 
 ---

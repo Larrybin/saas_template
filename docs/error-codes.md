@@ -25,11 +25,12 @@
 
 ## Billing / 计费
 
-| Code                    | Key                 | Domain  | Description                            |
-| ----------------------- | ------------------- | ------- | -------------------------------------- |
-| `BILLING_PLAN_NOT_FOUND`| `BillingPlanNotFound`| Billing | 计费计划不存在或已禁用。              |
-| `BILLING_PRICE_NOT_FOUND`| `BillingPriceNotFound`| Billing | 计费计划下找不到对应价格。           |
-| `PAYMENT_SECURITY_VIOLATION` | `PaymentSecurityViolation` | Billing / Payment | 支付安全校验失败（如签名/密钥错误）。 |
+| Code                    | Key                   | Domain  | Description                                     |
+| ----------------------- | --------------------- | ------- | ----------------------------------------------- |
+| `BILLING_PLAN_NOT_FOUND`| `BillingPlanNotFound` | Billing | 计费计划不存在或已禁用。                       |
+| `BILLING_PRICE_NOT_FOUND`| `BillingPriceNotFound`| Billing | 计费计划下找不到对应价格。                    |
+| `PAYMENT_SECURITY_VIOLATION` | `PaymentSecurityViolation` | Billing / Payment | 支付安全校验失败（如签名/密钥错误）。        |
+| `SUBSCRIPTION_FETCH_FAILED` | `SubscriptionFetchFailed` | Billing / Payment | 查询订阅状态失败（Stripe 调用或配置异常）。 |
 
 ## Credits / 积分
 
@@ -86,6 +87,27 @@
 | `STORAGE_INVALID_FOLDER`    | `StorageInvalidFolder`  | Storage | 目标文件夹不合法或不在允许列表中。         |
 | `STORAGE_PROVIDER_ERROR`    | `StorageProviderError`  | Storage | 存储提供商内部错误（如 S3/兼容实现异常）。 |
 | `STORAGE_UNKNOWN_ERROR`     | `StorageUnknownError`   | Storage | 未分类的存储错误兜底。                       |
+
+## Docs Search / 文档搜索
+
+| Code                 | Key                | Domain | Description                          |
+| -------------------- | ------------------ | ------ | ------------------------------------ |
+| `DOCS_SEARCH_FAILED` | `DocsSearchFailed` | Docs   | 文档搜索失败，参考日志获取更多详情。 |
+
+## Newsletter / 通知订阅
+
+| Code                         | Key                      | Domain      | Description                                   |
+| ---------------------------- | ------------------------ | ----------- | --------------------------------------------- |
+| `NEWSLETTER_SUBSCRIBE_FAILED`   | `NewsletterSubscribeFailed`   | Newsletter | 订阅 Newsletter 失败（包含欢迎邮件发送失败）。 |
+| `NEWSLETTER_UNSUBSCRIBE_FAILED` | `NewsletterUnsubscribeFailed` | Newsletter | 退订 Newsletter 失败。                         |
+| `NEWSLETTER_STATUS_FAILED`      | `NewsletterStatusFailed`      | Newsletter | 查询 Newsletter 订阅状态失败。                 |
+
+## Contact & Captcha / 联系与验证码
+
+| Code                     | Key                 | Domain   | Description                                 |
+| ------------------------ | ------------------- | -------- | ------------------------------------------- |
+| `CONTACT_SEND_FAILED`    | `ContactSendFailed` | Contact  | 联系表单邮件发送失败。                       |
+| `CAPTCHA_VALIDATION_FAILED` | `CaptchaValidationFailed` | Auth / Captcha | 验证 Turnstile Captcha 失败（服务端调用错误）。 |
 
 ## 使用约定
 

@@ -43,7 +43,7 @@
 | --- | --- | --- | --- | --- |
 | `/api/search` 未返回统一 envelope，文档也标记为⚠️ | `docs/error-logging.md:344`、`src/app/api/search/route.ts:71` | P1 | 1 人日 | 需决定 fallback code（建议 `UNEXPECTED_ERROR`）并补充测试 |
 | `/api/distribute-credits` 的 401 响应非 JSON | `src/app/api/distribute-credits/route.ts:25` | P1 | 0.5 人日 | 改为 JSON envelope，同时更新 `docs/api-reference.md` 示例 |
-| Server Action 缺少 `code`，无法复用错误 UI 策略 | `src/actions/subscribe-newsletter.ts:25` 等 | P1 | 1.5 人日 | 盘点 `src/actions`，统一抛 DomainError 或补 `code` / `retryable` 字段 |
+| Server Action 缺少 `code`，无法复用错误 UI 策略 | `src/actions/*` | P1 | 1.5 人日 | **已在 `src/actions` 范围内完成治理：所有 Server Actions 错误均通过 DomainError + ErrorCodes 返回标准 envelope；后续新增 Action 必须遵循 `.codex/rules/error-handling-and-fallbacks-best-practices.md` 的 Server Action 约束。** |
 | AI 计费配置为常量，无法 per-plan 调整 | `src/ai/billing-config.ts:10` | P2 | 2 人日 | 引入配置存储（例如 `websiteConfig` + override），并在计划文档中说明 |
 | `pagesSource` baseUrl TODO 未解决，营销页路由风险 | `src/lib/source.ts:54` | P2 | 1 人日 | 明确 pages 的真实路由前缀，必要时为每种语言生成动态 baseUrl |
 | 支付服务强耦合单一 Stripe 凭证，阻塞多实例/多 Provider | `src/payment/services/stripe-payment-service.ts:148` | P2 | 3 人日 | 抽象 `PaymentProviderFactory` 并允许按租户注入配置 |

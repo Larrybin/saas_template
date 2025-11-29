@@ -51,6 +51,25 @@ export const websiteConfig: WebsiteConfig = {
     enableVercelAnalytics: false,
     enableSpeedInsights: false,
   },
+  ai: {
+    billing: {
+      chat: {
+        enabled: true,
+        creditsPerCall: 1,
+        freeCallsPerPeriod: 8,
+      },
+      analyzeContent: {
+        enabled: true,
+        creditsPerCall: 1,
+        freeCallsPerPeriod: 8,
+      },
+      generateImage: {
+        enabled: true,
+        creditsPerCall: 1,
+        freeCallsPerPeriod: 8,
+      },
+    },
+  },
   auth: {
     enableGoogleLogin: true,
     enableGithubLogin: false,

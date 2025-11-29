@@ -5,7 +5,9 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import { isDemoWebsite } from '@/lib/demo';
+import { DomainError } from '@/lib/domain-errors';
 import { adminActionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
 const logger = getLogger({ span: 'actions.get-users' });
@@ -96,9 +98,14 @@ export const getUsersAction = adminActionClient
       };
     } catch (error) {
       logger.error({ error }, 'get users error');
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch users',
-      };
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.UnexpectedError,
+        message:
+          error instanceof Error ? error.message : 'Failed to fetch users',
+        retryable: true,
+      });
     }
   });

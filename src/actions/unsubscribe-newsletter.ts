@@ -1,7 +1,9 @@
 'use server';
 
 import { z } from 'zod';
+import { DomainError } from '@/lib/domain-errors';
 import { userActionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { unsubscribe } from '@/newsletter';
 
@@ -21,20 +23,28 @@ export const unsubscribeNewsletterAction = userActionClient
 
       if (!unsubscribed) {
         logger.error({ email }, 'unsubscribe newsletter error');
-        return {
-          success: false,
-          error: 'Failed to unsubscribe from the newsletter',
-        };
+        throw new DomainError({
+          code: ErrorCodes.NewsletterUnsubscribeFailed,
+          message: 'Failed to unsubscribe from the newsletter',
+          retryable: true,
+        });
       }
 
       return {
         success: true,
       };
     } catch (error) {
-      logger.error({ error }, 'unsubscribe newsletter error');
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
+      logger.error({ error, email }, 'unsubscribe newsletter error');
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.NewsletterUnsubscribeFailed,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to unsubscribe from the newsletter',
+        retryable: true,
+      });
     }
   });

@@ -26,12 +26,12 @@ Payment 模块承担的核心职责：
 
 - `src/payment/index.ts`
   - 提供对外入口函数：`getPaymentProvider`, `createCheckout`, `createCreditCheckout`, `createCustomerPortal`, `handleWebhookEvent`, `getSubscriptions` 等。  
-  - 默认使用 `StripePaymentService` 作为 `PaymentProvider` 实现。
+  - 默认使用 `StripePaymentService` 作为 `PaymentProvider` 实现，由该模块从 `serverEnv` 读取 Stripe 配置并组装依赖。
 
 - `src/payment/services/stripe-payment-service.ts`
   - `StripePaymentService`：Stripe 场景下的核心领域服务，职责包括：
-    - 持有 Stripe client 与 webhook secret。  
-    - 按配置实例化 `CreditsGateway`（通常为 `CreditLedgerService`）、`NotificationGateway`、`UserRepository`、`PaymentRepository`、`StripeEventRepository` 等。  
+    - 持有由外部注入的 Stripe client 与 webhook secret（不直接读取 env/config）。  
+    - 按需实例化或接受注入 `CreditsGateway`（通常为 `CreditLedgerService`）、`NotificationGateway`、`UserRepository`、`PaymentRepository`、`StripeEventRepository` 等。  
     - 封装：
       - `createCheckout` / `createCreditCheckout`（创建 checkout session）。  
       - `createCustomerPortal`（customer portal session）。  
@@ -53,7 +53,7 @@ Payment 模块承担的核心职责：
 
 ### 2.3 Billing 域与 Credits 交互
 
-- `src/domain/billing/billing-service.ts`（`DefaultBillingService`）
+  - `src/domain/billing/billing-service.ts`（`DefaultBillingService`）
   - 负责 Payment 与 Credits/Billing 策略之间的协调：
     - `startSubscriptionCheckout`：校验 plan/price 合法性后委托 `PaymentProvider` 创建 checkout。  
     - `startCreditCheckout`：为积分套餐创建 checkout session。  
@@ -180,4 +180,3 @@ Payment 模块承担的核心职责：
   - 按本项目错误码工作流：`ErrorCodes` → `docs/error-codes.md` → `DOMAIN_ERROR_MESSAGES` → `domain-error-ui-registry` → 领域 Hook/组件。  
 
 通过上述边界与约定，可以在不破坏现有 Payment / Billing / Credits 关系的前提下，逐步扩展更多支付能力。
-

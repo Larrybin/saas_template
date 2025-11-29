@@ -52,11 +52,11 @@
   - 调用 `handleWebhookEvent(payload, signature)`（`src/payment/index.ts` → `StripePaymentService`）。
   - 处理 DomainError 与未知错误，返回结构化 JSON（`success/error/code/retryable`）。
 
-- StripePaymentService：`src/payment/services/stripe-payment-service.ts`
-  - 使用 `STRIPE_SECRET_KEY` 与 `STRIPE_WEBHOOK_SECRET` 验证事件：
+- Payment 组合根与 StripePaymentService：
+  - `src/payment/index.ts` 会从 `serverEnv.stripeSecretKey` 与 `serverEnv.stripeWebhookSecret` 读取配置，创建 Stripe client，并以依赖注入方式构造 `StripePaymentService`。  
+  - `StripePaymentService`（`src/payment/services/stripe-payment-service.ts`）内部使用注入的 Stripe client 与 webhook secret 验证事件：
     - `stripe.webhooks.constructEvent(payload, signature, webhookSecret)`。  
-  - 通过 `StripeEventRepository.withEventProcessingLock` 确保单个事件幂等处理。  
-  - 将事件交给 `handleStripeWebhookEvent` 更新本地 Payment 状态，并在需要时调用 Billing/Credits。
+  - 通过 `StripeEventRepository.withEventProcessingLock` 确保单个事件幂等处理，将事件交给 `handleStripeWebhookEvent` 更新本地 Payment 状态，并在需要时调用 Billing/Credits。
 
 ### 2.2 本地开发与测试
 
@@ -65,7 +65,7 @@
   - 确保 `STRIPE_SECRET_KEY` 与 `STRIPE_WEBHOOK_SECRET` 与 Stripe Dashboard / CLI 配置一致。
 - 常见问题：
   - 若缺少 payload 或签名，路由会返回 400 并附带错误信息。  
-  - 若 `STRIPE_WEBHOOK_SECRET` 未配置，`StripePaymentService` 构造时会抛出错误（防止静默失败）。
+  - 若 `STRIPE_SECRET_KEY` 或 `STRIPE_WEBHOOK_SECRET` 未配置，初始化 Payment Provider（组合根工厂）时会抛出错误（防止静默失败）。
 
 ---
 
@@ -169,5 +169,66 @@
     4. Credits 分发 Job：手动触发 `/api/distribute-credits` 并观察日志与返回值。  
     5. Storage 上传（如头像上传），确认 Storage 相关 env 正确配置。
   - 为关键路径配置监控与告警（HTTP 5xx、特定 span 下的 error 日志、Job errorCount > 0 等）。
+
+---
+
+## 6. websiteConfig.ai.billing 配置
+
+AI 调用的计费规则不再在业务代码中硬编码，而是集中在 `websiteConfig.ai.billing` 中配置，并通过 `AiBillingPolicy` 适配层提供给 usecase：
+
+- 配置文件：`src/config/website.tsx`  
+- 类型定义：`WebsiteConfig`（`src/types/index.d.ts`）中的：  
+  - `ai?: AiConfig`  
+  - `AiConfig.billing?: AiBillingConfig`  
+  - `AiBillingConfig` 下的：`chat` / `analyzeContent` / `generateImage`。  
+- 策略层：`src/ai/billing-policy.ts`（`DefaultAiBillingPolicy` 从 `websiteConfig.ai.billing` 解析规则）。  
+- 适配器：`src/ai/billing-config.ts`（向 usecase 暴露 `getAi*BillingRule`）。  
+
+每个 AI 能力的计费规则结构与 `AiBillingRuleConfig` 对应：
+
+- `enabled?: boolean`：是否启用该能力的计费逻辑（目前主要用于显式关闭某个能力的计费）。  
+- `creditsPerCall?: number`：单次调用消耗的积分数量。  
+- `freeCallsPerPeriod?: number`：每个周期内的免费调用次数（按「用户 + 功能」计数），超过后才开始扣积分。  
+
+默认配置示例（节选自 `src/config/website.tsx`）：
+
+```ts
+export const websiteConfig: WebsiteConfig = {
+  // ...
+  ai: {
+    billing: {
+      chat: {
+        enabled: true,
+        creditsPerCall: 1,
+        freeCallsPerPeriod: 8,
+      },
+      analyzeContent: {
+        enabled: true,
+        creditsPerCall: 1,
+        freeCallsPerPeriod: 8,
+      },
+      generateImage: {
+        enabled: true,
+        creditsPerCall: 1,
+        freeCallsPerPeriod: 8,
+      },
+    },
+  },
+  // ...
+};
+```
+
+在运行时，AI 相关 usecase（如 `executeAiChatWithBilling`、`generateImageWithCredits`）会通过：
+
+- `getAiChatBillingRule` / `getAnalyzeContentBillingRule` / `getImageGenerateBillingRule`  
+- → `DefaultAiBillingPolicy`  
+- → `websiteConfig.ai.billing.*`  
+
+解析出实际的计费规则，用于决定：
+
+- 当前请求是否仍在免费调用额度内（基于 `freeCallsPerPeriod` 与 `incrementAiUsageAndCheckWithinFreeQuota`）。  
+- 若超出免费额度时，每次调用应扣除多少积分（`creditsPerCall`）。  
+
+如需在不同环境 / 站点对 AI 计费进行统一调整，优先通过修改 `websiteConfig.ai.billing` 来完成，而不是直接改 usecase 代码或在调用处硬编码数值。
 
 通过以上约定与实践，可以在不同环境下稳定运行本项目，并快速排查与定位与 Payment/Credits/Storage/AI 等相关的问题。

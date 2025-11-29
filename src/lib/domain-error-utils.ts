@@ -65,6 +65,34 @@ const DOMAIN_ERROR_MESSAGES: Record<string, DomainErrorMessageDefinition> = {
   [ErrorCodes.ImageProviderError]: {
     key: 'AIImagePage.errors.providerError',
   },
+  [ErrorCodes.DocsSearchFailed]: {
+    key: 'Docs.search.error',
+    fallback: 'Docs search failed. Please try again later.',
+  },
+  [ErrorCodes.SubscriptionFetchFailed]: {
+    key: 'Dashboard.settings.billing.errorMessage',
+    fallback: 'Failed to fetch subscription data',
+  },
+  [ErrorCodes.NewsletterSubscribeFailed]: {
+    key: 'Dashboard.settings.notification.newsletter.subscribeFail',
+    fallback: 'Failed to subscribe to the newsletter',
+  },
+  [ErrorCodes.NewsletterUnsubscribeFailed]: {
+    key: 'Dashboard.settings.notification.newsletter.unsubscribeFail',
+    fallback: 'Failed to unsubscribe from the newsletter',
+  },
+  [ErrorCodes.NewsletterStatusFailed]: {
+    key: 'Dashboard.settings.notification.newsletter.error',
+    fallback: 'Failed to update newsletter subscription status',
+  },
+  [ErrorCodes.ContactSendFailed]: {
+    key: 'ContactPage.form.fail',
+    fallback: 'Failed to send message',
+  },
+  [ErrorCodes.CaptchaValidationFailed]: {
+    key: 'AuthPage.login.captchaError',
+    fallback: 'Captcha verification error',
+  },
 };
 
 export type DomainErrorLike = {

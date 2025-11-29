@@ -3,7 +3,9 @@
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 import { websiteConfig } from '@/config/website';
+import { DomainError } from '@/lib/domain-errors';
 import { actionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { sendEmail } from '@/mail';
 
@@ -55,10 +57,11 @@ export const sendMessageAction = actionClient
 
       if (!result) {
         logger.error('send message error');
-        return {
-          success: false,
-          error: 'Failed to send the message',
-        };
+        throw new DomainError({
+          code: ErrorCodes.ContactSendFailed,
+          message: 'Failed to send the message',
+          retryable: true,
+        });
       }
 
       return {
@@ -66,9 +69,14 @@ export const sendMessageAction = actionClient
       };
     } catch (error) {
       logger.error({ error }, 'send message error');
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.ContactSendFailed,
+        message:
+          error instanceof Error ? error.message : 'Failed to send the message',
+        retryable: true,
+      });
     }
   });

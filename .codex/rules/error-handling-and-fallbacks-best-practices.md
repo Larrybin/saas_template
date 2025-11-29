@@ -46,6 +46,11 @@ description: 基于 MkSaaS 模板的端到端错误处理与用户兜底体验�
      - Chat/Image/Analyze/Storage 路由已对 JSON 解析错误、参数校验错误、DomainError 与 UnexpectedError 做了明确分支。
    - 文本分析链路：
      - 使用 `WebContentAnalyzerError` + `logAnalyzerErrorServer` 为错误打上 `ErrorType` / `ErrorSeverity` 标签，分别处理 validation / network / scraping 等场景。
+   - Server Actions：
+     - 所有通过 `actionClient` / `userActionClient` / `adminActionClient` 暴露的 Action（`src/actions/*`）在出现业务错误或系统异常时，必须满足：
+       - 要么直接抛出 `DomainError`（带 `code` + `retryable`），交由 safe-action 的 `handleServerError` 统一包装；
+       - 要么返回带 `code` / `retryable` 的错误 envelope（`{ success: false, error, code, retryable }`），`code` 必须来自 `ErrorCodes`。
+     - 禁止在 Action 内吞掉下游 DomainError 信息，仅返回裸 `error` 字符串；新增 Server Action 时应优先选择抛出 DomainError 的模式。
 
 2. 前端错误 UI
    - AI 相关 UI：
@@ -82,4 +87,3 @@ description: 基于 MkSaaS 模板的端到端错误处理与用户兜底体验�
   - [ ] 其它新模块在处理错误时是否统一复用 Error UI hook，避免在组件内重复手写错误解析与 Toast 逻辑。
   - [ ] 全站错误页（如 `not-found.tsx` 与全局 error 组件）是否对常见“系统级错误”提供一致的兜底体验。
   - [ ] Analytics / 监控系统中是否有对高频错误码的聚合视图与告警规则。
-

@@ -11,6 +11,7 @@ export type WebsiteConfig = {
 	features: FeaturesConfig;
 	routes: RoutesConfig;
 	analytics: AnalyticsConfig;
+	ai?: AiConfig;
 	auth: AuthConfig;
 	i18n: I18nConfig;
 	blog: BlogConfig;
@@ -98,6 +99,25 @@ export interface RoutesConfig {
 export interface AnalyticsConfig {
 	enableVercelAnalytics?: boolean; // Whether to enable vercel analytics
 	enableSpeedInsights?: boolean; // Whether to enable speed insights
+}
+
+/**
+ * AI configuration
+ */
+export interface AiConfig {
+	billing?: AiBillingConfig;
+}
+
+export interface AiBillingConfig {
+	chat?: AiBillingRuleConfig;
+	analyzeContent?: AiBillingRuleConfig;
+	generateImage?: AiBillingRuleConfig;
+}
+
+export interface AiBillingRuleConfig {
+	enabled?: boolean;
+	creditsPerCall?: number;
+	freeCallsPerPeriod?: number;
 }
 
 export interface AuthConfig {

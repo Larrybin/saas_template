@@ -27,7 +27,10 @@ AI 模块主要职责：
 - AI 领域工具：
   - 文本分析：`src/ai/text/utils/*`  
   - 图片生成：`src/ai/image/lib/*`  
-  - 计费规则：`src/ai/billing-config.ts`  
+  - 计费规则：
+    - 配置源：`src/config/website.tsx` 中的 `websiteConfig.ai.billing.*`  
+    - 策略层：`src/ai/billing-policy.ts`（`AiBillingPolicy` / `DefaultAiBillingPolicy`）  
+    - 适配器：`src/ai/billing-config.ts`（向 usecase 暴露 `getAi*BillingRule`）  
   - 使用量统计：`src/ai/usage/ai-usage-service.ts`
 
 ---
@@ -104,7 +107,7 @@ AI 模块主要职责：
 3. **Usecase**：`src/lib/server/usecases/execute-ai-chat-with-billing.ts`
    - 入参：`{ userId, messages, model, webSearch, requiredCredits? }`。  
    - 步骤：
-     1. 获取 AI 计费规则（`getAiChatBillingRule`，见 `src/ai/billing-config.ts`），确定每次调用消耗的积分数量。  
+     1. 获取 AI 计费规则（`getAiChatBillingRule` → `DefaultAiBillingPolicy` → `websiteConfig.ai.billing.chat`），确定每次调用消耗的积分数量。  
      2. 基础参数校验（messages/model/webSearch），不合法时抛 `DomainError(AI_CHAT_INVALID_PARAMS)`。  
      3. 获取免费额度参数（freeCallsPerPeriod）：  
         - 如果 > 0，调用 `incrementAiUsageAndCheckWithinFreeQuota`（`src/ai/usage/ai-usage-service.ts`）对 `ai_usage` 表做原子自增，并检查是否仍在免费额度内。  
@@ -151,7 +154,7 @@ AI 模块主要职责：
 
 3. **Usecase**：`src/lib/server/usecases/generate-image-with-credits.ts`
    - 类似 Chat usecase：  
-     - 读取图片生成计费规则（`getImageGenerateBillingRule`），决定每次调用消耗的积分数量与免费额度。  
+     - 读取图片生成计费规则（`getImageGenerateBillingRule` → `DefaultAiBillingPolicy` → `websiteConfig.ai.billing.generateImage`），决定每次调用消耗的积分数量与免费额度。  
      - 使用 `incrementAiUsageAndCheckWithinFreeQuota` 判断是否处于免费阶段。  
      - 若需扣费：调用 `consumeCredits` 扣积分；不足时抛 `CREDITS_INSUFFICIENT_BALANCE`。  
      - 调用图片生成 provider（OpenAI/Fireworks/Replicate/FAL），并把结果封装为 `GenerateImageResponse`：
@@ -206,7 +209,7 @@ AI 模块主要职责：
 
 1. 在 `src/ai/*` 下定义领域逻辑：
    - 文本/图片/其他 AI 能力的请求类型、响应结构、错误模型。  
-   - 如需计费：在 `src/ai/billing-config.ts` 中定义对应规则。
+   - 如需计费：在 `src/config/website.tsx` 中为新用例增加 `websiteConfig.ai.billing.*` 配置，并在 `src/ai/billing-policy.ts` / `src/ai/billing-config.ts` 中扩展对应规则与策略方法。
 2. 在 usecase 层新增编排函数：
    - 放在 `src/lib/server/usecases/*` 中，负责 Credits/免费额度/调用 provider 的 orchestration。  
    - 避免在 API Route 中直接调用 provider。
@@ -218,4 +221,3 @@ AI 模块主要职责：
    - 错误处理统一通过 `useAiErrorUi`，必要时与 `useCreditsErrorUi` 联合使用。
 
 通过上述分层与边界约定，可以在不破坏现有 Credits/Billing/Storage 的前提下，持续扩展 AI 能力并保持错误模型与 UX 一致性。
-

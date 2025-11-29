@@ -28,6 +28,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { clientLogger } from '@/lib/client-logger';
+import {
+  type EnvelopeWithDomainError,
+  unwrapEnvelopeOrThrowDomainError,
+} from '@/lib/domain-error-utils';
+
+type Envelope<T> = EnvelopeWithDomainError<T>;
 
 /**
  * Contact form card component
@@ -67,21 +73,22 @@ export function ContactFormCard() {
       try {
         setError('');
 
-        // Submit form data using the contact server action
         const result = await sendMessageAction(values);
+        unwrapEnvelopeOrThrowDomainError<{ success: true }>(
+          result?.data as Envelope<{ success: true }> | undefined,
+          {
+            defaultErrorMessage: t('fail'),
+          }
+        );
 
-        if (result?.data?.success) {
-          toast.success(t('success'));
-          form.reset();
-        } else {
-          const errorMessage = result?.data?.error || t('fail');
-          setError(errorMessage);
-          toast.error(errorMessage);
-        }
+        toast.success(t('success'));
+        form.reset();
       } catch (err) {
         clientLogger.error('Form submission error:', err);
-        setError(t('fail'));
-        toast.error(t('fail'));
+        const errorMessage =
+          err instanceof Error && err.message ? err.message : t('fail');
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     });
   };

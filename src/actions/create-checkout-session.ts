@@ -6,9 +6,10 @@ import { z } from 'zod';
 import { websiteConfig } from '@/config/website';
 import type { StartSubscriptionCheckoutInput } from '@/domain/billing';
 import type { User } from '@/lib/auth-types';
-import { findPlanByPlanId } from '@/lib/price-plan';
+import { DomainError } from '@/lib/domain-errors';
 import { userActionClient } from '@/lib/safe-action';
 import { getBillingService } from '@/lib/server/billing-service';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 import { Routes } from '@/routes';
@@ -36,15 +37,6 @@ export const createCheckoutAction = userActionClient
     try {
       // Get the current locale from the request
       const locale = await getLocale();
-
-      // Check if plan exists
-      const plan = findPlanByPlanId(planId);
-      if (!plan) {
-        return {
-          success: false,
-          error: 'Price plan not found',
-        };
-      }
 
       // Add user id to metadata, so we can get it in the webhook event
       const customMetadata: Record<string, string> = {
@@ -87,10 +79,20 @@ export const createCheckoutAction = userActionClient
         data: result,
       };
     } catch (error) {
-      logger.error({ error }, 'create checkout session error');
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
+      logger.error(
+        { error, userId: currentUser.id, planId, priceId },
+        'create checkout session error'
+      );
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.UnexpectedError,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to create checkout session',
+        retryable: true,
+      });
     }
   });

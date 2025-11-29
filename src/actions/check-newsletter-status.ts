@@ -1,7 +1,9 @@
 'use server';
 
 import { z } from 'zod';
+import { DomainError } from '@/lib/domain-errors';
 import { userActionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { isSubscribed } from '@/newsletter';
 
@@ -25,10 +27,16 @@ export const checkNewsletterStatusAction = userActionClient
       };
     } catch (error) {
       logger.error({ error, email }, 'check newsletter status error');
-      return {
-        success: false,
-        subscribed: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.NewsletterStatusFailed,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to check newsletter status',
+        retryable: true,
+      });
     }
   });

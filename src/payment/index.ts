@@ -1,4 +1,6 @@
+import Stripe from 'stripe';
 import { websiteConfig } from '@/config/website';
+import { serverEnv } from '@/env/server';
 import { StripePaymentService } from './services/stripe-payment-service';
 import type {
   CheckoutResult,
@@ -10,6 +12,31 @@ import type {
   PortalResult,
   Subscription,
 } from './types';
+
+type StripeProviderOverrides = {
+  stripeSecretKey?: string;
+  stripeWebhookSecret?: string;
+};
+
+const createStripePaymentProvider = (
+  overrides?: StripeProviderOverrides
+): PaymentProvider => {
+  const stripeSecretKey =
+    overrides?.stripeSecretKey ?? serverEnv.stripeSecretKey;
+  if (!stripeSecretKey) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+  }
+  const stripeWebhookSecret =
+    overrides?.stripeWebhookSecret ?? serverEnv.stripeWebhookSecret;
+  if (!stripeWebhookSecret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set.');
+  }
+  const stripeClient = new Stripe(stripeSecretKey);
+  return new StripePaymentService({
+    stripeClient,
+    webhookSecret: stripeWebhookSecret,
+  });
+};
 
 /**
  * Global payment provider instance
@@ -35,7 +62,7 @@ export const getPaymentProvider = (): PaymentProvider => {
 export const initializePaymentProvider = (): PaymentProvider => {
   if (!paymentProvider) {
     if (websiteConfig.payment.provider === 'stripe') {
-      paymentProvider = new StripePaymentService();
+      paymentProvider = createStripePaymentProvider();
     } else {
       throw new Error(
         `Unsupported payment provider: ${websiteConfig.payment.provider}`

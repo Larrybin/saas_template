@@ -5,7 +5,9 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
+import { DomainError } from '@/lib/domain-errors';
 import { userActionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
 const logger = getLogger({ span: 'actions.get-credit-transactions' });
@@ -43,9 +45,9 @@ const sortFieldMap = {
 export const getCreditTransactionsAction = userActionClient
   .schema(getCreditTransactionsSchema)
   .action(async ({ parsedInput, ctx }) => {
+    const currentUser = (ctx as { user: User }).user;
     try {
       const { pageIndex, pageSize, search, sorting } = parsedInput;
-      const currentUser = (ctx as { user: User }).user;
 
       // Search logic: text fields use ilike, and if search is a number, also search amount fields
       const searchConditions = [];
@@ -121,13 +123,20 @@ export const getCreditTransactionsAction = userActionClient
         },
       };
     } catch (error) {
-      logger.error({ error }, 'get credit transactions error');
-      return {
-        success: false,
-        error:
+      logger.error(
+        { error, userId: currentUser.id },
+        'get credit transactions error'
+      );
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.UnexpectedError,
+        message:
           error instanceof Error
             ? error.message
             : 'Failed to fetch credit transactions',
-      };
+        retryable: true,
+      });
     }
   });

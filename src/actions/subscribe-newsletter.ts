@@ -2,7 +2,9 @@
 
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
+import { DomainError } from '@/lib/domain-errors';
 import { actionClient } from '@/lib/safe-action';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { sendEmail } from '@/mail';
 import { subscribe } from '@/newsletter';
@@ -24,10 +26,11 @@ export const subscribeNewsletterAction = actionClient
 
       if (!subscribed) {
         logger.error({ email }, 'subscribe newsletter error');
-        return {
-          success: false,
-          error: 'Failed to subscribe to the newsletter',
-        };
+        throw new DomainError({
+          code: ErrorCodes.NewsletterSubscribeFailed,
+          message: 'Failed to subscribe to the newsletter',
+          retryable: true,
+        });
       }
 
       // Send a welcome email to the user
@@ -45,10 +48,17 @@ export const subscribeNewsletterAction = actionClient
         success: true,
       };
     } catch (error) {
-      logger.error({ error }, 'subscribe newsletter error');
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Something went wrong',
-      };
+      logger.error({ error, email }, 'subscribe newsletter error');
+      if (error instanceof DomainError) {
+        throw error;
+      }
+      throw new DomainError({
+        code: ErrorCodes.NewsletterSubscribeFailed,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to subscribe to the newsletter',
+        retryable: true,
+      });
     }
   });

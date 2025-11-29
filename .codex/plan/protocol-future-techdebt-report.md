@@ -13,9 +13,12 @@
    - 文档在 `docs/error-logging.md:344` 中已将 `/api/search` 标记为“✅ 已符合”，当前实现 `src/app/api/search/route.ts` 会在调用 `searchAPI.GET(request)` 后，将结果统一包装为 `{ success: true, data }` 或 `{ success: false, error, code: ErrorCodes.DocsSearchFailed, retryable }`，并记录请求与上游失败上下文。
    - 现状：协议与错误码行为与文档约定一致，暂无额外技术债；后续变更该路由时需要同步更新 `docs/error-logging.md`，并保持 `search-route.test.ts` 中的 envelope 约束通过。
 
-2. **积分分发 API 的未授权响应不是 JSON**
-   - `docs/api-reference.md:6` 要求（除 Chat 流式外）所有接口都用统一 envelope。但 `src/app/api/distribute-credits/route.ts:25` 在 Basic Auth 失败时返回 `NextResponse('Unauthorized', 401)`，导致调用方无法根据 `code` 区分凭证缺失/配置错误等情况，也无法经过 `DomainError` 处理链。
-   - 建议：与其他分支一致返回 `{ success: false, error, code: 'AUTH_UNAUTHORIZED', retryable: false }`。
+2. **积分分发 API 的未授权响应不是 JSON（已完成治理）**
+   - 原风险：`docs/api-reference.md:6` 要求（除 Chat 流式外）所有接口都用统一 envelope，旧实现的 `/api/distribute-credits` 在 Basic Auth 失败时返回纯文本 `Unauthorized`，调用方无法根据 `code` 区分凭证缺失/配置错误等情况，也无法经过 `DomainError` 处理链。
+   - 当前状态：`src/app/api/distribute-credits/route.ts` 已统一为 JSON envelope，并区分两类错误：
+     - 凭证错误（含缺失/错误 Basic Auth）→ `401` + `{ success: false, error: 'Unauthorized', code: 'AUTH_UNAUTHORIZED', retryable: false }`，同时附带 `WWW-Authenticate: Basic realm="Secure Area"`。
+     - 环境未配置（`CRON_JOBS_USERNAME/PASSWORD` 缺失）→ `500` + `{ success: false, error: 'Cron basic auth credentials misconfigured', code: 'CRON_BASIC_AUTH_MISCONFIGURED', retryable: false }`。
+   - 文档与规则：`docs/error-codes.md` 新增了 `CRON_BASIC_AUTH_MISCONFIGURED`，`docs/api-reference.md` 与 `.codex/rules/api-protocol-and-error-codes-best-practices.md` 已反映上述行为，`distribute-credits-route.test.ts` 对 401/500 envelope 做了显式断言，防止回退为非 JSON。
 
 3. **Server Action 错误 envelope 规范需要持续守卫**
    - 现状：`src/actions` 已通过 `DomainError` + `ErrorCodes` + `safe-action` 统一处理错误，诸如 `subscribeNewsletterAction`、`validateCaptchaAction` 在失败时会抛出 `DomainError`，由 `handleServerError` 封装 `{ success: false, error, code, retryable }`，与 `docs/error-logging.md` 的约定一致。
@@ -43,7 +46,7 @@
 | 问题 | 证据 | 优先级 | 估算 | 备注 |
 | --- | --- | --- | --- | --- |
 | `/api/search` envelope 一致性（原风险已关闭） | `docs/error-logging.md:344`、`src/app/api/search/route.ts` | P1 | 1 人日 | **现状：`/api/search` 已返回统一 envelope 并在 `docs/error-logging.md` 中标记为 ✅；原技术债已关闭，本条保留用于追踪未来改动时的回归风险。** |
-| `/api/distribute-credits` 的 401 响应非 JSON | `src/app/api/distribute-credits/route.ts:25` | P1 | 0.5 人日 | 改为 JSON envelope，同时更新 `docs/api-reference.md` 示例 |
+| `/api/distribute-credits` 的 401 响应非 JSON | `src/app/api/distribute-credits/route.ts:25` | P1 | 0.5 人日 | **已完成：401 与 5xx 分支均返回 JSON envelope，并新增 `CRON_BASIC_AUTH_MISCONFIGURED` 区分 env misconfig；相关文档与测试已更新。** |
 | Server Action 缺少 `code`，无法复用错误 UI 策略 | `src/actions/*` | P1 | 1.5 人日 | **已在 `src/actions` 范围内完成治理：所有 Server Actions 错误均通过 DomainError + ErrorCodes 返回标准 envelope；后续新增 Action 必须遵循 `.codex/rules/error-handling-and-fallbacks-best-practices.md` 的约束。** |
 | AI 计费配置为常量，无法 per-plan 调整 | `src/ai/billing-config.ts:10` | P2 | 2 人日 | 引入配置存储（例如 `websiteConfig` + override），并在计划文档中说明 |
 | `pagesSource` baseUrl TODO 未解决，营销页路由风险 | `src/lib/source.ts:54` | P2 | 1 人日 | 明确 pages 的真实路由前缀，必要时为每种语言生成动态 baseUrl |

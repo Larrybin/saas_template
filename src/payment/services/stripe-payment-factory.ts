@@ -122,7 +122,7 @@ function createStripeInfra(
     paymentRepository,
     stripeEventRepository,
   };
-};
+}
 
 export const createStripePaymentProviderFromEnv = (
   env: StripeSecretsEnv,

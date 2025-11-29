@@ -27,14 +27,26 @@ describe('/api/distribute-credits route', () => {
   });
 
   it('returns 401 when basic auth is missing', async () => {
+    serverEnv.cronJobs.username = username;
+    serverEnv.cronJobs.password = password;
+
     const req = new Request('http://localhost/api/distribute-credits', {
       method: 'GET',
     });
 
     const res = await distributeCreditsGet(req);
+    const json = (await res.json()) as {
+      success: boolean;
+      error?: string;
+      code?: string;
+      retryable?: boolean;
+    };
 
     expect(res.status).toBe(401);
     expect(res.headers.get('WWW-Authenticate')).toContain('Basic');
+    expect(json.success).toBe(false);
+    expect(json.code).toBe('AUTH_UNAUTHORIZED');
+    expect(json.retryable).toBe(false);
   });
 
   it('returns 401 when basic auth credentials are invalid', async () => {
@@ -48,12 +60,21 @@ describe('/api/distribute-credits route', () => {
     });
 
     const res = await distributeCreditsGet(req);
+    const json = (await res.json()) as {
+      success: boolean;
+      error?: string;
+      code?: string;
+      retryable?: boolean;
+    };
 
     expect(res.status).toBe(401);
+    expect(json.success).toBe(false);
+    expect(json.code).toBe('AUTH_UNAUTHORIZED');
+    expect(json.retryable).toBe(false);
     expect(runCreditsDistributionJobMock).not.toHaveBeenCalled();
   });
 
-  it('returns 401 when env credentials are not configured', async () => {
+  it('returns 500 when env credentials are not configured', async () => {
     const req = new Request('http://localhost/api/distribute-credits', {
       method: 'GET',
       headers: {
@@ -62,8 +83,17 @@ describe('/api/distribute-credits route', () => {
     });
 
     const res = await distributeCreditsGet(req);
+    const json = (await res.json()) as {
+      success: boolean;
+      error?: string;
+      code?: string;
+      retryable?: boolean;
+    };
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(500);
+    expect(json.success).toBe(false);
+    expect(json.code).toBe('CRON_BASIC_AUTH_MISCONFIGURED');
+    expect(json.retryable).toBe(false);
     expect(runCreditsDistributionJobMock).not.toHaveBeenCalled();
   });
 

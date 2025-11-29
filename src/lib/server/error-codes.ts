@@ -10,6 +10,7 @@ export const ErrorCodes = {
   AnalyzeContentInvalidJson: 'ANALYZE_CONTENT_INVALID_JSON',
   AnalyzeContentInvalidParams: 'ANALYZE_CONTENT_INVALID_PARAMS',
   CreditsDistributionFailed: 'CREDITS_DISTRIBUTION_FAILED',
+  CronBasicAuthMisconfigured: 'CRON_BASIC_AUTH_MISCONFIGURED',
   DocsSearchFailed: 'DOCS_SEARCH_FAILED',
   SubscriptionFetchFailed: 'SUBSCRIPTION_FETCH_FAILED',
   NewsletterSubscribeFailed: 'NEWSLETTER_SUBSCRIBE_FAILED',

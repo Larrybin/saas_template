@@ -45,6 +45,7 @@ description: 基于 MkSaaS 模板的定时任务、资源清理与内部 Job 设
      - 调用 `runCreditsDistributionJob()` 并返回统计信息。
    - `docs/env-and-ops.md`：
      - 解释了如何在不同环境下配置 Cron 与内部 Job。
+   - 当新增第二个使用 Basic Auth 的内部 Job 路由时，应抽象 `ensureInternalJobAuthorized` 之类 helper，避免在各路由重复 env/401/5xx 分支。
 
 3. 脚本与 SQL
    - `scripts/sql/*` 与 `scripts/*.ts`：
@@ -73,4 +74,3 @@ description: 基于 MkSaaS 模板的定时任务、资源清理与内部 Job 设
   - [ ] 其它可能需要定期维护的资源（如存储中的过期文件）是否也需要引入类似 Job 模式与文档。
   - [ ] 是否为所有 Job 定义了统一的命名、日志字段与监控告警策略。
   - [ ] 对 Job 的运行频率与超时限制是否在 docs 中清晰说明，避免误配置。
-

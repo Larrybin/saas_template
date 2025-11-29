@@ -24,12 +24,20 @@ export async function GET(request: Request) {
 
   if (!validateInternalJobBasicAuth(request, log, expectedCredentials)) {
     log.warn('Unauthorized attempt to distribute credits');
-    return new NextResponse('Unauthorized', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Secure Area"',
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Unauthorized',
+        code: ErrorCodes.AuthUnauthorized,
+        retryable: false,
       },
-    });
+      {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': 'Basic realm="Secure Area"',
+        },
+      }
+    );
   }
 
   log.info('Distribute credits job triggered');

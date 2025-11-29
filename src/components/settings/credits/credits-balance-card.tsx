@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCreditBalance, useCreditStats } from '@/hooks/use-credits';
+import { useCreditOverview } from '@/hooks/use-credits';
 import { useMounted } from '@/hooks/use-mounted';
 import { useLocaleRouter } from '@/i18n/navigation';
 import { CREDITS_EXPIRATION_DAYS } from '@/lib/constants';
@@ -42,21 +42,10 @@ function CreditsBalanceCardContent() {
   const hasHandledSession = useRef(false);
   const mounted = useMounted();
 
-  // Use TanStack Query hooks for credits
-  const {
-    data: balance = 0,
-    isLoading: isLoadingBalance,
-    error: balanceError,
-    refetch: refetchBalance,
-  } = useCreditBalance();
+  const { data: overview, isLoading, error, refetch } = useCreditOverview();
 
-  // TanStack Query hook for credit statistics
-  const {
-    data: creditStats,
-    isLoading: isLoadingStats,
-    error: statsError,
-    refetch: refetchStats,
-  } = useCreditStats();
+  const balance = overview?.balance ?? 0;
+  const creditStats = overview;
 
   // Handle payment success after credits purchase
   const handlePaymentSuccess = useCallback(async () => {
@@ -69,9 +58,8 @@ function CreditsBalanceCardContent() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Force refresh data
-    refetchBalance();
-    refetchStats();
-  }, [t, refetchBalance, refetchStats]);
+    refetch();
+  }, [t, refetch]);
 
   // Check for payment success and show success message
   useEffect(() => {
@@ -92,12 +80,11 @@ function CreditsBalanceCardContent() {
   // Retry all data fetching using refetch methods
   const handleRetry = useCallback(() => {
     // Use refetch methods for immediate data refresh
-    refetchBalance();
-    refetchStats();
-  }, [refetchBalance, refetchStats]);
+    refetch();
+  }, [refetch]);
 
   // Render loading skeleton
-  if (!mounted || isLoadingBalance || isLoadingStats) {
+  if (!mounted || isLoading) {
     return (
       <Card className={cn('w-full overflow-hidden pt-6 pb-0 flex flex-col')}>
         <CardHeader>
@@ -117,7 +104,7 @@ function CreditsBalanceCardContent() {
   }
 
   // Render error state
-  if (balanceError || statsError) {
+  if (error) {
     return (
       <Card className={cn('w-full overflow-hidden pt-6 pb-0 flex flex-col')}>
         <CardHeader>
@@ -125,9 +112,7 @@ function CreditsBalanceCardContent() {
           <CardDescription>{t('description')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 flex-1">
-          <div className="text-destructive text-sm">
-            {balanceError?.message || statsError?.message}
-          </div>
+          <div className="text-destructive text-sm">{error?.message}</div>
         </CardContent>
         <CardFooter className="mt-2 px-6 py-4 flex justify-end items-center bg-muted rounded-none">
           <Button
@@ -163,7 +148,7 @@ function CreditsBalanceCardContent() {
       </CardContent>
       <CardFooter className="px-6 py-4 flex justify-between items-center bg-muted rounded-none">
         {/* Expiring credits warning */}
-        {!isLoadingStats && creditStats && (
+        {!isLoading && creditStats && (
           <div className="text-sm text-muted-foreground space-y-2">
             {' '}
             <div className="flex items-center gap-2 text-amber-600">

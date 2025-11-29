@@ -68,7 +68,18 @@ export const getUsersAction = adminActionClient
       const db = await getDb();
       let [items, countRows] = await Promise.all([
         db
-          .select()
+          .select({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            emailVerified: user.emailVerified,
+            role: user.role,
+            createdAt: user.createdAt,
+            customerId: user.customerId,
+            banned: user.banned,
+            banReason: user.banReason,
+            banExpires: user.banExpires,
+          })
           .from(user)
           .where(where)
           .orderBy(sortDirection(sortField))

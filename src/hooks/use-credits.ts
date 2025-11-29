@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SortingState } from '@tanstack/react-table';
 import { consumeCreditsAction } from '@/actions/consume-credits';
 import { getCreditBalanceAction } from '@/actions/get-credit-balance';
+import { getCreditOverviewAction } from '@/actions/get-credit-overview';
 import { getCreditStatsAction } from '@/actions/get-credit-stats';
 import { getCreditTransactionsAction } from '@/actions/get-credit-transactions';
 import type { CreditTransaction } from '@/components/settings/credits/credit-transactions-table';
@@ -26,6 +27,16 @@ type CreditStatsSuccess = {
   };
 };
 
+type CreditOverviewSuccess = {
+  success: true;
+  data: {
+    balance: number;
+    expiringCredits: {
+      amount: number;
+    };
+  };
+};
+
 type CreditTransactionsSuccess = {
   success: true;
   data: {
@@ -40,6 +51,7 @@ export const creditsKeys = {
   all: ['credits'] as const,
   balance: () => [...creditsKeys.all, 'balance'] as const,
   stats: () => [...creditsKeys.all, 'stats'] as const,
+  overview: () => [...creditsKeys.all, 'overview'] as const,
   transactions: () => [...creditsKeys.all, 'transactions'] as const,
   transactionsList: (filters: {
     pageIndex: number;
@@ -91,6 +103,34 @@ export function useCreditStats() {
       );
       clientLogger.debug('Credit stats fetched:', data.data);
       return data.data;
+    },
+  });
+}
+
+// Hook to fetch credit overview (balance + stats)
+export function useCreditOverview() {
+  const handleAuthError = useAuthErrorHandler();
+
+  return useQuery({
+    queryKey: creditsKeys.overview(),
+    queryFn: async () => {
+      clientLogger.debug('Fetching credit overview...');
+      const result = await getCreditOverviewAction();
+      const data = unwrapEnvelopeOrThrowDomainError<CreditOverviewSuccess>(
+        result?.data as Envelope<CreditOverviewSuccess> | undefined,
+        {
+          defaultErrorMessage: 'Failed to fetch credit overview',
+          handleAuthEnvelope: (payload) =>
+            handleAuthFromEnvelope(handleAuthError, payload),
+        }
+      );
+      clientLogger.debug('Credit overview fetched:', data.data);
+      return {
+        balance: data.data.balance || 0,
+        expiringCredits: {
+          amount: data.data.expiringCredits?.amount || 0,
+        },
+      };
     },
   });
 }

@@ -145,8 +145,20 @@ export const auth = betterAuth({
   onAPIError: {
     // https://www.better-auth.com/docs/reference/options#onapierror
     errorURL: '/auth/error',
-    onError: (error, _ctx) => {
-      console.error('auth error:', error);
+    onError: (error, ctx) => {
+      const safeError = {
+        name: error?.name,
+        message: error?.message,
+        // 部分 better-auth 错误实现会附带 code 字段
+        code: (error as { code?: string }).code,
+        path: (ctx as { path?: string } | undefined)?.path,
+        method: (ctx as { request?: { method?: string } } | undefined)?.request
+          ?.method,
+        requestId: (ctx as { requestId?: string } | undefined)?.requestId,
+      };
+
+      // 仅记录必要字段，避免在日志中泄露 token、内部 ID 等敏感信息
+      console.error('auth error:', safeError);
     },
   },
 });

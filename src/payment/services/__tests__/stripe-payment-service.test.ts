@@ -706,9 +706,7 @@ describe('StripePaymentAdapter', () => {
     (stripe.webhooks.constructEvent as any).mockReturnValue(event);
     const tx = { id: 'tx-sub-fail' };
     const billingService = {
-      handleRenewal: vi
-        .fn()
-        .mockRejectedValue(new Error('sub grant fail')),
+      handleRenewal: vi.fn().mockRejectedValue(new Error('sub grant fail')),
       grantLifetimePlan: vi.fn(),
     } satisfies BillingRenewalPort;
     const paymentRepository = {

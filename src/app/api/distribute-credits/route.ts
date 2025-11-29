@@ -17,10 +17,27 @@ export async function GET(request: Request) {
   const expectedUsername = serverEnv.cronJobs.username;
   const expectedPassword = serverEnv.cronJobs.password;
 
-  const expectedCredentials =
-    expectedUsername && expectedPassword
-      ? { username: expectedUsername, password: expectedPassword }
-      : {};
+  if (!expectedUsername || !expectedPassword) {
+    log.error(
+      'Cron basic auth credentials not configured in environment variables'
+    );
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Cron basic auth credentials misconfigured',
+        code: ErrorCodes.CronBasicAuthMisconfigured,
+        retryable: false,
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+  const expectedCredentials = {
+    username: expectedUsername,
+    password: expectedPassword,
+  };
 
   if (!validateInternalJobBasicAuth(request, log, expectedCredentials)) {
     log.warn('Unauthorized attempt to distribute credits');

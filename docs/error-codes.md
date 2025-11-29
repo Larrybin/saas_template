@@ -41,6 +41,12 @@
 | `CREDITS_PLAN_POLICY_MISSING` | `CreditsPlanPolicyMissing`| Credits | 对应 plan/price 缺少积分策略配置。       |
 | `CREDITS_DISTRIBUTION_FAILED` | `CreditsDistributionFailed`| Credits | 积分分发 Job 执行失败。                  |
 
+## Ops / Cron
+
+| Code                           | Key                        | Domain | Description                                      |
+| ------------------------------ | -------------------------- | ------ | ------------------------------------------------ |
+| `CRON_BASIC_AUTH_MISCONFIGURED`| `CronBasicAuthMisconfigured`| Ops   | Cron Basic Auth 环境变量未正确配置（缺失/不完整）。 |
+
 ## AI Chat / 文本对话
 
 | Code                    | Key                 | Domain | Description                        |

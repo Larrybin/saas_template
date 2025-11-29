@@ -23,7 +23,8 @@ description: 基于 MkSaaS 模板的统一 JSON Envelope 协议与错误码体�
    - 失败：
      - 统一为 `{ success: false, error: string, code: ErrorCode, retryable?: boolean }`。
    - 特例：
-     - Webhook（`/api/webhooks/stripe`）、健康检查（`/api/ping`）、纯文本 Basic Auth 接口（`/api/distribute-credits` 的 401）允许与公共 JSON API 不同，但必须在文档中标明。
+     - Webhook（`/api/webhooks/stripe`）、健康检查（`/api/ping`）允许与公共 JSON API 不同，但必须在文档中标明。
+     - `/api/distribute-credits` 在 200/401/5xx 场景均返回统一 JSON envelope，仅在 401 时通过 `WWW-Authenticate: Basic ...` 暴露 Basic Auth 语义。
 
 2. **错误码命名分层**
    - 路由入口级错误：
@@ -52,11 +53,10 @@ description: 基于 MkSaaS 模板的统一 JSON Envelope 协议与错误码体�
 
 1. 路由分类
    - 公共 JSON API：
-     - `/api/chat`（错误 JSON + 成功流式）、`/api/analyze-content`、`/api/generate-images`、`/api/storage/upload`、`/api/distribute-credits` 的 200/5xx。
+     - `/api/chat`（错误 JSON + 成功流式）、`/api/analyze-content`、`/api/generate-images`、`/api/storage/upload`、`/api/distribute-credits` 的 200/401/5xx。
    - 特例：
      - `/api/webhooks/stripe`：成功为 `{ received: true }`，错误为标准 envelope。
      - `/api/ping`：健康检查，可返回简单 JSON，不纳入公共错误码体系。
-     - `/api/distribute-credits` 的 401：Basic Auth，返回纯文本 `Unauthorized`。
 
 2. 错误码与 i18n 映射
    - `src/lib/domain-error-utils.ts` 中的 `DOMAIN_ERROR_MESSAGES`：
@@ -90,4 +90,3 @@ description: 基于 MkSaaS 模板的统一 JSON Envelope 协议与错误码体�
   - [ ] 新增或调整 API 路由时，是否全部遵循 `.codex/plan/unify-api-envelope-and-errors.md` 中的约定，避免产生新特例。
   - [ ] 入口级错误码（如 `ANALYZE_CONTENT_*` 系列）与领域级错误码（如 `AI_CONTENT_*` 系列）在文档与实现中是否完全按“入口 vs 领域过程”分层使用。
   - [ ] 错误码与 i18n key 之间的映射是否已经加入静态校验脚本（如 `scripts/check-domain-error-messages.ts`）并在 CI 中强制执行。
-

@@ -92,6 +92,7 @@
   - 在 Cron 配置中添加 Basic Auth 头，例如：  
     - `Authorization: Basic base64("username:password")`，与 `CRON_JOBS_USERNAME/PASSWORD` 保持一致；缺失或错误会被 `validateInternalJobBasicAuth` 拒绝并在日志中标记。  
   - 根据日志与返回 JSON 中的 `usersCount/processedCount/errorCount` 监控分发效果。
+  - 约定：当新增第二个使用 Basic Auth 的内部 Job 路由时，应抽象 `ensureInternalJobAuthorized` 之类 helper，避免在各路由重复 env/401/5xx 分支。
 
 ### 3.2 其他内部 Job
 

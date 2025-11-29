@@ -257,7 +257,42 @@
   }
   ```
 
-- **Failure**：`401 Unauthorized`（缺少/错误凭证）或 `CREDITS_DISTRIBUTION_FAILED`（任务异常，可重试）。
+- **Failure**：
+  - `401 Unauthorized`：缺少或错误的 Basic Auth 凭证，返回统一 JSON envelope：
+
+    ```json
+    {
+      "success": false,
+      "error": "Unauthorized",
+      "code": "AUTH_UNAUTHORIZED",
+      "retryable": false
+    }
+    ```
+
+    响应头包含 `WWW-Authenticate: Basic realm="Secure Area"`，便于上游 Cron/监控识别 401 类型。
+
+  - `500`：服务器端错误，典型包括：
+    - Cron Basic Auth 环境变量未正确配置（`CRON_BASIC_AUTH_MISCONFIGURED`）：
+
+      ```json
+      {
+        "success": false,
+        "error": "Cron basic auth credentials misconfigured",
+        "code": "CRON_BASIC_AUTH_MISCONFIGURED",
+        "retryable": false
+      }
+      ```
+
+    - 积分分发 Job 执行异常（`CREDITS_DISTRIBUTION_FAILED`，可重试）：
+
+      ```json
+      {
+        "success": false,
+        "error": "Distribute credits job failed",
+        "code": "CREDITS_DISTRIBUTION_FAILED",
+        "retryable": true
+      }
+      ```
 
 ### POST `/api/webhooks/stripe`
 - **Purpose**：接收 Stripe Webhook 事件（Checkout、Subscription、Payments）。

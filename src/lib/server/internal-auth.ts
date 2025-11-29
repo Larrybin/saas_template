@@ -65,19 +65,20 @@ export function validateInternalJobBasicAuth(
   logger: Logger,
   expected: ExpectedCredentials
 ): boolean {
-  const parsed = parseBasicAuthHeader(request);
-
-  if (!parsed) {
-    return false;
-  }
-
   const expectedUsername = expected.username;
   const expectedPassword = expected.password;
 
   if (!expectedUsername || !expectedPassword) {
     logger.error(
-      'Basic auth credentials not configured in environment variables'
+      'Basic auth expected credentials not configured when calling validateInternalJobBasicAuth'
     );
+    return false;
+  }
+
+  const parsed = parseBasicAuthHeader(request);
+
+  if (!parsed) {
+    logger.warn('Missing or invalid Basic auth header for internal job');
     return false;
   }
 

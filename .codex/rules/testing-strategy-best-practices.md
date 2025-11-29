@@ -74,6 +74,12 @@ description: 基于 MkSaaS 模板的单元 / 集成 / E2E 测试策略规范
    - API Route：
      - 推荐使用统一的 Request helper，例如 `tests/utils/requests.ts` 中的 `createJsonPost(url, body)`；
      - Route handler 尽量声明为 `POST(req: Request)`，测试直接传入 `Request` 实例，无需 `req as any`。
+5. Server Actions 与 safe-action
+   - 所有受保护的 Server Actions（`src/actions/*`）应通过 `safe-action` 封装统一 envelope：
+     - 业务侧只抛出 `DomainError` 或通用 `Error`，由 `handleServerError` 统一转换为 `{ success, data?, error?, code?, retryable? }`。
+   - 前端消费 Server Action 结果时：
+     - 必须以 `code` / `DomainError` 为唯一分支依据，并通过 DomainError UI registry + i18n helper 生成用户可见文案。
+     - **禁止**根据 `error.message` 做逻辑判断或直接将其展示在 UI（toast / banner / dialog）中；message 仅可用于受控日志或本地调试。
 
 ## 反模式（应避免）
 

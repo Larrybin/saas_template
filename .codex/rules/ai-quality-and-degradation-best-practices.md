@@ -44,6 +44,7 @@ description: 基于 MkSaaS 模板与 OpenAI SDK 的 AI 可靠性与体验设计�
      - 对用户可控的字符串做长度限制与截断。
    - 输出层：
      - 对模型输出做安全过滤（如富文本内容、HTML 标签等）。
+     - 禁止在 React 组件中直接将 AI 输出结果作为 `dangerouslySetInnerHTML`/`innerHTML` 注入 DOM；如需富文本展示，必须使用可信的 Markdown 渲染器并叠加 XSS 过滤库，仅允许有限、安全的标签与属性。
      - 对结构化输出使用 schema 校验与 parse helper（如 Zod）。
 
 5. **可观测性与灰度发布**

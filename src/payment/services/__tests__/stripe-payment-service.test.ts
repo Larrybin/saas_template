@@ -294,8 +294,6 @@ const createService = (
   const billingService =
     overrides.billingService ??
     ({
-      startSubscriptionCheckout: vi.fn(),
-      startCreditCheckout: vi.fn(),
       handleRenewal: vi.fn(),
       grantLifetimePlan: vi.fn(),
     } satisfies BillingRenewalPort);

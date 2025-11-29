@@ -61,6 +61,18 @@ Credits 模块用于抽象「用量型计费」能力，典型场景包括：
     - `src/lib/server/usecases/distribute-credits-job.ts`：对外暴露「运行分发 Job」的 usecase。  
     - `src/lib/server/usecases/*with-credits.ts`：AI + 积分消费类 usecase。
 
+### 2.3 Membership 域（终身会员）
+
+- 领域层：`src/domain/membership/*`
+  - `LifetimeMembershipRepository`：抽象终身会员记录的读写能力（当前实现为 `UserLifetimeMembershipRepository`，基于 `user_lifetime_membership` 表）。  
+  - `MembershipService` / `DefaultMembershipService`：
+    - `grantLifetimeMembership`：根据 user/price/cycleRefDate 统一落库或更新终身会员记录，内部处理事务执行器的解析；  
+    - `findActiveMembershipsByUserIds`：按用户批量查询当前有效的终身会员记录（用于 Credits 分发等场景）。
+- server 组合根：`src/lib/server/membership-service.ts`
+  - `createMembershipService` / `getMembershipService`：
+    - 默认注入 `UserLifetimeMembershipRepository`，构建 `DefaultMembershipService`；  
+    - 为 Billing、Credits 等领域提供统一的 Membership 领域服务实例。
+
 ---
 
 ## 3. 生命周期阶段
@@ -92,8 +104,8 @@ Credits 模块用于抽象「用量型计费」能力，典型场景包括：
 ### 3.2 订阅续费（周期性积分发放）
 
 - 事件触发：
-  - Stripe 订阅续费等事件经 `/api/webhooks/stripe` → `handleWebhookEvent` → Payment 领域（内部由 `StripeWebhookHandler` 与 Billing/Credits 协同处理），最终触发续费处理：
-    - 入口在 `src/app/api/webhooks/stripe/route.ts`，通过 `handleWebhookEvent(payload, signature)` 调用 Payment 组合根；  
+  - Stripe 订阅续费等事件经 `/api/webhooks/stripe` → `handleStripeWebhook` → Payment 领域（内部由 `StripeWebhookHandler` 与 Billing/Credits 协同处理），最终触发续费处理：
+    - 入口在 `src/app/api/webhooks/stripe/route.ts`，通过 `handleStripeWebhook(payload, signature)` 调用 Webhook 组合根；  
     - 组合根再委托给 Stripe 适配层与 WebhookHandler，按照事件类型更新 Payment 状态并触发续费处理。
 
 - 调用链（简化）：
@@ -130,6 +142,42 @@ Credits 模块用于抽象「用量型计费」能力，典型场景包括：
 - 持久化影响：
   - 新增 lifetime membership 记录（如尚不存在）。  
   - 每个自然周期发放一条 type = `LIFETIME_MONTHLY` 的交易记录，并更新余额。
+
+#### 3.3.1 Webhook → Billing → MembershipService 时序（简化）
+
+下图以「一次性 Lifetime 购买 + 首次授予终身会员」为例说明调用顺序：
+
+```text
+Stripe       →  /api/webhooks/stripe  →  handleStripeWebhook  →  StripeWebhookHandler
+  │                      │                      │                        │
+  │  POST event          │                      │                        │
+  │─────────────────────▶│                      │                        │
+  │                      │  read payload/text   │                        │
+  │                      │────────────────────▶ │                        │
+  │                      │  handleStripeWebhook(payload, signature)      │
+  │                      │──────────────────────────────────────────────▶│
+  │                      │                      │  constructEvent +      │
+  │                      │                      │  withEventProcessingLock
+  │                      │                      │──────────────────────▶ │
+  │                      │                      │  handleStripeWebhookEvent(event, deps)
+  │                      │                      │──────────────────────▶ │
+  │                      │                      │                        │  onOnetimePayment/…
+  │                      │                      │                        │  ├─ 写入 payment 记录
+  │                      │                      │                        │  └─ 调用
+  │                      │                      │                        │     billingService.grantLifetimePlan(...)
+  │                      │                      │                        │────────────────────────────▶
+  │                      │                      │                        │
+  │                      │                      │                        │  DefaultBillingService.grantLifetimePlan:
+  │                      │                      │                        │  ├─ 校验 plan/credits 配置
+  │                      │                      │                        │  ├─ 调用 CreditsGateway.addLifetimeMonthlyCredits
+  │                      │                      │                        │  └─ 调用
+  │                      │                      │                        │     membershipService.grantLifetimeMembership(...)
+  │                      │                      │                        │────────────────────────────▶
+  │                      │                      │                        │
+  │                      │                      │                        │  DefaultMembershipService.grantLifetimeMembership:
+  │                      │                      │                        │  └─ 解析 transaction executor 并
+  │                      │                      │                        │     调用 LifetimeMembershipRepository.upsertMembership
+```
 
 ### 3.4 积分套餐购买 / 人工调整（如适用）
 

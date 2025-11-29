@@ -24,10 +24,13 @@ This module provides a flexible payment integration with Stripe, supporting both
 
 ## Environment Variables
 
-The following environment variables are required:
+The following environment variables are used by the payment module:
 
-```
+```bash
+# Required for creating checkout sessions and customer portal
 STRIPE_SECRET_KEY=sk_test_...
+
+# Required only if you enable Stripe webhooks
 STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Public Stripe Variables (used in client components)
@@ -189,7 +192,7 @@ Displays a single pricing plan with checkout button:
 
 ## Webhooks
 
-Stripe webhook events are handled via `/app/api/webhooks/stripe/route.ts`, which calls the `handleWebhookEvent` function from the payment module.
+Stripe webhook events are handled via `/app/api/webhooks/stripe/route.ts`, which calls the `handleStripeWebhook` composition function from `src/lib/server/stripe-webhook.ts`.
 
 The webhook handler processes events like:
 
@@ -200,7 +203,7 @@ The webhook handler processes events like:
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`
 
-The webhook functionality is implemented in the `handleWebhookEvent` method of the payment module.
+Internally, `handleStripeWebhook` wires the Stripe client, repositories and gateways, and then delegates to `StripeWebhookHandler` in the payment module to validate the event, enforce idempotency and trigger Billing/Credits side effects.
 
 ## Integration Steps
 
@@ -246,9 +249,6 @@ getCustomer(params: GetCustomerParams): Promise<Customer | null>;
 
 // Get a subscription by ID
 getSubscription(params: GetSubscriptionParams): Promise<Subscription | null>;
-
-// Handle a webhook event
-handleWebhookEvent(payload: string, signature: string): Promise<void>;
 
 // Get plan by ID
 getPlanById(planId: string): PricePlan | undefined;

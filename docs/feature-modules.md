@@ -79,7 +79,7 @@
 ### 3.2 关键文件
 
 - 领域与接口：
-  - `src/payment/index.ts`：对外导出的 payment 入口（创建 checkout、customer portal、webhook 处理等）
+  - `src/payment/index.ts`：对外导出的 payment 入口（创建 checkout、customer portal、订阅查询等）
   - `src/payment/types.ts`：支付相关类型（PaymentTypes、PlanIntervals 等）
   - `src/payment/services/*`：领域服务（`stripe-payment-service.ts`, `stripe-checkout-service.ts`, `webhook-handler.ts` 等）
   - `src/payment/data-access/*`：访问 `payment` / `stripe_event` 等表的仓储
@@ -89,7 +89,7 @@
   - `src/actions/create-customer-portal-session.ts`
   - `src/components/payment/*`：CheckoutButton / CustomerPortalButton / PricingTable 等
 - Webhook：
-  - `src/app/api/webhooks/stripe/route.ts`：HTTP 入口，调用 `handleWebhookEvent`，并使用 `DomainError` + 结构化 logger。
+  - `src/app/api/webhooks/stripe/route.ts`：HTTP 入口，调用 `handleStripeWebhook`（`src/lib/server/stripe-webhook.ts`），并使用 `DomainError` + 结构化 logger。
 
 ### 3.3 典型请求流：订阅/credits 购买
 

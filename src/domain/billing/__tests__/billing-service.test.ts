@@ -4,7 +4,7 @@ import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { CreditsTransaction } from '@/credits/services/transaction-context';
 import { DefaultBillingService } from '@/domain/billing/billing-service';
 import type { PlanPolicy } from '@/domain/billing/plan-policy';
-import type { UserLifetimeMembershipRepository } from '@/payment/data-access/user-lifetime-membership-repository';
+import type { MembershipService } from '@/domain/membership';
 import type { PaymentProvider, PricePlan } from '@/payment/types';
 import { PaymentTypes, PlanIntervals } from '@/payment/types';
 
@@ -75,6 +75,12 @@ const createCreditsGateway = (): CreditsGateway => ({
   addLifetimeMonthlyCredits: vi.fn(),
 });
 
+const createMembershipService = (): MembershipService =>
+  ({
+    grantLifetimeMembership: vi.fn(),
+    findActiveMembershipsByUserIds: vi.fn(),
+  }) satisfies MembershipService;
+
 describe('DefaultBillingService', () => {
   it('creates checkout session after validating plan and price', async () => {
     const paymentProvider = createPaymentProvider();
@@ -83,6 +89,7 @@ describe('DefaultBillingService', () => {
       creditsGateway: createCreditsGateway(),
       planPolicy: createPlanPolicy(),
       creditsEnabled: true,
+      membershipService: createMembershipService(),
     });
 
     const result = await service.startSubscriptionCheckout({
@@ -110,6 +117,7 @@ describe('DefaultBillingService', () => {
       creditsGateway,
       planPolicy: createPlanPolicy(),
       creditsEnabled: true,
+      membershipService: createMembershipService(),
     });
 
     const cycleRefDate = new Date('2025-01-01');
@@ -135,6 +143,7 @@ describe('DefaultBillingService', () => {
       creditsGateway,
       planPolicy: createPlanPolicy(),
       creditsEnabled: false,
+      membershipService: createMembershipService(),
     });
 
     await service.handleRenewal({
@@ -159,6 +168,7 @@ describe('DefaultBillingService', () => {
       creditsGateway,
       planPolicy,
       creditsEnabled: true,
+      membershipService: createMembershipService(),
     });
 
     await service.handleRenewal({
@@ -182,6 +192,7 @@ describe('DefaultBillingService', () => {
       creditsGateway: createCreditsGateway(),
       planPolicy,
       creditsEnabled: true,
+      membershipService: createMembershipService(),
     });
     await expect(
       service.startSubscriptionCheckout({
@@ -213,6 +224,7 @@ describe('DefaultBillingService', () => {
       creditsGateway,
       planPolicy,
       creditsEnabled: true,
+      membershipService: createMembershipService(),
     });
     await service.grantLifetimePlan({
       userId: 'user_1',
@@ -251,19 +263,16 @@ describe('DefaultBillingService', () => {
         disabled: false,
       }),
     };
-    const membershipRepository: Pick<
-      UserLifetimeMembershipRepository,
-      'upsertMembership'
-    > = {
-      upsertMembership: vi.fn(),
+    const membershipService: MembershipService = {
+      grantLifetimeMembership: vi.fn(),
+      findActiveMembershipsByUserIds: vi.fn(),
     };
     const service = new DefaultBillingService({
       paymentProvider: createPaymentProvider(),
       creditsGateway,
       planPolicy,
       creditsEnabled: true,
-      lifetimeMembershipRepository:
-        membershipRepository as UserLifetimeMembershipRepository,
+      membershipService,
     });
     const executor = {} as DbExecutor;
     const transaction = new CreditsTransaction(executor);
@@ -274,12 +283,12 @@ describe('DefaultBillingService', () => {
       transaction,
     });
 
-    expect(membershipRepository.upsertMembership).toHaveBeenCalledWith(
+    expect(membershipService.grantLifetimeMembership).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user_1',
         priceId: 'price_basic',
-      }),
-      executor
+        transaction,
+      })
     );
   });
 });

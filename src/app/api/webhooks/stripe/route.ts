@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders } from '@/lib/server/logger';
-import { handleWebhookEvent } from '@/payment';
+import { handleStripeWebhook } from '@/lib/server/stripe-webhook';
 
 /**
  * Stripe webhook handler
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Process the webhook event
-    await handleWebhookEvent(payload, signature);
+    await handleStripeWebhook(payload, signature);
 
     // Return success
     return NextResponse.json({ received: true }, { status: 200 });

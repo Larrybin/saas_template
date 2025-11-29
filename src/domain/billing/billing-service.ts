@@ -1,14 +1,11 @@
 import type { Locale } from 'next-intl';
 import type { PlanCreditsConfig } from '@/credits/config';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import {
-  type CreditsTransaction,
-  resolveExecutor,
-} from '@/credits/services/transaction-context';
+import type { CreditsTransaction } from '@/credits/services/transaction-context';
+import type { MembershipService } from '@/domain/membership';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
-import { UserLifetimeMembershipRepository } from '@/payment/data-access/user-lifetime-membership-repository';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
@@ -52,12 +49,17 @@ export interface BillingService {
   grantLifetimePlan(input: GrantLifetimePlanInput): Promise<void>;
 }
 
+export interface BillingRenewalPort {
+  handleRenewal(input: BillingRenewalInput): Promise<void>;
+  grantLifetimePlan(input: GrantLifetimePlanInput): Promise<void>;
+}
+
 export type BillingServiceDeps = {
   paymentProvider: PaymentProvider;
   creditsGateway: CreditsGateway;
   planPolicy: PlanPolicy;
   creditsEnabled: boolean;
-  lifetimeMembershipRepository?: UserLifetimeMembershipRepository;
+  membershipService: MembershipService;
 };
 
 export class DefaultBillingService implements BillingService {
@@ -66,16 +68,14 @@ export class DefaultBillingService implements BillingService {
   private readonly creditsGateway: CreditsGateway;
   private readonly planPolicy: PlanPolicy;
   private readonly creditsEnabled: boolean;
-  private readonly lifetimeMembershipRepository: UserLifetimeMembershipRepository;
+  private readonly membershipService: MembershipService;
 
   constructor(deps: BillingServiceDeps) {
     this.paymentProvider = deps.paymentProvider;
     this.creditsGateway = deps.creditsGateway;
     this.planPolicy = deps.planPolicy;
     this.creditsEnabled = deps.creditsEnabled;
-    this.lifetimeMembershipRepository =
-      deps.lifetimeMembershipRepository ??
-      new UserLifetimeMembershipRepository();
+    this.membershipService = deps.membershipService;
   }
 
   async startSubscriptionCheckout(
@@ -159,15 +159,12 @@ export class DefaultBillingService implements BillingService {
       refDate,
       input.transaction
     );
-    const executor = resolveExecutor(input.transaction);
-    await this.lifetimeMembershipRepository.upsertMembership(
-      {
-        userId: input.userId,
-        priceId: input.priceId,
-        cycleRefDate: refDate,
-      },
-      executor
-    );
+    await this.membershipService.grantLifetimeMembership({
+      userId: input.userId,
+      priceId: input.priceId,
+      cycleRefDate: refDate,
+      transaction: input.transaction,
+    });
   }
 
   private ensurePlanAndPrice(planId: string, priceId: string): PricePlan {

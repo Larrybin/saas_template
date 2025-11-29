@@ -2,7 +2,7 @@ import type Stripe from 'stripe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { websiteConfig } from '@/config/website';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import type { BillingService } from '@/domain/billing';
+import type { BillingRenewalPort } from '@/domain/billing';
 import { getLogger } from '@/lib/server/logger';
 import { withTestCreditsConfig } from '../../../../tests/utils/credits-config';
 import { PaymentTypes } from '../../types';
@@ -239,7 +239,7 @@ const createService = (
     userRepository?: UserRepositoryLike;
     paymentRepository?: PaymentRepositoryLike;
     stripeEventRepository?: StripeEventRepositoryLike;
-    billingService?: BillingService;
+    billingService?: BillingRenewalPort;
   } = {}
 ) => {
   const stripe = overrides.stripe ?? createStripeStub();
@@ -298,7 +298,7 @@ const createService = (
       startCreditCheckout: vi.fn(),
       handleRenewal: vi.fn(),
       grantLifetimePlan: vi.fn(),
-    } satisfies BillingService);
+    } satisfies BillingRenewalPort);
 
   const service = new StripePaymentAdapter({
     stripeClient: stripe,
@@ -572,7 +572,7 @@ describe('StripePaymentAdapter', () => {
       startCreditCheckout: vi.fn(),
       handleRenewal: vi.fn(),
       grantLifetimePlan: vi.fn(),
-    } satisfies BillingService;
+    } satisfies BillingRenewalPort;
     const notificationGateway = {
       notifyPurchase: vi.fn(),
     };
@@ -649,7 +649,7 @@ describe('StripePaymentAdapter', () => {
       startCreditCheckout: vi.fn(),
       handleRenewal: vi.fn(),
       grantLifetimePlan: vi.fn(),
-    } satisfies BillingService;
+    } satisfies BillingRenewalPort;
     const tx = { id: 'tx-sub' };
     const paymentRepository = {
       listByUser: vi.fn(),
@@ -716,7 +716,7 @@ describe('StripePaymentAdapter', () => {
       startCreditCheckout: vi.fn(),
       handleRenewal: vi.fn().mockRejectedValue(new Error('sub grant fail')),
       grantLifetimePlan: vi.fn(),
-    } satisfies BillingService;
+    } satisfies BillingRenewalPort;
     const paymentRepository = {
       listByUser: vi.fn(),
       findOneBySubscriptionId: vi.fn().mockResolvedValue({

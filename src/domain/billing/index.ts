@@ -1,5 +1,6 @@
 export {
   type BillingRenewalInput,
+  type BillingRenewalPort,
   type BillingService,
   type BillingServiceDeps,
   DefaultBillingService,

@@ -16,7 +16,7 @@ import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import { getDb } from '@/db';
 import { DefaultBillingService } from '@/domain/billing/billing-service';
 import type { PlanPolicy } from '@/domain/billing/plan-policy';
-import type { UserLifetimeMembershipRepository } from '@/payment/data-access/user-lifetime-membership-repository';
+import type { MembershipService } from '@/domain/membership';
 import type { PaymentProvider, PricePlan } from '@/payment/types';
 import { PaymentTypes, PlanIntervals } from '@/payment/types';
 
@@ -127,6 +127,12 @@ describe('Billing -> Credits integration (happy path)', () => {
   const balances = new Map<string, number>();
   const transactions: CreditTransactionInsert[] = [];
 
+  const createMembershipService = (): MembershipService =>
+    ({
+      grantLifetimeMembership: vi.fn(),
+      findActiveMembershipsByUserIds: vi.fn(),
+    }) satisfies MembershipService;
+
   beforeEach(() => {
     vi.clearAllMocks();
     balances.clear();
@@ -196,6 +202,7 @@ describe('Billing -> Credits integration (happy path)', () => {
       creditsGateway,
       planPolicy: billingPlanPolicy,
       creditsEnabled: true,
+      membershipService: createMembershipService(),
     });
 
     const refDate = new Date('2025-01-01T00:00:00Z');
@@ -281,11 +288,9 @@ describe('Billing -> Credits integration (happy path)', () => {
     const planCreditsPolicy = createPlanCreditsPolicyForCreditsLifetime();
 
     const creditsGateway = new CreditLedgerService(planCreditsPolicy);
-    const membershipRepository: Pick<
-      UserLifetimeMembershipRepository,
-      'upsertMembership'
-    > = {
-      upsertMembership: vi.fn(),
+    const membershipService: MembershipService = {
+      grantLifetimeMembership: vi.fn(),
+      findActiveMembershipsByUserIds: vi.fn(),
     };
 
     const billingService = new DefaultBillingService({
@@ -293,8 +298,7 @@ describe('Billing -> Credits integration (happy path)', () => {
       creditsGateway,
       planPolicy: billingPlanPolicy,
       creditsEnabled: true,
-      lifetimeMembershipRepository:
-        membershipRepository as UserLifetimeMembershipRepository,
+      membershipService,
     });
 
     const refDate = new Date('2025-02-01T00:00:00Z');
@@ -315,14 +319,12 @@ describe('Billing -> Credits integration (happy path)', () => {
     expect(tx.remainingAmount).toBe(lifetimeRule.amount);
     expect(tx.periodKey).toBeGreaterThan(0);
 
-    expect(membershipRepository.upsertMembership).toHaveBeenCalledTimes(1);
-    expect(membershipRepository.upsertMembership).toHaveBeenCalledWith(
-      {
-        userId: 'user-1',
-        priceId: 'price_lifetime',
-        cycleRefDate: refDate,
-      },
-      undefined
-    );
+    expect(membershipService.grantLifetimeMembership).toHaveBeenCalledTimes(1);
+    expect(membershipService.grantLifetimeMembership).toHaveBeenCalledWith({
+      userId: 'user-1',
+      priceId: 'price_lifetime',
+      cycleRefDate: refDate,
+      transaction: undefined,
+    });
   });
 });

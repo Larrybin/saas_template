@@ -4,7 +4,7 @@ import { getCreditPackageById } from '@/credits/server';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { createCreditsTransaction } from '@/credits/services/transaction-context';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
-import type { BillingService } from '@/domain/billing';
+import type { BillingRenewalPort } from '@/domain/billing';
 import { PaymentTypes } from '../types';
 import type { NotificationGateway } from './gateways/notification-gateway';
 import type {
@@ -26,7 +26,7 @@ type WebhookDeps = {
   creditsGateway: CreditsGateway;
   notificationGateway: NotificationGateway;
   logger: Logger;
-  billingService: BillingService;
+  billingService: BillingRenewalPort;
 };
 
 export async function handleStripeWebhookEvent(

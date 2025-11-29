@@ -1,9 +1,5 @@
 import { websiteConfig } from '@/config/website';
-import { serverEnv } from '@/env/server';
-import {
-  createStripePaymentProviderFromEnv,
-  createStripeWebhookHandlerFromEnv,
-} from './services/stripe-payment-factory';
+import { createStripePaymentProviderFromEnv } from './services/stripe-payment-factory';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
@@ -104,29 +100,6 @@ export const createCustomerPortal = async (
 ): Promise<PortalResult> => {
   const provider = getPaymentProvider();
   return provider.createCustomerPortal(params);
-};
-
-/**
- * Handle webhook event
- * @param payload Raw webhook payload
- * @param signature Webhook signature
- */
-export const handleWebhookEvent = async (
-  payload: string,
-  signature: string
-): Promise<void> => {
-  if (websiteConfig.payment.provider !== 'stripe') {
-    throw new Error(
-      `Webhook handling not supported for provider: ${websiteConfig.payment.provider}`
-    );
-  }
-
-  const handler = createStripeWebhookHandlerFromEnv({
-    stripeSecretKey: serverEnv.stripeSecretKey,
-    stripeWebhookSecret: serverEnv.stripeWebhookSecret,
-  });
-
-  await handler.handleWebhookEvent(payload, signature);
 };
 
 /**

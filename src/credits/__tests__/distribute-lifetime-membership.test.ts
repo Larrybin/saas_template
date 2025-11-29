@@ -4,7 +4,7 @@ import {
   collectValidLifetimeMemberships,
   createCachedPlanResolver,
 } from '@/credits/distribute';
-import type { LifetimeMembershipRecord } from '@/payment/data-access/user-lifetime-membership-repository';
+import type { LifetimeMembershipRecord } from '@/domain/membership';
 import { PlanIntervals, type PricePlan } from '@/payment/types';
 
 const createMembership = (

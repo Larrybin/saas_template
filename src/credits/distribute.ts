@@ -1,11 +1,12 @@
 import { featureFlags } from '@/config/feature-flags';
 import { getDb } from '@/db';
+import type {
+  LifetimeMembershipRecord,
+  MembershipService,
+} from '@/domain/membership';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
 import { getLogger } from '@/lib/server/logger';
-import {
-  type LifetimeMembershipRecord,
-  UserLifetimeMembershipRepository,
-} from '@/payment/data-access/user-lifetime-membership-repository';
+import { createMembershipService } from '@/lib/server/membership-service';
 import { createUserBillingReader } from './data-access/user-billing-view';
 import { CreditDistributionService } from './distribution/credit-distribution-service';
 import {
@@ -27,12 +28,12 @@ const baseLogger = getLogger({ span: 'credits.distribute' });
 
 export type DistributeCreditsDeps = {
   creditDistributionService: CreditDistributionService;
-  lifetimeMembershipRepository: UserLifetimeMembershipRepository;
+  membershipService: MembershipService;
 };
 
 const defaultDeps: DistributeCreditsDeps = {
   creditDistributionService: new CreditDistributionService(),
-  lifetimeMembershipRepository: new UserLifetimeMembershipRepository(),
+  membershipService: createMembershipService(),
 };
 
 export type {
@@ -54,7 +55,7 @@ async function resolveLifetimeMemberships(
   resolvePlan: PlanResolver
 ): Promise<Map<string, LifetimeMembershipResolution>> {
   const membershipsInBatch =
-    await deps.lifetimeMembershipRepository.findActiveByUserIds(userIds, db);
+    await deps.membershipService.findActiveMembershipsByUserIds(userIds, db);
   const membershipsByUser = membershipsInBatch.reduce<
     Map<string, LifetimeMembershipRecord[]>
   >((acc, membership) => {

@@ -1,4 +1,4 @@
-import type { LifetimeMembershipRecord } from '@/payment/data-access/user-lifetime-membership-repository';
+import type { LifetimeMembershipRecord } from '@/domain/membership';
 import type { PricePlan } from '@/payment/types';
 
 export type PlanUserRecord = {

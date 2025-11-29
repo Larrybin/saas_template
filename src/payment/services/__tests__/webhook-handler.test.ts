@@ -1,7 +1,7 @@
 import type { Logger } from 'pino';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import type { BillingService } from '@/domain/billing';
+import type { BillingRenewalPort } from '@/domain/billing';
 import { PaymentTypes } from '../../types';
 import type { NotificationGateway } from '../gateways/notification-gateway';
 import type {
@@ -45,12 +45,12 @@ const createDeps = () => {
     notifyPurchase: vi.fn(),
   } as unknown as NotificationGateway;
 
-  const billingService: BillingService = {
+  const billingService: BillingRenewalPort = {
     startSubscriptionCheckout: vi.fn(),
     startCreditCheckout: vi.fn(),
     handleRenewal: vi.fn(),
     grantLifetimePlan: vi.fn(),
-  } as unknown as BillingService;
+  } as unknown as BillingRenewalPort;
 
   const logger: Logger = {
     debug: vi.fn(),

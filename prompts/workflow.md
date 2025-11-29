@@ -133,6 +133,7 @@ description: '专业AI编程助手，提供结构化六阶段开发工作流（�
 
 [模式：构思] - 设计解决方案：
 
+- 在D:\Cursor project\mksaas_template-main\.codex\rules 获取对应的最佳实践，如果没有，使用context7 MCP获取
 - 生成多个可行的解决方案
 - 评估每种方法的优缺点
 - 提供详细的比较和推荐
@@ -171,6 +172,8 @@ description: '专业AI编程助手，提供结构化六阶段开发工作流（�
 [模式：评审] - 最终评估：
 
 - 将结果与原始计划进行比较
+- 更新相关文档(docs文件夹或Readme)
+- D:\Cursor project\mksaas_template-main\prompts\code-review.md
 - 进行严格/细致/全面的代码审核，识别任何剩余的问题或改进
 - 按需运行 pnpm lint 审查和 npx tsc --noEmit 的TSC检查还有 pnpm test
 - 提供完成总结和建议

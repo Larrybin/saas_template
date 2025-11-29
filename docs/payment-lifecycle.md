@@ -25,18 +25,24 @@ Payment 模块承担的核心职责：
 ### 2.1 Provider 与服务
 
 - `src/payment/index.ts`
-  - 提供对外入口函数：`getPaymentProvider`, `createCheckout`, `createCreditCheckout`, `createCustomerPortal`, `handleWebhookEvent`, `getSubscriptions` 等。  
+  - 提供对外入口函数：`getPaymentProvider`, `createCheckout`, `createCreditCheckout`, `createCustomerPortal`, `getSubscriptions` 等（不再承担 Webhook 入口职责）。  
   - 默认使用 `StripePaymentAdapter` 作为 `PaymentProvider` 实现，由该模块从 `serverEnv` 读取 Stripe 配置并组装依赖。
 
 - `src/payment/services/stripe-payment-adapter.ts`
   - `StripePaymentAdapter`：Stripe 场景下的支付适配器，职责包括：
-    - 持有由外部注入的 Stripe client 与 webhook secret（不直接读取 env/config）。  
-    - 接受注入 `CreditsGateway`、`NotificationGateway`、`UserRepository`、`PaymentRepository`、`StripeEventRepository` 等依赖（具体默认实现由工厂/组合根提供）。  
+    - 持有由外部注入的 Stripe client（不直接读取 env/config）。  
+    - 接受注入 `UserRepository`、`PaymentRepository` 等依赖（具体默认实现由工厂/组合根提供）。  
     - 封装：
       - `createCheckout` / `createCreditCheckout`（创建 checkout session）。  
       - `createCustomerPortal`（customer portal session）。  
-      - `getSubscriptions`（从本地状态查询订阅）。  
-      - `handleWebhookEvent`（当前版本中仍通过内部委托调用 `StripeWebhookHandler`，后续可进一步从 `PaymentProvider` 接口中下沉该职责）。
+      - `getSubscriptions`（从本地状态查询订阅）。
+
+- `src/lib/server/stripe-webhook.ts`
+  - `handleStripeWebhook(payload, signature)`：Stripe Webhook 组合根，职责包括：
+    - 从 `serverEnv` 读取 `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`；  
+    - 通过 `createStripeWebhookHandlerFromEnv` 组装 `StripeWebhookHandler` 所需的 Stripe client / 仓储 / 网关；  
+    - 通过 `getBillingService()` 获取 Billing 领域服务（按窄接口 `BillingRenewalPort` 使用）；  
+    - 调用 `handler.handleWebhookEvent(payload, signature)` 完成验证、幂等与业务协作。
 
 ### 2.2 数据访问与仓储
 
@@ -60,6 +66,7 @@ Payment 模块承担的核心职责：
   - 依赖的核心能力：
     - `CreditsGateway`：通常为 `CreditLedgerService`，负责实际积分发放。  
     - `PlanPolicy`：对 `websiteConfig.price.plans`/`credits` 的抽象视图，用于解析计划与积分策略。
+    - `MembershipService`：Membership 域服务，用于在 lifetime 购买成功时统一落库/更新终身会员记录。
 
 ---
 
@@ -83,8 +90,8 @@ Payment 模块承担的核心职责：
    - API Route：`src/app/api/webhooks/stripe/route.ts`：
      - 使用 `createLoggerFromHeaders` 建立 request logger；  
      - 读取 payload + signature，检查缺失条件（缺 payload/签名）返回 400；  
-     - 调用 `handleWebhookEvent(payload, signature)`。
-   - Webhook 处理由 `StripeWebhookHandler` 承担（当前通过 `StripePaymentAdapter.handleWebhookEvent` 委托实现，后续可进一步在组合根中直接使用 Handler）：
+     - 调用 `handleStripeWebhook(payload, signature)`。
+   - Webhook 处理由 `StripeWebhookHandler` 承担：
      - 通过 `stripe.webhooks.constructEvent` 验证并解析事件。  
      - 使用 `StripeEventRepository.withEventProcessingLock` 确保幂等处理。  
      - 委托 `handleStripeWebhookEvent`，其中会：

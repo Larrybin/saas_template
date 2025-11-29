@@ -1,12 +1,7 @@
 import Stripe from 'stripe';
 import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import {
-  type BillingService,
-  DefaultBillingService,
-  DefaultPlanPolicy,
-} from '@/domain/billing';
-import { isCreditsEnabled } from '@/lib/credits-settings';
+import type { BillingRenewalPort } from '@/domain/billing';
 import { getLogger } from '@/lib/server/logger';
 import { PaymentRepository } from '../data-access/payment-repository';
 import { StripeEventRepository } from '../data-access/stripe-event-repository';
@@ -27,7 +22,10 @@ type StripeProviderOverrides = {
   userRepository?: UserRepository;
   paymentRepository?: PaymentRepository;
   stripeEventRepository?: StripeEventRepository;
-  billingService?: BillingService;
+};
+
+type StripeWebhookHandlerOverrides = StripeProviderOverrides & {
+  billingService: BillingRenewalPort;
 };
 
 export const createStripeClientFromSecret = (
@@ -41,32 +39,41 @@ type StripeSecretsEnv = {
   stripeWebhookSecret?: string | undefined;
 };
 
-const resolveStripeSecrets = (
+const resolveStripeSecretKey = (
   env: StripeSecretsEnv,
   overrides?: StripeProviderOverrides
-) => {
+): string => {
   const stripeSecretKey =
     overrides?.stripeSecretKey ?? env.stripeSecretKey ?? undefined;
   if (!stripeSecretKey) {
     throw new Error('STRIPE_SECRET_KEY environment variable is not set');
   }
+  return stripeSecretKey;
+};
+
+const resolveStripeWebhookSecret = (
+  env: StripeSecretsEnv,
+  overrides?: StripeProviderOverrides
+): string => {
   const stripeWebhookSecret =
     overrides?.stripeWebhookSecret ?? env.stripeWebhookSecret ?? undefined;
   if (!stripeWebhookSecret) {
     throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set.');
   }
 
-  return { stripeSecretKey, stripeWebhookSecret };
+  return stripeWebhookSecret;
+};
+
+type StripeInfraOptions = {
+  requireWebhookSecret?: boolean;
 };
 
 const createStripeInfra = (
   env: StripeSecretsEnv,
-  overrides?: StripeProviderOverrides
+  overrides?: StripeProviderOverrides,
+  options?: StripeInfraOptions
 ) => {
-  const { stripeSecretKey, stripeWebhookSecret } = resolveStripeSecrets(
-    env,
-    overrides
-  );
+  const stripeSecretKey = resolveStripeSecretKey(env, overrides);
 
   const stripeClient =
     overrides?.stripeClient ?? createStripeClientFromSecret(stripeSecretKey);
@@ -80,14 +87,10 @@ const createStripeInfra = (
   const stripeEventRepository =
     overrides?.stripeEventRepository ?? new StripeEventRepository();
 
-  const billingService =
-    overrides?.billingService ??
-    new DefaultBillingService({
-      paymentProvider: undefined as unknown as PaymentProvider,
-      creditsGateway,
-      planPolicy: new DefaultPlanPolicy(),
-      creditsEnabled: isCreditsEnabled(),
-    });
+  const requireWebhookSecret = options?.requireWebhookSecret ?? true;
+  const stripeWebhookSecret = requireWebhookSecret
+    ? resolveStripeWebhookSecret(env, overrides)
+    : (overrides?.stripeWebhookSecret ?? env.stripeWebhookSecret ?? undefined);
 
   return {
     stripeClient,
@@ -97,7 +100,6 @@ const createStripeInfra = (
     userRepository,
     paymentRepository,
     stripeEventRepository,
-    billingService,
   };
 };
 
@@ -107,7 +109,8 @@ export const createStripePaymentProviderFromEnv = (
 ): PaymentProvider => {
   const { stripeClient, userRepository, paymentRepository } = createStripeInfra(
     env,
-    overrides
+    overrides,
+    { requireWebhookSecret: false }
   );
 
   const paymentProvider = new StripePaymentAdapter({
@@ -121,7 +124,7 @@ export const createStripePaymentProviderFromEnv = (
 
 export const createStripeWebhookHandlerFromEnv = (
   env: StripeSecretsEnv,
-  overrides?: StripeProviderOverrides
+  overrides: StripeWebhookHandlerOverrides
 ): StripeWebhookHandler => {
   const {
     stripeClient,
@@ -130,8 +133,7 @@ export const createStripeWebhookHandlerFromEnv = (
     paymentRepository,
     creditsGateway,
     notificationGateway,
-    billingService,
-  } = createStripeInfra(env, overrides);
+  } = createStripeInfra(env, overrides, { requireWebhookSecret: true });
 
   const logger = getLogger({
     span: 'payment.stripe',
@@ -145,7 +147,7 @@ export const createStripeWebhookHandlerFromEnv = (
     paymentRepository,
     creditsGateway,
     notificationGateway,
-    billingService,
+    billingService: overrides.billingService,
     logger,
   });
 };

@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
-import type { BillingService } from '@/domain/billing';
+import type { BillingRenewalPort } from '@/domain/billing';
 import type { Logger } from '@/lib/server/logger';
 import type { NotificationGateway } from './gateways/notification-gateway';
 import type {
@@ -18,7 +18,7 @@ export type StripeWebhookHandlerDeps = {
   paymentRepository: PaymentRepositoryLike;
   creditsGateway: CreditsGateway;
   notificationGateway: NotificationGateway;
-  billingService: BillingService;
+  billingService: BillingRenewalPort;
   logger: Logger;
 };
 
@@ -29,7 +29,7 @@ export class StripeWebhookHandler {
   private readonly paymentRepository: PaymentRepositoryLike;
   private readonly creditsGateway: CreditsGateway;
   private readonly notificationGateway: StripeWebhookHandlerDeps['notificationGateway'];
-  private readonly billingService: BillingService;
+  private readonly billingService: BillingRenewalPort;
   private readonly logger: Logger;
 
   constructor(deps: StripeWebhookHandlerDeps) {

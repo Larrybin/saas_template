@@ -21,11 +21,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { clientLogger } from '@/lib/client-logger';
-import { cn } from '@/lib/utils';
 import {
   type EnvelopeWithDomainError,
   unwrapEnvelopeOrThrowDomainError,
 } from '@/lib/domain-error-utils';
+import { cn } from '@/lib/utils';
 
 type Envelope<T> = EnvelopeWithDomainError<T>;
 

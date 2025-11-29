@@ -1,9 +1,9 @@
+import { describe, expect, it } from 'vitest';
 import {
   type AiBillingRule,
   DefaultAiBillingPolicy,
 } from '@/ai/billing-policy';
 import { websiteConfig } from '@/config/website';
-import { describe, expect, it } from 'vitest';
 
 describe('DefaultAiBillingPolicy', () => {
   const policy = new DefaultAiBillingPolicy();

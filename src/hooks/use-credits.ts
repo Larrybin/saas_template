@@ -169,6 +169,9 @@ export function useConsumeCredits() {
       queryClient.invalidateQueries({
         queryKey: creditsKeys.stats(),
       });
+      queryClient.invalidateQueries({
+        queryKey: creditsKeys.overview(),
+      });
     },
   });
 }

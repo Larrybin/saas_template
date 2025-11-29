@@ -76,7 +76,10 @@ export function evaluateRouteAccess(
 export function shouldCheckSession(pathname: string): boolean {
   const normalizedPath = normalizePathname(pathname);
 
-  return protectedRouteSet.has(normalizedPath);
+  return (
+    protectedRouteSet.has(normalizedPath) ||
+    disallowedWhenLoggedInRouteSet.has(normalizedPath)
+  );
 }
 
 export function buildSafeCallbackUrl(nextUrl: URL): string {

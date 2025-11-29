@@ -53,12 +53,17 @@ description: 基于 MkSaaS 模板的认证、安全存储与合规性设计规�
 4. 配置与环境
    - `env.example` 与 `docs/env-and-ops.md` 记录了 Auth / Stripe / AI / Analytics 等敏感配置变量。
    - `src/env` 模块封装了环境变量访问，减少在业务代码中直接读 `process.env`。
+   - Demo 标志与生产环境约束：
+     - 判定是否为演示站点的逻辑（如 `isDemoWebsite()`）只能在受控 demo 环境返回 `true`，**生产环境必须保证始终为 `false`**。
+     - 生产配置中应通过明确的环境变量（如 `APP_ENV=production` 或 `IS_DEMO=false`）驱动该判断，而不是依赖隐含约定。
+     - 建议在启动过程中或健康检查中加入断言：一旦检测到生产环境 `isDemoWebsite()` 为 `true`，立即告警或阻断，以防 demo 级放宽逻辑在生产暴露管理操作。
 
 ## 反模式（应避免）
 
 - 在客户端暴露服务端密钥（如错误使用 `NEXT_PUBLIC_` 前缀）。
 - 在日志或错误消息中包含敏感数据（密码、token、完整 URL 包含敏感 query 等）。
 - 为了“方便调试”绕过认证 / 限流逻辑，或在生产环境保留调试后门。
+- 在生产环境错误配置 demo 标志（如 `isDemoWebsite()` 返回 `true`），导致演示用的宽松权限策略在生产环境生效。
 
 ## Checklist
 
@@ -78,4 +83,3 @@ description: 基于 MkSaaS 模板的认证、安全存储与合规性设计规�
   - [ ] 是否已在部署环境中启用严格的安全头部（CSP、HSTS 等）与 Cookie 属性（Secure、HttpOnly 等）。
   - [ ] 是否对关键 Job / Webhook 引入幂等键记录，以防止重放攻击导致重复扣费或重复发放。
   - [ ] 是否有定期的日志抽样与安全审计流程，以发现潜在的敏感信息泄漏或异常访问模式。
-

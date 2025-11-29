@@ -1,6 +1,7 @@
 import type { BetterAuthPlugin } from 'better-auth';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { APIError } from 'better-auth/api';
 import { admin } from 'better-auth/plugins';
 import { parse as parseCookies } from 'cookie';
 import type { Locale } from 'next-intl';
@@ -145,8 +146,46 @@ export const auth = betterAuth({
   onAPIError: {
     // https://www.better-auth.com/docs/reference/options#onapierror
     errorURL: '/auth/error',
-    onError: (error, _ctx) => {
-      console.error('auth error:', error);
+    onError: (error, ctx) => {
+      const baseContext = {
+        path: (ctx as { path?: string } | undefined)?.path,
+        method: (ctx as { request?: { method?: string } } | undefined)?.request
+          ?.method,
+        requestId: (ctx as { requestId?: string } | undefined)?.requestId,
+      };
+
+      if (error instanceof APIError) {
+        const safeError = {
+          name: error.name,
+          message: error.message,
+          status: error.status,
+          // 部分 better-auth 错误实现会附带 code 字段
+          code: (error as { code?: string }).code,
+          ...baseContext,
+        };
+
+        // 仅记录必要字段，避免在日志中泄露 token、内部 ID 等敏感信息
+        console.error('auth api error:', safeError);
+        return;
+      }
+
+      if (error instanceof Error) {
+        const safeError = {
+          name: error.name,
+          message: error.message,
+          ...baseContext,
+        };
+
+        // 仅记录必要字段，避免在日志中泄露 token、内部 ID 等敏感信息
+        console.error('auth error:', safeError);
+        return;
+      }
+
+      // 非 Error 类型的异常值（如字符串、未知对象），仅作为 opaque 值记录
+      console.error('auth non-error thrown:', {
+        value: error,
+        ...baseContext,
+      });
     },
   },
 });

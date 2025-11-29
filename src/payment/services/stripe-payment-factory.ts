@@ -20,8 +20,8 @@ import { StripeWebhookHandler } from './stripe-webhook-handler';
 
 type StripeProviderOverrides = {
   stripeClient?: StripeClientLike;
-  stripeSecretKey?: string;
-  stripeWebhookSecret?: string;
+  stripeSecretKey?: string | undefined;
+  stripeWebhookSecret?: string | undefined;
   creditsGateway?: CreditsGateway;
   notificationGateway?: NotificationGateway;
   userRepository?: UserRepository;

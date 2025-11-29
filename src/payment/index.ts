@@ -16,8 +16,8 @@ import type {
 } from './types';
 
 type StripeProviderOverrides = {
-  stripeSecretKey?: string;
-  stripeWebhookSecret?: string;
+  stripeSecretKey?: string | undefined;
+  stripeWebhookSecret?: string | undefined;
 };
 
 const createStripePaymentProvider = (

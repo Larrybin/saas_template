@@ -66,7 +66,7 @@
 
 - Payment 模块：
   - `src/payment/services/__tests__/stripe-payment-service.test.ts`：  
-    - 覆盖 `StripePaymentService` 主要行为（checkout / webhook / subscriptions 等），确保与仓储/通知/Credits/Billing 的协作正常。
+    - 覆盖 `StripePaymentAdapter` 主要行为（checkout / webhook / subscriptions 等），确保与仓储/通知/Credits/Billing 的协作正常。
 
 ### 2.3 API Routes 与基础设施
 

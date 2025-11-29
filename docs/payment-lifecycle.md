@@ -26,19 +26,17 @@ Payment 模块承担的核心职责：
 
 - `src/payment/index.ts`
   - 提供对外入口函数：`getPaymentProvider`, `createCheckout`, `createCreditCheckout`, `createCustomerPortal`, `handleWebhookEvent`, `getSubscriptions` 等。  
-  - 默认使用 `StripePaymentService` 作为 `PaymentProvider` 实现，由该模块从 `serverEnv` 读取 Stripe 配置并组装依赖。
+  - 默认使用 `StripePaymentAdapter` 作为 `PaymentProvider` 实现，由该模块从 `serverEnv` 读取 Stripe 配置并组装依赖。
 
-- `src/payment/services/stripe-payment-service.ts`
-  - `StripePaymentService`：Stripe 场景下的核心领域服务，职责包括：
+- `src/payment/services/stripe-payment-adapter.ts`
+  - `StripePaymentAdapter`：Stripe 场景下的支付适配器，职责包括：
     - 持有由外部注入的 Stripe client 与 webhook secret（不直接读取 env/config）。  
-    - 按需实例化或接受注入 `CreditsGateway`（通常为 `CreditLedgerService`）、`NotificationGateway`、`UserRepository`、`PaymentRepository`、`StripeEventRepository` 等。  
+    - 接受注入 `CreditsGateway`、`NotificationGateway`、`UserRepository`、`PaymentRepository`、`StripeEventRepository` 等依赖（具体默认实现由工厂/组合根提供）。  
     - 封装：
       - `createCheckout` / `createCreditCheckout`（创建 checkout session）。  
       - `createCustomerPortal`（customer portal session）。  
       - `getSubscriptions`（从本地状态查询订阅）。  
-      - `handleWebhookEvent`（解析并调度 Stripe 事件）。  
-    - 组合 Billing 域：
-      - 通过 `DefaultBillingService` + `DefaultPlanPolicy` 处理订阅续费、lifetime 计划与积分发放。
+      - `handleWebhookEvent`（当前版本中仍通过内部委托调用 `StripeWebhookHandler`，后续可进一步从 `PaymentProvider` 接口中下沉该职责）。
 
 ### 2.2 数据访问与仓储
 
@@ -55,7 +53,7 @@ Payment 模块承担的核心职责：
 
   - `src/domain/billing/billing-service.ts`（`DefaultBillingService`）
   - 负责 Payment 与 Credits/Billing 策略之间的协调：
-    - `startSubscriptionCheckout`：校验 plan/price 合法性后委托 `PaymentProvider` 创建 checkout。  
+   - `startSubscriptionCheckout`：校验 plan/price 合法性后委托 `PaymentProvider`（默认 `StripePaymentAdapter`）创建 checkout。  
     - `startCreditCheckout`：为积分套餐创建 checkout session。  
     - `handleRenewal`：订阅续费时，根据 plan/price 与 credits 配置决定是否调用 `CreditsGateway.addSubscriptionCredits`。  
     - `grantLifetimePlan`：lifetime 计划购买时，处理月度积分发放与 lifetime membership 记录。
@@ -77,7 +75,7 @@ Payment 模块承担的核心职责：
    - Action 调用 `getBillingService().startSubscriptionCheckout(...)`。  
    - `DefaultBillingService.startSubscriptionCheckout`：
      - 使用 `PlanPolicy` 检查 plan/price 是否存在且未禁用。  
-     - 调用 `PaymentProvider.createCheckout`（StripePaymentService）创建 checkout session。  
+     - 调用 `PaymentProvider.createCheckout`（默认 `StripePaymentAdapter`）创建 checkout session。  
    - 结果通过 Action 返回前端，前端重定向到 Stripe Checkout。
 
 3. **续费与积分发放**：
@@ -86,7 +84,7 @@ Payment 模块承担的核心职责：
      - 使用 `createLoggerFromHeaders` 建立 request logger；  
      - 读取 payload + signature，检查缺失条件（缺 payload/签名）返回 400；  
      - 调用 `handleWebhookEvent(payload, signature)`。
-   - `StripePaymentService.handleWebhookEvent`：
+   - Webhook 处理由 `StripeWebhookHandler` 承担（当前通过 `StripePaymentAdapter.handleWebhookEvent` 委托实现，后续可进一步在组合根中直接使用 Handler）：
      - 通过 `stripe.webhooks.constructEvent` 验证并解析事件。  
      - 使用 `StripeEventRepository.withEventProcessingLock` 确保幂等处理。  
      - 委托 `handleStripeWebhookEvent`，其中会：

@@ -184,6 +184,8 @@ export interface getSubscriptionsParams {
 
 /**
  * Payment provider interface
+ *
+ * 专注于「主动发起支付」相关能力，不再承载 Webhook 处理职责。
  */
 export interface PaymentProvider {
 	/**
@@ -207,9 +209,4 @@ export interface PaymentProvider {
 	 * Get customer subscriptions
 	 */
 	getSubscriptions(params: getSubscriptionsParams): Promise<Subscription[]>;
-
-	/**
-	 * Handle webhook events
-	 */
-	handleWebhookEvent(payload: string, signature: string): Promise<void>;
 }

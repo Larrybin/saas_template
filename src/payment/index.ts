@@ -1,7 +1,9 @@
-import Stripe from 'stripe';
 import { websiteConfig } from '@/config/website';
 import { serverEnv } from '@/env/server';
-import { StripePaymentService } from './services/stripe-payment-service';
+import {
+  createStripePaymentProviderFromEnv,
+  createStripeWebhookHandlerFromEnv,
+} from './services/stripe-payment-factory';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
@@ -14,28 +16,24 @@ import type {
 } from './types';
 
 type StripeProviderOverrides = {
-  stripeSecretKey?: string;
-  stripeWebhookSecret?: string;
+  stripeSecretKey?: string | undefined;
+  stripeWebhookSecret?: string | undefined;
 };
 
 const createStripePaymentProvider = (
   overrides?: StripeProviderOverrides
 ): PaymentProvider => {
-  const stripeSecretKey =
-    overrides?.stripeSecretKey ?? serverEnv.stripeSecretKey;
-  if (!stripeSecretKey) {
-    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
-  }
-  const stripeWebhookSecret =
-    overrides?.stripeWebhookSecret ?? serverEnv.stripeWebhookSecret;
-  if (!stripeWebhookSecret) {
-    throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set.');
-  }
-  const stripeClient = new Stripe(stripeSecretKey);
-  return new StripePaymentService({
-    stripeClient,
-    webhookSecret: stripeWebhookSecret,
-  });
+  return createStripePaymentProviderFromEnv(
+    {
+      stripeSecretKey: overrides?.stripeSecretKey ?? serverEnv.stripeSecretKey,
+      stripeWebhookSecret:
+        overrides?.stripeWebhookSecret ?? serverEnv.stripeWebhookSecret,
+    },
+    {
+      stripeSecretKey: overrides?.stripeSecretKey,
+      stripeWebhookSecret: overrides?.stripeWebhookSecret,
+    }
+  );
 };
 
 /**
@@ -117,8 +115,18 @@ export const handleWebhookEvent = async (
   payload: string,
   signature: string
 ): Promise<void> => {
-  const provider = getPaymentProvider();
-  await provider.handleWebhookEvent(payload, signature);
+  if (websiteConfig.payment.provider !== 'stripe') {
+    throw new Error(
+      `Webhook handling not supported for provider: ${websiteConfig.payment.provider}`
+    );
+  }
+
+  const handler = createStripeWebhookHandlerFromEnv({
+    stripeSecretKey: serverEnv.stripeSecretKey,
+    stripeWebhookSecret: serverEnv.stripeWebhookSecret,
+  });
+
+  await handler.handleWebhookEvent(payload, signature);
 };
 
 /**

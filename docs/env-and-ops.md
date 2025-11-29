@@ -49,12 +49,12 @@
   - 从请求中读取：
     - `payload`：`await req.text()`  
     - `signature`：`req.headers.get('stripe-signature')`  
-  - 调用 `handleWebhookEvent(payload, signature)`（`src/payment/index.ts` → `StripePaymentService`）。
+  - 调用 `handleWebhookEvent(payload, signature)`（`src/payment/index.ts` → `StripePaymentAdapter`）。
   - 处理 DomainError 与未知错误，返回结构化 JSON（`success/error/code/retryable`）。
 
-- Payment 组合根与 StripePaymentService：
-  - `src/payment/index.ts` 会从 `serverEnv.stripeSecretKey` 与 `serverEnv.stripeWebhookSecret` 读取配置，创建 Stripe client，并以依赖注入方式构造 `StripePaymentService`。  
-  - `StripePaymentService`（`src/payment/services/stripe-payment-service.ts`）内部使用注入的 Stripe client 与 webhook secret 验证事件：
+- Payment 组合根与 StripePaymentAdapter：
+  - `src/payment/index.ts` 会从 `serverEnv.stripeSecretKey` 与 `serverEnv.stripeWebhookSecret` 读取配置，创建 Stripe client，并以依赖注入方式构造 `StripePaymentAdapter`。  
+  - `StripePaymentAdapter`（`src/payment/services/stripe-payment-adapter.ts`）内部使用注入的 Stripe client 与 webhook secret 验证事件：
     - `stripe.webhooks.constructEvent(payload, signature, webhookSecret)`。  
   - 通过 `StripeEventRepository.withEventProcessingLock` 确保单个事件幂等处理，将事件交给 `handleStripeWebhookEvent` 更新本地 Payment 状态，并在需要时调用 Billing/Credits。
 

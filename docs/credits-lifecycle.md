@@ -92,11 +92,13 @@ Credits 模块用于抽象「用量型计费」能力，典型场景包括：
 ### 3.2 订阅续费（周期性积分发放）
 
 - 事件触发：
-  - Stripe 订阅续费等事件经 `/api/webhooks/stripe` → `handleWebhookEvent` → Payment 领域，最终触发续费处理。
+  - Stripe 订阅续费等事件经 `/api/webhooks/stripe` → `handleWebhookEvent` → Payment 领域（内部由 `StripeWebhookHandler` 与 Billing/Credits 协同处理），最终触发续费处理：
+    - 入口在 `src/app/api/webhooks/stripe/route.ts`，通过 `handleWebhookEvent(payload, signature)` 调用 Payment 组合根；  
+    - 组合根再委托给 Stripe 适配层与 WebhookHandler，按照事件类型更新 Payment 状态并触发续费处理。
 
 - 调用链（简化）：
   - Webhook：`src/app/api/webhooks/stripe/route.ts`  
-    → `src/payment/index.ts` → `StripePaymentService`  
+    → `src/payment/index.ts` → `StripePaymentAdapter` / `StripeWebhookHandler`  
     → 业务事件分类后调用 Billing 域：
   - Billing 域：`src/domain/billing/billing-service.ts`：
     - `handleRenewal({ userId, priceId, cycleRefDate?, transaction? })`：

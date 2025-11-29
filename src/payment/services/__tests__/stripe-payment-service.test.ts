@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { websiteConfig } from '@/config/website';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { BillingService } from '@/domain/billing';
+import { getLogger } from '@/lib/server/logger';
 import { withTestCreditsConfig } from '../../../../tests/utils/credits-config';
 import { PaymentTypes } from '../../types';
 import { PaymentSecurityError } from '../errors';
@@ -13,7 +14,8 @@ import type {
   StripeEventRepositoryLike,
   UserRepositoryLike,
 } from '../stripe-deps';
-import { StripePaymentService } from '../stripe-payment-service';
+import { StripePaymentAdapter } from '../stripe-payment-adapter';
+import { StripeWebhookHandler } from '../stripe-webhook-handler';
 
 type EventProcessingMeta = Parameters<
   StripeEventRepositoryLike['withEventProcessingLock']
@@ -298,19 +300,27 @@ const createService = (
       grantLifetimePlan: vi.fn(),
     } satisfies BillingService);
 
-  const service = new StripePaymentService({
+  const service = new StripePaymentAdapter({
     stripeClient: stripe,
-    webhookSecret: 'whsec_test',
-    creditsGateway: creditsGateway as CreditsGateway,
-    notificationGateway: notificationGateway as NotificationGateway,
     userRepository,
     paymentRepository,
-    stripeEventRepository,
-    billingService,
   });
+
+  const createWebhookHandler = () =>
+    new StripeWebhookHandler({
+      stripeClient: stripe,
+      webhookSecret: 'whsec_test',
+      stripeEventRepository,
+      paymentRepository,
+      creditsGateway: creditsGateway as CreditsGateway,
+      notificationGateway: notificationGateway as NotificationGateway,
+      billingService,
+      logger: getLogger({ span: 'payment.stripe.test', provider: 'stripe' }),
+    });
 
   return {
     service,
+    createWebhookHandler,
     stripe,
     creditsGateway,
     notificationGateway,
@@ -321,7 +331,7 @@ const createService = (
   };
 };
 
-describe('StripePaymentService', () => {
+describe('StripePaymentAdapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -462,14 +472,15 @@ describe('StripePaymentService', () => {
           }
         ),
     };
-    const { service } = createService({
+    const { createWebhookHandler } = createService({
       stripe,
       creditsGateway,
       paymentRepository,
       stripeEventRepository,
     });
+    const handler = createWebhookHandler();
 
-    await service.handleWebhookEvent('payload', 'signature');
+    await handler.handleWebhookEvent('payload', 'signature');
 
     expect(paymentRepository.withTransaction).toHaveBeenCalledTimes(1);
     expect(paymentRepository.findBySessionId).toHaveBeenCalledWith(
@@ -527,15 +538,16 @@ describe('StripePaymentService', () => {
           }
         ),
     };
-    const { service } = createService({
+    const { createWebhookHandler } = createService({
       stripe,
       creditsGateway,
       paymentRepository,
       stripeEventRepository,
     });
+    const handler = createWebhookHandler();
 
     await expect(
-      service.handleWebhookEvent('payload', 'signature')
+      handler.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('grant failed');
     expect(paymentRepository.insert).toHaveBeenCalled();
     const txWrapper = creditsGateway.addCredits.mock.calls[0]?.[1];
@@ -590,15 +602,16 @@ describe('StripePaymentService', () => {
           }
         ),
     };
-    const { service } = createService({
+    const { createWebhookHandler } = createService({
       stripe,
       paymentRepository,
       stripeEventRepository,
       notificationGateway,
       billingService,
     });
+    const handler = createWebhookHandler();
 
-    await service.handleWebhookEvent('payload', 'signature');
+    await handler.handleWebhookEvent('payload', 'signature');
 
     expect(paymentRepository.findBySessionId).toHaveBeenCalledWith(
       'cs_one_time',
@@ -667,14 +680,15 @@ describe('StripePaymentService', () => {
           }
         ),
     };
-    const { service } = createService({
+    const { createWebhookHandler } = createService({
       stripe,
       paymentRepository,
       stripeEventRepository,
       billingService,
     });
+    const handler = createWebhookHandler();
 
-    await service.handleWebhookEvent('payload', 'signature');
+    await handler.handleWebhookEvent('payload', 'signature');
 
     const subTxWrapper =
       billingService.handleRenewal.mock.calls[0]?.[0]?.transaction;
@@ -732,15 +746,16 @@ describe('StripePaymentService', () => {
           }
         ),
     };
-    const { service } = createService({
+    const { createWebhookHandler } = createService({
       stripe,
       paymentRepository,
       stripeEventRepository,
       billingService,
     });
+    const handler = createWebhookHandler();
 
     await expect(
-      service.handleWebhookEvent('payload', 'signature')
+      handler.handleWebhookEvent('payload', 'signature')
     ).rejects.toThrow('sub grant fail');
     const subTxWrapper =
       billingService.handleRenewal.mock.calls[0]?.[0]?.transaction;

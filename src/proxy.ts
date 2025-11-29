@@ -1,3 +1,4 @@
+import { getCookieCache } from 'better-auth/cookies';
 import { type NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import {
@@ -17,16 +18,19 @@ import { DEFAULT_LOGIN_REDIRECT } from './routes';
 const intlMiddleware = createMiddleware(routing);
 
 /**
- * 1. Next.js middleware
+ * 1. Next.js Proxy
  * https://nextjs.org/docs/app/building-your-application/routing/middleware
  *
- * 2. Better Auth middleware
+ * 2. Better Auth Proxy integration
  * https://www.better-auth.com/docs/integrations/next#middleware
  *
- * In Next.js middleware, it's recommended to only check for the existence of a session cookie
- * to handle redirection. To avoid blocking requests by making API or database calls.
+ * In Next.js Proxy，better-auth 支持通过 cookie cache 快速读取会话。
+ * 本项目在 Proxy 中遵循以下原则：
+ * - 首选使用 `getCookieCache(request)` 从已签名的 cookie cache 中读取 session（不访问数据库）。
+ * - 如 cookie cache 未命中，但存在 session cookie，再退回到调用 `/api/auth/get-session` 做完整校验。
+ * - 具体受保护操作仍必须在对应 API route / 页面内执行服务端鉴权，Proxy 只负责“乐观重定向”。
  */
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const { nextUrl } = req;
   // Handle internal docs link redirection for internationalization
   // Check if this is a docs page without locale prefix
@@ -48,8 +52,11 @@ export default async function middleware(req: NextRequest) {
 
   let isLoggedIn = false;
 
-  if (hasBetterAuthSessionCookie(req.cookies.getAll())) {
-    try {
+  try {
+    const cachedSession = await getCookieCache(req);
+    if (cachedSession) {
+      isLoggedIn = true;
+    } else if (hasBetterAuthSessionCookie(req.cookies.getAll())) {
       const sessionResponse = await fetch(
         new URL('/api/auth/get-session', nextUrl),
         {
@@ -64,9 +71,9 @@ export default async function middleware(req: NextRequest) {
         const sessionData = await sessionResponse.json();
         isLoggedIn = Boolean(sessionData?.data?.session);
       }
-    } catch {
-      isLoggedIn = false;
     }
+  } catch {
+    isLoggedIn = false;
   }
 
   const pathnameWithoutLocale = getPathnameWithoutLocale(nextUrl.pathname);

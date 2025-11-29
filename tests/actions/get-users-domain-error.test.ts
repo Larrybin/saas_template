@@ -63,7 +63,7 @@ describe('getUsersAction DomainError behavior', () => {
       getUsersAction({
         parsedInput: baseInput,
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: 'UNEXPECTED_ERROR',
       retryable: true,
     });

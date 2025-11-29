@@ -64,7 +64,7 @@ describe('getCreditBalanceAction DomainError behavior', () => {
       getCreditBalanceAction({
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.UnexpectedError,
       retryable: true,
     });

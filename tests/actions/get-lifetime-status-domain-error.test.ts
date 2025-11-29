@@ -42,7 +42,7 @@ describe('getLifetimeStatusAction DomainError behavior', () => {
       getLifetimeStatusAction({
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.UnexpectedError,
       retryable: false,
     });
@@ -85,7 +85,7 @@ describe('getLifetimeStatusAction DomainError behavior', () => {
       getLifetimeStatusAction({
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.UnexpectedError,
       retryable: true,
     });

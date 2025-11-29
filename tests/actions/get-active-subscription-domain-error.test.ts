@@ -71,7 +71,7 @@ describe('getActiveSubscriptionAction DomainError behavior', () => {
       getActiveSubscriptionAction({
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.SubscriptionFetchFailed,
       retryable: true,
     });
@@ -91,7 +91,7 @@ describe('getActiveSubscriptionAction DomainError behavior', () => {
       getActiveSubscriptionAction({
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.SubscriptionFetchFailed,
       retryable: true,
     });

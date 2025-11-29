@@ -60,7 +60,7 @@ describe('validateCaptchaAction DomainError behavior', () => {
       validateCaptchaAction({
         parsedInput: { captchaToken },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.CaptchaValidationFailed,
       retryable: true,
     });
@@ -77,7 +77,7 @@ describe('validateCaptchaAction DomainError behavior', () => {
       validateCaptchaAction({
         parsedInput: { captchaToken },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.CaptchaValidationFailed,
       retryable: true,
     });

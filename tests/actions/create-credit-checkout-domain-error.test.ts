@@ -77,7 +77,7 @@ describe('createCreditCheckoutSession DomainError behavior', () => {
         parsedInput: baseInput,
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.CreditsInvalidPayload,
       retryable: false,
     });
@@ -126,7 +126,7 @@ describe('createCreditCheckoutSession DomainError behavior', () => {
         parsedInput: baseInput,
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.UnexpectedError,
       retryable: true,
     });

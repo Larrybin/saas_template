@@ -60,7 +60,7 @@ describe('consumeCreditsAction DomainError behavior', () => {
         parsedInput: { amount: 10 },
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.CreditsInsufficientBalance,
       retryable: false,
     });
@@ -76,7 +76,7 @@ describe('consumeCreditsAction DomainError behavior', () => {
         parsedInput: { amount: 5 },
         ctx: { user },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.UnexpectedError,
     });
   });

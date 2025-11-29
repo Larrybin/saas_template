@@ -51,7 +51,7 @@ describe('unsubscribeNewsletterAction DomainError behavior', () => {
       unsubscribeNewsletterAction({
         parsedInput: { email },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterUnsubscribeFailed,
       retryable: true,
     });
@@ -72,7 +72,7 @@ describe('unsubscribeNewsletterAction DomainError behavior', () => {
       unsubscribeNewsletterAction({
         parsedInput: { email },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterUnsubscribeFailed,
       retryable: true,
     });
@@ -89,7 +89,7 @@ describe('unsubscribeNewsletterAction DomainError behavior', () => {
       unsubscribeNewsletterAction({
         parsedInput: { email },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterUnsubscribeFailed,
       retryable: true,
     });

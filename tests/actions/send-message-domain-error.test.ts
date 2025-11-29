@@ -67,7 +67,7 @@ describe('sendMessageAction DomainError behavior', () => {
       sendMessageAction({
         parsedInput: baseInput,
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.ContactSendFailed,
       retryable: true,
     });
@@ -88,7 +88,7 @@ describe('sendMessageAction DomainError behavior', () => {
       sendMessageAction({
         parsedInput: baseInput,
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.ContactSendFailed,
       retryable: true,
     });
@@ -105,7 +105,7 @@ describe('sendMessageAction DomainError behavior', () => {
       sendMessageAction({
         parsedInput: baseInput,
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.ContactSendFailed,
       retryable: true,
     });

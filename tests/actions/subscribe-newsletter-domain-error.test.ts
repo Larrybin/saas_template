@@ -57,7 +57,7 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
 
     await expect(
       subscribeNewsletterAction({ parsedInput: { email } } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,
     });
@@ -76,7 +76,7 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
 
     await expect(
       subscribeNewsletterAction({ parsedInput: { email } } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,
     });
@@ -91,7 +91,7 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
 
     await expect(
       subscribeNewsletterAction({ parsedInput: { email } } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,
     });

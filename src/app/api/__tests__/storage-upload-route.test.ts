@@ -20,12 +20,14 @@ vi.mock('@/storage', () => ({
   uploadFile: (...args: unknown[]) => uploadFileMock(...args),
 }));
 
+type MultipartOptions = {
+  file?: { name: string; type: string; size: number };
+  folder?: string | null;
+};
+
 function createMultipartRequest(
   url: string,
-  options: {
-    file?: { name: string; type: string; size: number };
-    folder?: string | null;
-  }
+  options: MultipartOptions
 ): Request {
   const form = new FormData();
 
@@ -89,7 +91,7 @@ describe('/api/storage/upload route', () => {
   });
 
   it('returns error envelope when no file is provided', async () => {
-    const req = createMultipartRequest(baseUrl, { file: undefined });
+    const req = createMultipartRequest(baseUrl, {});
 
     const res = await storageUploadPost(req as never);
     const json = (await res.json()) as {

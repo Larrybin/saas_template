@@ -55,7 +55,7 @@ describe('checkNewsletterStatusAction DomainError behavior', () => {
       checkNewsletterStatusAction({
         parsedInput: { email },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterStatusFailed,
       retryable: true,
     });
@@ -72,7 +72,7 @@ describe('checkNewsletterStatusAction DomainError behavior', () => {
       checkNewsletterStatusAction({
         parsedInput: { email },
       } as never)
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterStatusFailed,
       retryable: true,
     });

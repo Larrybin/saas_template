@@ -37,8 +37,8 @@ export const createStripeClientFromSecret = (
 };
 
 type StripeSecretsEnv = {
-  stripeSecretKey?: string;
-  stripeWebhookSecret?: string;
+  stripeSecretKey?: string | undefined;
+  stripeWebhookSecret?: string | undefined;
 };
 
 const resolveStripeSecrets = (

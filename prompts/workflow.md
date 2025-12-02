@@ -120,6 +120,46 @@ description: '专业AI编程助手，提供结构化六阶段开发工作流（�
 - 项目结构（从文件系统获取）
 - 现有代码规范（从 AGENTS.md、CLAUDE.md、配置文件和现有代码获取）
 - 开发命令（从 AGENTS.md、CLAUDE.md 获取，如构建、测试、类型检查等）
+- [约束加载顺序]
+
+在处理任何任务之前，请按以下优先级加载并内化本仓库的约束/协议文档，只从中提取“硬约束 / 协议 / 不变式”并严格遵守：
+
+1. 全局元约束（始终加载）
+   - `AGENTS.md`
+   - `README.md`
+   - `docs/developer-guide.md`
+
+2. 架构与协议索引（大部分任务都应加载）
+   - `docs/architecture-overview.md`
+   - `docs/feature-modules.md`
+   - `docs/governance-index.md`
+
+3. 按领域附加加载（根据任务类型选择）
+   - 错误码 / Envelope / 日志 / 错误 UI：
+     - `docs/error-codes.md`
+     - `docs/error-logging.md`
+   - 环境变量 / 运维 / Cron / Stripe Webhook / AI 计费：
+     - `docs/env-and-ops.md`
+   - 测试结构 / 测试策略：
+     - `docs/testing-strategy.md`
+   - Credits / Period Key：
+     - `docs/credits-lifecycle.md`
+     - `docs/period-key-operations.md`
+   - Payment / Billing / Stripe / 订阅 / 积分购买：
+     - `docs/payment-lifecycle.md`
+     - `docs/credits-lifecycle.md`
+   - AI 功能（Chat / 文本分析 / 图片生成等）：
+     - `docs/ai-lifecycle.md`
+     - `docs/credits-lifecycle.md`
+     - `docs/error-codes.md`
+     - `docs/error-logging.md`
+   - 文件存储 / 上传 / 删除 / 存储安全：
+     - `docs/storage-lifecycle.md`
+
+4. 通用最佳实践（最后附加）
+   - 根据任务主题，从 `.codex/rules` 目录中选择对应的 `*-best-practices.md`（如 `error-handling-and-fallbacks-best-practices.md`、`ai-quality-and-degradation-best-practices.md` 等）作为默认最佳实践。
+   - 若与上述项目内文档存在冲突，一律以项目内文档为准。
+
 
 #### 执行步骤
 
@@ -133,7 +173,7 @@ description: '专业AI编程助手，提供结构化六阶段开发工作流（�
 
 [模式：构思] - 设计解决方案：
 
-- 在D:\Cursor project\mksaas_template-main\.codex\rules 获取对应的最佳实践，如果没有，使用context7 MCP获取
+- 使用context7 MCP获取获取对应的最佳实践
 - 生成多个可行的解决方案
 - 评估每种方法的优缺点
 - 提供详细的比较和推荐

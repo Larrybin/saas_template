@@ -11,6 +11,8 @@
   - 抽出工厂集中读取配置并组装依赖；
   - 抽出 Stripe 事件映射为纯函数模块，简化 Webhook 入口。
 
+> 当前代码状态：已将原先的 `StripePaymentService` 拆分为 `StripePaymentAdapter`（支付入口）、`StripeWebhookHandler`（事件处理）与工厂 `createStripePaymentProviderFromEnv`/`createStripeWebhookHandlerFromEnv`（`src/payment/services/stripe-payment-factory.ts`），并通过 `src/payment/index.ts` / `src/lib/server/stripe-webhook.ts` 暴露。以下任务保留历史语境，后续改动应以现有 Adapter + Factory + WebhookHandler 结构为准。
+
 ## 约束
 
 - 对外 HTTP API / Webhook URL、请求/响应结构与错误语义保持兼容。
@@ -59,4 +61,3 @@
 - 进一步将 `StripePaymentService` 收窄为「StripePaymentAdapter」，仅负责 Stripe 调用与类型映射；
 - 强化 Billing/Credits 领域服务作为 orchestrator，统一依赖 PaymentProvider 抽象；
 - 将 Webhook 入口封装为独立的 `StripeWebhookHandler`，实现「Webhook 适配层 → 领域事件处理层」的清晰分层。
-

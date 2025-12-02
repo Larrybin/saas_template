@@ -67,6 +67,14 @@
 - Payment 模块：
   - `src/payment/services/__tests__/stripe-payment-service.test.ts`：  
     - 覆盖 `StripePaymentAdapter` 主要行为（checkout / webhook / subscriptions 等），确保与仓储/通知/Credits/Billing 的协作正常。
+  - `src/payment/services/__tests__/webhook-handler-credit.test.ts`：  
+    - 基于 `tests/helpers/payment.ts` 的 InMemory repository/Fake gateway，验证 credit purchase webhook 在事务上下文中如何写入 `PaymentRepository`、调用 `CreditsGateway`，并覆盖 package 缺失、重复 session、网关异常等失败分支。
+
+- Mail 模块：
+  - `src/mail/__tests__/mail-service.test.ts`：  
+    - 验证 Resend provider 初始化缓存、`sendEmail` 在 template/raw 路径上的委托，并通过 `tests/helpers/mail.ts` 的 fake provider 避免真实网络调用。
+  - `src/mail/provider/__tests__/resend-provider.test.ts`：  
+    - 覆盖 Resend provider 对 env 配置的校验、缺失字段时的 warning 以及模板渲染/发送流程，测试中会在 `beforeEach/afterEach` 恢复 `websiteConfig.mail` 与 `serverEnv`，防止污染。
 
 ### 2.3 API Routes 与基础设施
 
@@ -149,6 +157,14 @@
 - 对 UI 组件：
   - 本项目当前并未大规模使用 React Testing Library；如需增加，可针对关键组件（如极复杂的表单/交互）谨慎引入。  
   - 一般建议优先测试 hooks + API + usecases，把 UI 层保持尽量薄。
+
+### 3.4 共享测试 Helper
+
+- `tests/helpers/credits.ts`：提供 `createCreditDistributionServiceStub`、`createMembershipServiceStub` 等工具，减少在积分领域重复构造 mock。
+- `tests/helpers/mail.ts`：构建 Fake Mail provider，支持模板/原始邮件的成功或失败路径，所有 Mail 测试应通过该 helper 获取 fake。
+- `tests/helpers/payment.ts`：包含具备事务感知的 `InMemoryPaymentRepository` 与 Fake `CreditsGateway`/`NotificationGateway`。  
+  - 生产代码调用 `PaymentRepository.withTransaction` 时必须将获得的 `tx` 传入 `insert/update/findBySessionId`，并使用 `createCreditsTransaction(tx)` 传递给 Credits gateway。  
+  - 相关测试新增时，务必复用该 helper 以获得 transaction 校验能力，否则事务链路可能被遗漏。
 
 ---
 

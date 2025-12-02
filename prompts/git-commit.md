@@ -16,6 +16,7 @@ argument-hint: [--no-verify] [--all] [--amend] [--signoff] [--emoji] [--scope <s
 该命令在**不依赖任何包管理器/构建工具**的前提下，仅通过 **Git**：
 
 - 读取改动（staged/unstaged）
+- 判断是否需要**新建分支及PR**
 - 判断是否需要**拆分为多次提交**
 - 为每个提交生成 **Conventional Commits** 风格的信息（必选 emoji）
 - 按需执行 `git add` 与 `git commit`（默认运行本地 Git 钩子；可 `--no-verify` 跳过）

@@ -43,7 +43,7 @@ The route stays thin and focuses on HTTP concerns (auth, rate-limit, request val
 ### High-level flow
 
 1. **API route**: `src/app/api/distribute-credits/route.ts`
-   - Validates Basic Auth via `validateBasicAuth` using credentials from `serverEnv.cronJobs`.
+   - 使用 `serverEnv.cronJobs` 中的凭证配置，并通过 `validateInternalJobBasicAuth` 校验 Basic Auth。
    - Only allows triggering the job when credentials match.
    - On success, calls `runCreditsDistributionJob` and returns a JSON envelope:
      ```json
@@ -71,7 +71,7 @@ The route stays thin and focuses on HTTP concerns (auth, rate-limit, request val
    - Logs a “starting” entry with the jobRunId.
    - Calls `distributeCreditsToAllUsers()` from `src/credits/distribute.ts`.
    - Logs a “finished” entry with `{ jobRunId, usersCount, processedCount, errorCount }`.
-   - Returns `{ usersCount, processedCount, errorCount }` to the caller.
+   - Returns `{ usersCount, processedCount, errorCount }` to the caller; unexpected errors surface as `ErrorCodes.CreditsDistributionFailed`.
 
 3. **Credits distribution domain**: `src/credits/distribute.ts`
    - Orchestrates the core distribution logic:
@@ -83,6 +83,10 @@ The route stays thin and focuses on HTTP concerns (auth, rate-limit, request val
        - Yearly subscription users.
      - Delegates per-segment command generation and execution to `CreditDistributionService`.
    - Uses DB schema from `src/db/schema.ts` and plan configuration from `src/lib/price-plan.ts` and policies under `src/domain/billing`.
+   - Auth / envelope expectations for the API route:
+     - Missing `CRON_JOBS_USERNAME` / `CRON_JOBS_PASSWORD` → `500` + `CRON_BASIC_AUTH_MISCONFIGURED`.
+     - Wrong or missing Basic header → `401` + `AUTH_UNAUTHORIZED`，附带 `WWW-Authenticate: Basic realm="Secure Area"`。
+     - Job failure → `500` + `CREDITS_DISTRIBUTION_FAILED`（`retryable: true`）。
 
 The job usecase keeps the API route focused on authentication and HTTP response shape, while centralizing the job orchestration concerns (logging, tracing, and the call into the credits domain) in a reusable server-side entry point that could later be reused by CLI or background worker triggers.
 

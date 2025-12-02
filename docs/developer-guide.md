@@ -20,6 +20,9 @@
   - `docs/testing-strategy.md`：测试层级、现有覆盖与新增测试的推荐策略。
  - 环境与运维：
    - `docs/env-and-ops.md`：环境变量、Stripe Webhook、Cron 积分分发与日志查看等运维实践。
+- 治理与协议索引：
+  - `docs/governance-index.md`：汇总架构体检报告与协议/技术债报告（包括 `.codex/plan` 下的计划与报告文档），是协议层与错误码治理的入口。
+  - `.codex/rules/*.md`：跨领域最佳实践与约束（错误处理、AI 质量、安全、存储等），在未被项目文档显式覆盖/否定时视为默认应遵守的约定。
 
 ---
 

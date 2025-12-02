@@ -69,7 +69,7 @@ SaaS Template is an opinionated starter kit for building SaaS applications with:
 
 - 路由与 UI 层：`src/app` 只负责页面与布局，复杂交互拆分到 `src/components`，数据与副作用通过 `src/actions`（Server Actions）或 `src/lib` / `src/payment` 等服务模块完成。
 - 认证与用户生命周期：Better Auth 的配置与包装位于 `src/lib/auth.ts` 与 `src/lib/auth-domain.ts`；用户创建后的后置行为（发放积分、订阅 Newsletter 等）由 `src/lib/user-lifecycle` 统一管理，通过 `UserLifecycleManager` 注入不同的生命周期 hook。
-- 支付与计费：页面或 API 路由通过 `import * as payment from '@/payment'` 访问支付域；`src/payment/services/stripe-payment-service.ts` 作为领域服务，直接封装 Stripe SDK，并依赖 `src/payment/data-access/*`（读写数据库与 Stripe 事件表）；Stripe Webhook 入口位于 `src/app/api/webhooks/stripe/route.ts`，仅负责解析请求并转交给支付服务。
+- 支付与计费：页面或 API 路由通过 `import * as payment from '@/payment'` 访问支付域；`src/payment/index.ts` 提供对外入口，内部通过 `src/payment/services/stripe-payment-adapter.ts`、`stripe-checkout-service.ts` 等领域服务（依赖 `src/payment/data-access/*` 读写数据库与 Stripe 事件表）封装 Stripe SDK；Stripe Webhook 入口位于 `src/app/api/webhooks/stripe/route.ts`，调用 `src/lib/server/stripe-webhook.ts` 组装 handler 并处理事件。
 - 积分与用量：与支付服务解耦的积分逻辑集中在 `src/credits` 与部分 `src/payment` 服务中，UI 通过 `src/actions` 暴露的接口来查询余额、消费积分与查询交易记录。
 - 存储与上传：`src/storage/index.ts` 提供统一的存储客户端，按配置选择具体 provider（例如 `src/storage/provider/s3.ts`），业务代码不直接依赖第三方 SDK，便于后续更换存储服务。
 - 内容与多语言：静态内容（博客、文档等）存放在 `content/`，运行时多语言文案通过 `messages/` 加载，配合 `src/i18n` 进行解析与路由映射；页面通常通过 hooks/辅助函数读字典而不是硬编码文案。

@@ -16,6 +16,8 @@ description: 将 StripePaymentService 从 env/config 与依赖构造中解耦，
   - PaymentProvider 与具体实现（Stripe）强耦合，未来引入第二个 Provider（例如 Creem）以及多租户（每 workspace / project 独立 Stripe key/secret）时代价高。
   - 测试时虽然可以通过 deps 注入替身，但默认路径仍然强依赖 env，组合逻辑分散。
 
+> 当前代码状态：已通过 `StripePaymentAdapter` + `createStripePaymentProviderFromEnv` / `createStripeWebhookHandlerFromEnv` 将 env/wiring 下沉到工厂，Adapter/WebhookHandler 仅消费注入依赖；下文步骤保留为检查清单，后续演进请以现有结构为基准。
+
 ## 设计决策（已在构思阶段确认）
 
 1. **统一 PaymentProvider 接口，上层不感知具体实现**
@@ -85,4 +87,3 @@ description: 将 StripePaymentService 从 env/config 与依赖构造中解耦，
 - 单元测试全部通过，特别是 Payment/Billing 相关测试。
 - 本地或测试环境下，`STRIPE_SECRET_KEY` 或 `STRIPE_WEBHOOK_SECRET` 缺失时，错误日志与文档描述的行为一致。
 - Route / Actions / Usecase 对 Payment 的调用点无需改动即可通过编译与测试。
-

@@ -8,7 +8,7 @@
     - 运行过期处理（`runExpirationJob`）；
     - 构造 Drizzle SQL 子查询（latest payment per user）；
     - 分页查询所有用户；
-    - 解析终身会员记录（`UserLifetimeMembershipRepository`）；
+    - 解析终身会员记录（通过 `MembershipService` / `findActiveMembershipsByUserIds`）；
     - 按 plan 分类用户（free / yearly / lifetime / fallback）；
     - 调用 `CreditDistributionService` 生成并执行命令；
     - 累计 processed / errors / usersCount，贯穿整个流程写日志。
@@ -30,12 +30,12 @@
    ```ts
    export type DistributeCreditsDeps = {
      creditDistributionService: CreditDistributionService;
-     lifetimeMembershipRepository: UserLifetimeMembershipRepository;
+     membershipService: MembershipService;
    };
 
    const defaultDeps: DistributeCreditsDeps = {
      creditDistributionService: new CreditDistributionService(),
-     lifetimeMembershipRepository: new UserLifetimeMembershipRepository(),
+     membershipService: createMembershipService(),
    };
    ```
 
@@ -54,9 +54,9 @@
      - 内部封装 `createLatestPaymentSubquery(db)` 与 `fetchUsersBatch(...)`：
        - `fetchUsersBatch` 返回 `UserBillingSnapshot[]`（用户 + 最近一次有效支付快照）。
      - `distributeCreditsToAllUsers` 不再直接感知 SQL/Drizzle 细节，仅依赖 reader 接口。
-   - `resolveLifetimeMemberships(userIds, deps.lifetimeMembershipRepository, resolvePlan)`：
+   - `resolveLifetimeMemberships(userIds, deps.membershipService, resolvePlan)`：
      - 保留在 `distribute.ts` 中作为应用层 helper；
-     - 内部使用 `findActiveByUserIds` + `collectValidLifetimeMemberships`；
+     - 内部使用 `membershipService.findActiveMembershipsByUserIds` + `collectValidLifetimeMemberships`；
      - 返回 `Map<string, LifetimeMembershipResolution>`，主函数负责对 `invalidMemberships` 写日志。
 
 3. **纯业务 helper（不依赖 logger/IO）**

@@ -1,16 +1,27 @@
 import {
+  type AiBillingPolicy,
   type AiBillingRule,
   defaultAiBillingPolicy,
 } from '@/ai/billing-policy';
 
+let currentAiBillingPolicy: AiBillingPolicy = defaultAiBillingPolicy;
+
+export function setAiBillingPolicy(policy: AiBillingPolicy): void {
+  currentAiBillingPolicy = policy;
+}
+
+export function getAiBillingPolicy(): AiBillingPolicy {
+  return currentAiBillingPolicy;
+}
+
 export function getAiChatBillingRule(): AiBillingRule {
-  return defaultAiBillingPolicy.getChatRule();
+  return currentAiBillingPolicy.getChatRule();
 }
 
 export function getAnalyzeContentBillingRule(): AiBillingRule {
-  return defaultAiBillingPolicy.getAnalyzeContentRule();
+  return currentAiBillingPolicy.getAnalyzeContentRule();
 }
 
 export function getImageGenerateBillingRule(): AiBillingRule {
-  return defaultAiBillingPolicy.getImageRule();
+  return currentAiBillingPolicy.getImageRule();
 }

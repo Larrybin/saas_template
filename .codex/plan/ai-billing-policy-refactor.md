@@ -5,14 +5,14 @@ description: 将 AI 计费规则从硬编码常量迁移到 websiteConfig/env，
 
 ## 背景
 
-- 现状：
-  - `src/ai/billing-config.ts` 中使用模块级常量 `aiBillingConfig` 硬编码 Chat/Text/Image 的计费规则。
-  - Usecase（如 `execute-ai-chat-with-billing`、`generate-image-with-credits`）直接依赖这些常量，无法通过配置按 plan/区域/环境进行差异化。
-  - 与 `.codex/rules/config-and-env-best-practices.md` 中“可变配置集中在 src/config、业务通过配置接口读取”的原则不一致。
+- 现状（当前代码状态）：
+  - `src/ai/billing-policy.ts` 中已定义 `AiBillingPolicy` / `DefaultAiBillingPolicy`，并从 `websiteConfig.ai.billing.*` 解析 Chat/Text/Image 的计费规则。
+  - `src/ai/billing-config.ts` 作为适配层，对外继续暴露 `getAi*BillingRule`，内部通过 `defaultAiBillingPolicy` 获取规则，并新增 `setAiBillingPolicy` / `getAiBillingPolicy` 以支持策略实例注入（全局级别）。
+  - Usecase（如 `execute-ai-chat-with-billing`、`generate-image-with-credits`）仍然只依赖 `getAi*BillingRule`，不直接读取配置或具体策略实现。
 - 目标：
-  - 将 AI 计费规则统一收敛到 `websiteConfig` / env。
-  - 引入 `AiBillingPolicy` 抽象，与 Credits 模块的 `PlanCreditsPolicy` 模式对齐。
-  - 保持现有 usecase API 基本不变，通过适配层平滑迁移。
+  - 将 AI 计费规则统一收敛到 `websiteConfig` / env（已达成）。
+  - 通过 `AiBillingPolicy` 抽象与 billing-config 适配层，为 usecase 提供稳定且可注入的计费策略接口。
+  - 在文档与测试中持续对齐这一模式，为后续按 plan/区域/环境扩展提供基础。
 
 ## 方案概述（方案 2，最小改造优先）
 
@@ -56,19 +56,21 @@ description: 将 AI 计费规则从硬编码常量迁移到 websiteConfig/env，
   - 导出单例：
     - `export const defaultAiBillingPolicy: AiBillingPolicy = new DefaultAiBillingPolicy();`
 
-### 3. 适配器层重写
+### 3. 适配器层与策略注入
 
-- 修改 `src/ai/billing-config.ts`：
-  - 删除原有 `AiBillingRule` 类型与 `aiBillingConfig` 常量。
+- 修改 `src/ai/billing-config.ts`（当前实现）：
   - 从策略层导入：
-    - `import { type AiBillingRule, defaultAiBillingPolicy } from '@/ai/billing-policy';`
-  - 重写导出函数：
-    - `getAiChatBillingRule` → `defaultAiBillingPolicy.getChatRule()`
-    - `getAnalyzeContentBillingRule` → `defaultAiBillingPolicy.getAnalyzeContentRule()`
-    - `getImageGenerateBillingRule` → `defaultAiBillingPolicy.getImageRule()`
+    - `import { type AiBillingPolicy, type AiBillingRule, defaultAiBillingPolicy } from '@/ai/billing-policy';`
+  - 维护可替换的策略实例：
+    - `let currentAiBillingPolicy: AiBillingPolicy = defaultAiBillingPolicy;`
+    - `setAiBillingPolicy(policy: AiBillingPolicy)` / `getAiBillingPolicy()`。
+  - 导出规则获取函数：
+    - `getAiChatBillingRule` → `currentAiBillingPolicy.getChatRule()`
+    - `getAnalyzeContentBillingRule` → `currentAiBillingPolicy.getAnalyzeContentRule()`
+    - `getImageGenerateBillingRule` → `currentAiBillingPolicy.getImageRule()`
 - 说明：
   - 对 usecase 与文档中提到的 `getAi*BillingRule` API 完全兼容。
-  - 实际规则来源由“硬编码常量”切换到“websiteConfig + 策略”。
+  - 实际规则来源由“硬编码常量”切换到 “websiteConfig + AiBillingPolicy 策略实例”；默认策略为 `DefaultAiBillingPolicy`，也可以在测试或多租户组合根中通过 `setAiBillingPolicy` 替换。
 
 ### 4. 调用方与文档同步
 
@@ -96,9 +98,7 @@ description: 将 AI 计费规则从硬编码常量迁移到 websiteConfig/env，
 ## 未来扩展建议（非本次实现范围）
 
 - 在 `AiBillingContext` 中引入 plan/region 维度：
-  - 从用户订阅/plan 信息中解析出 `planId`，在 usecase 调用策略时传入上下文。
-  - 在 `DefaultAiBillingPolicy` 中根据 plan/region/env 决定最终规则（例如分层覆盖：全局默认 → 环境级 → plan/region 专属）。
-- 引入可注入策略：
-  - 将 usecase 对 `defaultAiBillingPolicy` 的直接依赖抽象为可注入的 `AiBillingPolicy`，便于按 tenant 或 A/B 实验替换策略实现。
-  - 在测试与未来 console 配置实现中直接替换策略实例，而无需修改 usecase。
-
+  - 从用户订阅/plan 信息中解析出 `planId`，在策略实现中根据 `AiBillingContext` 决定最终规则（例如分层覆盖：全局默认 → 环境级 → plan/region 专属）。
+- 更细粒度地利用策略注入：
+  - 当前为全局级策略注入（通过 `setAiBillingPolicy` / `getAiBillingPolicy`）。
+  - 后续可以在上层组合根中根据 tenant/plan/context 构造不同的 `AiBillingPolicy` 实例，并在请求生命周期内按需切换或注入，而无需修改 usecase。

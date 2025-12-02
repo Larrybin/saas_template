@@ -50,7 +50,7 @@ description: 基于 MkSaaS 模板与 Stripe 的订阅与计费生命周期设计
 
 1. Webhook 处理
    - `src/app/api/webhooks/stripe/route.ts`：
-     - 验证签名、解析事件后，应尽快将事件转交给 `src/payment/services` 层处理。
+     - 验证签名、解析事件后，应尽快将事件转交给 `StripeWebhookHandler`（`createStripeWebhookHandlerFromEnv`）。
      - 对 DomainError 分支使用统一 JSON envelope 与错误码。
      - 非 DomainError 分支使用专门错误码，帮助定位 Stripe 集成问题。
 
@@ -85,10 +85,10 @@ description: 基于 MkSaaS 模板与 Stripe 的订阅与计费生命周期设计
 ## 实施进度 Checklist
 
 - 已基本符合
-  - [x] 支付入口与 Webhook 统一通过 `src/payment` 抽象：`createCheckout`、`createCustomerPortal`、`handleWebhookEvent` 等方法隐藏 Stripe 具体实现。
+  - [x] 支付入口与 Webhook 统一通过 `src/payment` 抽象：`createCheckout`、`createCreditCheckout`、`createCustomerPortal` 由 `StripePaymentAdapter` 实现，Webhook 通过 `StripeWebhookHandler` 处理并封装签名校验/幂等。
   - [x] 订阅与计划领域已拆分为 `src/domain/billing/*` 与 `src/domain/plan/*`，并在 `billing-service.ts`、`plan-policy.ts` 中集中定义状态机与额度策略。
   - [x] Stripe Webhook 路由 `/api/webhooks/stripe` 使用统一的 JSON envelope 返回 DomainError，非 DomainError 分支也返回标准错误结构并打日志。
 - 尚待调整 / 确认
-  - [ ] `StripePaymentService` 与 `billing-service` 内对 Stripe 事件的幂等处理（例如按 `event.id` 记录处理状态）是否在所有关键事件上完整实现并有测试覆盖。
+  - [ ] `StripeWebhookHandler` + `StripeEventRepository` 与 `billing-service` 内对 Stripe 事件的幂等处理（例如按 `event.id` 记录处理状态）是否在所有关键事件上完整实现并有测试覆盖。
   - [ ] Pricing 页面与设置页是否完全依赖本地 billing 读服务（domain 层）展示当前 plan / 续费信息，而不是在组件中直接调用 Stripe API。
   - [ ] 与 Credits 联动的边界（例如订阅变更时触发的积分发放/回收）是否在 `docs/credits-lifecycle.md` 与本规则之间保持一致说明。

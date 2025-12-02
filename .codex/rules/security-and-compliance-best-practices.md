@@ -42,9 +42,11 @@ description: 基于 MkSaaS 模板的认证、安全存储与合规性设计规�
    - `ensureApiUser` 在 API route 层提供统一的 Bearer 风格认证与封禁用户处理。
 
 2. 支付与 Webhook
-   - `src/payment/*` 将 Stripe 集成封装在 `StripePaymentService` 中，通过统一入口 `createCheckout` / `createCustomerPortal` / `handleWebhookEvent` 暴露。
-   - `/api/webhooks/stripe`：
-     - 验证 `stripe-signature` 并处理 Webhook 事件，对异常使用统一错误码与日志。
+   - 支付入口通过 `src/payment/index.ts` 暴露的 `createCheckout` / `createCreditCheckout` / `createCustomerPortal`，默认使用 `StripePaymentAdapter`（`src/payment/services/stripe-payment-adapter.ts`）并由 `createStripePaymentProviderFromEnv` 组装依赖与 Stripe client。
+   - Stripe Webhook 由 `src/lib/server/stripe-webhook.ts` 调用 `createStripeWebhookHandlerFromEnv`（`src/payment/services/stripe-payment-factory.ts`）构建 handler：
+     - 使用 `stripeClient.webhooks.constructEvent` 校验 `stripe-signature`；
+     - 通过 `StripeEventRepository.withEventProcessingLock` 处理幂等；
+     - 对异常使用统一错误码与结构化日志。
    - `/api/distribute-credits` 使用 Basic Auth 与 `serverEnv.cronJobs.*` 凭证保护内部 Job。
 
 3. 存储与上传

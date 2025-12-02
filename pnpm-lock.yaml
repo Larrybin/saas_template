@@ -53,8 +53,8 @@ importers:
         specifier: ^1.3.1
         version: 1.3.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@mendable/firecrawl-js':
-        specifier: ^4.4.1
-        version: 4.4.1
+        specifier: ^4.8.0
+        version: 4.8.0
       '@next/third-parties':
         specifier: 16.0.1
         version: 16.0.1(next@16.0.1(@opentelemetry/api@1.9.0)(@playwright/test@1.56.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)
@@ -1078,8 +1078,8 @@ packages:
   '@mdx-js/mdx@3.1.1':
     resolution: {integrity: sha512-f6ZO2ifpwAQIpzGWaBQT2TXxPv6z3RBzQKpVftEWN78Vl/YweF1uwussDx8ECAXVtr3Rs89fKyG9YlzUs9DyGQ==}
 
-  '@mendable/firecrawl-js@4.4.1':
-    resolution: {integrity: sha512-ba6Ed/Nbs6/dCffyiTJQQks6DJLPdClqKBl5aWxhhqzjNqhiTmSCgp/JulITwEf9vxxGHFRa+IuC6nurYGG2rg==}
+  '@mendable/firecrawl-js@4.8.0':
+    resolution: {integrity: sha512-3LpBhOKv+mVHe/cl+N/xPlP22I2DPhnAaxZqBQpCi+QnrWlvBPIAX0OGURxaeOeXdEWKgUxFQyGcGd2E00Dv1A==}
     engines: {node: '>=22.0.0'}
 
   '@mermaid-js/parser@0.6.3':
@@ -5655,6 +5655,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.18.3:
+    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -6335,14 +6347,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@mendable/firecrawl-js@4.4.1':
+  '@mendable/firecrawl-js@4.8.0':
     dependencies:
       axios: 1.13.1
       typescript-event-target: 1.1.1
+      ws: 8.18.3
       zod: 3.25.64
       zod-to-json-schema: 3.24.6(zod@3.25.64)
     transitivePeerDependencies:
+      - bufferutil
       - debug
+      - utf-8-validate
 
   '@mermaid-js/parser@0.6.3':
     dependencies:
@@ -11326,6 +11341,8 @@ snapshots:
       strip-ansi: 7.1.0
 
   ws@8.17.1: {}
+
+  ws@8.18.3: {}
 
   xtend@4.0.2: {}
 

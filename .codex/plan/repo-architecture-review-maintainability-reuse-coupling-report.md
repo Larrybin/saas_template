@@ -7,7 +7,7 @@
 - **整体评价**：
   - 可维护性：**偏高**。目录结构清晰、领域模块化（credits / payment / billing / storage / ai / newsletter 等），TypeScript 严格（`strict` + `noUncheckedIndexedAccess`），多数复杂逻辑集中在 domain/usecase 层，并有成体系的日志与错误码体系支撑。
   - 复用性：**较好**。`src/lib` / `src/hooks` / `src/components/ui` / `src/lib/server/usecases` 形成了较稳定的复用层，credits / billing / payment / AI 等核心域抽象了 domain service / gateway / usecase 等层次，减少跨域复制。
-  - 耦合度：**中等偏好**。路由 / actions 大多只面向 domain/usecase 层；infra 层（db / storage / notification）以接口或 provider 方式暴露。但也存在少量“多责任类”（如 `StripePaymentService`）、配置与业务逻辑耦合（`websiteConfig` / env 与服务实例化混在一起）的情况。
+  - 耦合度：**中等偏好**。路由 / actions 大多只面向 domain/usecase 层；infra 层（db / storage / notification）以接口或 provider 方式暴露。支付模块已拆分为 `StripePaymentAdapter` + 工厂 + webhook handler，较大程度消解了原先的“胖服务”耦合，剩余耦合主要集中在配置（`websiteConfig` / env）与部分 usecase 的直接读取上。
   - 测试支撑：**关键路径较完备，边缘区域有空洞**。credits / billing / payment / AI usecases / 部分 API Route 都有针对性单测/集成测及 e2e，用例量可观；但某些 action、部分 UI 逻辑、以及个别非核心 API（如 `/api/storage/upload`）测试缺口仍然存在。
 
 - **代表性优点**：
@@ -16,8 +16,7 @@
   - usecase 层封装业务流程，API Route / Server Action 只做协议与边界处理（例如 `executeAiChatWithBilling`、`analyze-web-content-with-credits` 等）。
 
 - **主要风险点（跨维度）**：
-  - 支付与计费实例化仍然“胖服务 + 直接读 env/配置”，对多 Provider / 多租户 / 多 plan 配置切换不够友好（`src/payment/services/stripe-payment-service.ts`、`src/ai/billing-config.ts`）。
-  - 少数 API 在特定错误分支上尚未完全对齐统一 envelope / DomainError 规范，例如 `/api/distribute-credits` 的未授权响应仍返回纯文本；协议层差异的细节分析已在 `protocol-future-techdebt-report.md` 中给出，本报告只保留架构视角。
+  - 配置耦合仍需收敛：`websiteConfig` / env 在个别 usecase 中直接读取，后续应继续通过 facade 统一注入（如 pricing/credits 适配层、AI 计费配置）。
   - 测试覆盖聚焦核心域，对 UI 组件（特别是复杂导航/交互）与部分边缘协议缺乏系统性验证。
 
 ---
@@ -71,18 +70,15 @@
 
 ### 2.3 反面 / 需要留意的示例
 
-1. **StripePaymentService 职责偏多，可进一步拆分**  
-   - 文件：`src/payment/services/stripe-payment-service.ts`  
-   - 问题：
-     - 构造函数内直接负责 env 校验、Stripe client 实例化、credits gateway / notification / repos / billingService 的构建，聚合了**配置解析 + infra wiring + 领域服务**三类职责。
-     - `StripePaymentService` 同时承担支付入口（`PaymentProvider`）与 Stripe webhook 处理委托（`handleWebhookEvent`）责任，虽然内部使用 `StripeCheckoutService` / `CustomerPortalService` / `SubscriptionQueryService` 分拆，但整体类仍然较厚。
-   - 影响：降低可读性与可扩展性（增加第二支付 Provider 或多租户配置时，需要改动过多逻辑）。
+1. **配置读取分散，尚未完全下沉到适配层**  
+   - 文件：`src/ai/billing-config.ts`、部分 usecase 直接使用 `websiteConfig`。  
+   - 问题：配置来源分散，虽已有 `StripePaymentAdapter` + `createStripePaymentProviderFromEnv` 收敛支付依赖，但 AI 计费、credits 定价仍有直接读取配置的分支。  
+   - 影响：后续引入多 Provider / 多租户配置时，需要额外梳理调用点，建议继续推进“配置适配层”方案。
 
-2. **部分路由的错误 envelope 与文档不一致**  
-   - 文件：`src/app/api/distribute-credits/route.ts`  
-   - 问题：
-     - 401 分支返回 `NextResponse('Unauthorized', ...)`，与项目“统一 envelope”约定不一致（README / `docs/api-reference.md` / `src/lib/domain-error-utils.ts` 中均强调统一 `success / error / code / retryable` 结构）。
-   - 影响：调用方需要写专门分支处理该路由，与其它 API 不一致，降低整体可维护性。
+2. **边缘路径测试空洞**  
+   - 文件：部分 UI 组件与非核心 API（如 `src/app/api/storage/upload/route.ts`）缺少端到端或行为级测试。  
+   - 问题：核心域测试完备，但导航/交互类 UI 与少量 API 的防回归保障不足。  
+   - 影响：未来迭代中容易出现未覆盖的 UI 回归或协议偏差。
 
 ---
 
@@ -135,12 +131,10 @@
 
 ### 3.3 可进一步提升复用性的点
 
-1. **StripePaymentService 的 wiring 逻辑可下沉到“factory/config 层”**  
-   - 文件：`src/payment/services/stripe-payment-service.ts`  
-   - 现状：实例化 stripe client、credit gateway、notification gateway、repos 与 billingService 的逻辑都在构造函数内，对所有调用方可见。
-   - 建议：
-     - 抽出 `createStripePaymentService(config)` 工厂，集中处理 env/websiteConfig 的解析与依赖注入；
-     - `StripePaymentService` 自身只关注 PaymentProvider 行为，以及与 Stripe webhook 的映射逻辑。
+1. **继续强化 Payment Provider 工厂化与多 Provider 预留**  
+   - 文件：`src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts`、`stripe-payment-adapter.ts`。  
+   - 现状：支付依赖已集中在 factory；Adapter 与 env/config 解耦，仅消费注入依赖。  
+   - 建议：在 factory 层保持 provider 选择与配置覆盖的单一责任，防止未来引入第二 Provider 或多租户 key 时回退到 Adapter/Usecase 读取 env/config。
 
 2. **AI 计费配置的复用维度不足**  
    - 文件：`src/ai/billing-config.ts`（未在本报告全文展示，但在其它 plan/report 已分析）  
@@ -162,7 +156,7 @@
   - `domain/billing` 作为纯领域服务，可被 payment/credits 等复用；
   - infra（db / storage / notification）通过接口（Repository / Provider）暴露给上层，较少见到 UI 直接依赖 infra。
 - 主要耦合点集中在：
-  - 支付与 env / 配置强耦合（如 `StripePaymentService` 直接读 `serverEnv` 与 `isCreditsEnabled`）；
+  - 支付的 provider 选择仍由单一 factory 管理，未来多 Provider / 多租户需要在此扩展（当前 Adapter 已与 env 解耦）；
   - 计费规则与代码（`ai/billing-config`）硬编码绑定。
 
 ### 4.2 边界健康的示例
@@ -186,16 +180,11 @@
 
 ### 4.3 耦合偏重 / 边界模糊的示例
 
-1. **StripePaymentService 同时承担配置、依赖注入与业务逻辑**  
-   - 文件：`src/payment/services/stripe-payment-service.ts`  
-   - 问题：
-     - 直接读取 `serverEnv` 与 `isCreditsEnabled`，并在构造函数中 new 多个依赖（`CreditLedgerService`、`DefaultNotificationGateway`、`UserRepository`、`PaymentRepository`、`StripeEventRepository`、`DefaultBillingService` 等）。
-     - `DefaultBillingService` 的构建也耦合在该类内部，将“计费策略”、“credits 启用开关”与“支付 provider 实现”绑定在一起。
-   - 影响：
-     - 想要支持多租户（每租户不同 Stripe key / webhook secret）或切换其他 PaymentProvider 时，需要拆散这一大块逻辑，执行成本高。
-   - 建议：
-     - 引入 `PaymentProviderFactory` 或配置层，将 env/config → 依赖注入逻辑集中在工厂中；
-     - `StripePaymentService` 只依赖抽象接口（billingService、creditsGateway、notificationGateway 等），不直接感知 env/config。
+1. **支付配置仍集中在单一工厂，需持续保持 Adapter 去耦**  
+   - 文件：`src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts`、`stripe-payment-adapter.ts`。  
+   - 现状：`StripePaymentAdapter` 已与 env/config 解耦，wiring 下沉到 factory，并通过 `PaymentProvider` 接口暴露给上层。  
+   - 风险：若未来引入多 Provider / 多租户 key，需确保选择逻辑仍只存在于 factory 层，避免 Adapter / usecase 回退到直接读取 env/config。  
+   - 建议：在 factory 中预留 provider 选择与多租户 key 覆盖点，并保持 Adapter 只感知注入的依赖。
 
 2. **AI 计费规则与 usecase 耦合**  
    - 文件：`src/lib/server/usecases/execute-ai-chat-with-billing.ts` + `src/ai/billing-config.ts`  
@@ -248,7 +237,7 @@
 ### 5.2 可测性与缺口
 
 - **已具备的可测性优势**：
-  - 多数关键服务通过接口/依赖注入设计（如 `StripePaymentServiceDeps`、`ICreditLedgerRepository`、`DbExecutor` 等），利于通过 mock/stub 构造测试。
+  - 多数关键服务通过接口/依赖注入设计（如 PaymentProvider + Stripe factory overrides、`ICreditLedgerRepository`、`DbExecutor` 等），利于通过 mock/stub 构造测试。
   - Usecase 与 API Route 分离，使得 usecase 可以在不依赖 HTTP 层的情况下进行测试。
   - 测试目录结构基本遵循“同模块旁边”或 `__tests__` 约定，有利于维护。
 
@@ -282,7 +271,7 @@
 ### P0（近期建议）
 
 1. **统一 API Route 与 Server Action 的错误 envelope 与 DomainError 使用**  
-   - 涉及：`src/app/api/distribute-credits/route.ts` 的未授权分支以及可能新增的 API / Actions。  
+   - 涉及：新扩展的 API / Actions，确保与现有 routes（含 `/api/distribute-credits`）一致。  
    - 动作：
      - 将所有 API 400/401/5xx 响应统一包装为 `{ success: false, error, code, retryable }`；
      - 对 action 中的错误路径统一使用 `DomainError`（或至少补充 `code` 字段并映射到 `ErrorCodes`）；
@@ -290,18 +279,18 @@
    - 收益：提升调用方与前端错误处理的一致性，降低后续改动时的回归风险，增强可维护性与复用性。
 
 2. **为“协议敏感”的 API 完善 route 测试**  
-  - 涉及：`/api/distribute-credits`、`/api/storage/upload` 等。  
+  - 涉及：`/api/storage/upload` 等少量尚未覆盖的路由（已存在的核心路由如 `/api/distribute-credits`、`/api/chat`、`/api/analyze-content` 已有测试，需持续守护）。  
   - 动作：在 `src/app/api/__tests__` 中补充或扩展对应 route 测试，特别覆盖错误分支（401/4xx/5xx）与 envelope 形态。  
   - 收益：为未来协议统一/重构提供安全网，防止协议细节回归。
 
 ### P1（中短期建议）
 
-3. **抽离 StripePaymentService 的配置与依赖注入逻辑，降耦合**  
-   - 涉及：`src/payment/services/stripe-payment-service.ts`。  
+3. **持续守护支付组合根与多 Provider 可插拔性**  
+   - 涉及：`src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts`、`stripe-payment-adapter.ts`。  
    - 动作：
-     - 引入 `createStripePaymentService(config)` 工厂或 `PaymentProviderFactory`，在其中解析 `serverEnv` / `websiteConfig` 并注入依赖；
-     - `StripePaymentService` 改为只依赖抽象接口与明确定义的 deps（已部分存在，通过 `StripePaymentServiceDeps`）。  
-   - 收益：降低类的复杂度，为未来支持多 Provider、多租户或更复杂计费策略打下基础。
+     - 保持 env/websiteConfig 解析集中在 factory，避免在 adapter/usecase 中重新读取配置；  
+     - 为未来第二 Provider（或多租户 key）预留选择/注入点，确保 PaymentProvider 接口消费方无需改动。  
+   - 收益：降低支付模块的耦合度，为未来扩展打下基础。
 
 4. **提升 AI 计费规则的可配置性与可测试性**  
    - 涉及：`src/ai/billing-config.ts` + `src/lib/server/usecases/execute-ai-chat-with-billing.ts` 等。  
@@ -322,9 +311,9 @@
 
 | 建议编号 | 建议摘要 | 主要涉及模块/文件 | 影响范围 | 复杂度评估 | 风险点 |
 | --- | --- | --- | --- | --- | --- |
-| P0-1 | 统一 API/Action 错误 envelope + DomainError 使用 | `src/app/api/*` 部分路由（如 `/api/distribute-credits` 未授权分支）及可能新增的 Actions | 前后端错误处理链路、日志/监控解析 | 中等：字段调整 + 局部错误处理重构 | 需确保前端 hooks 与 i18n 文案同步更新，避免打破现有 UI 行为 |
-| P0-2 | 为协议敏感 API 完善 route 测试 | `src/app/api/distribute-credits/route.ts`、`src/app/api/storage/upload/route.ts` 等 | 协议回归检测、CI 反馈质量 | 低：新增或扩展测试 + 少量 mock | 测试需覆盖 2xx/4xx/5xx 及 envelope 形态，避免遗漏主干路径 |
-| P1-3 | 抽离 StripePaymentService 的配置与依赖注入逻辑 | `src/payment/services/stripe-payment-service.ts`、可能新建 factory | 支付域（checkout、webhook、credits 发放） | 中高：需要拆分构造流程并保持现有测试通过 | 需维护现有 `stripe-payment-service.test.ts` 语义，避免打破 webhook/credits side effect |
+| P0-1 | 统一 API/Action 错误 envelope + DomainError 使用 | `src/app/api/*`、`src/actions/*` 新增/改动的路由与 Action | 前后端错误处理链路、日志/监控解析 | 中等：字段调整 + 局部错误处理重构 | 需确保前端 hooks 与 i18n 文案同步更新，避免打破现有 UI 行为 |
+| P0-2 | 为协议敏感 API 完善 route 测试 | `src/app/api/storage/upload/route.ts` 等少量未覆盖路由 | 协议回归检测、CI 反馈质量 | 低：新增或扩展测试 + 少量 mock | 测试需覆盖 2xx/4xx/5xx 及 envelope 形态，避免遗漏主干路径 |
+| P1-3 | 守护支付组合根与多 Provider 可插拔性 | `src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts` | 支付域（checkout、webhook、credits 发放） | 中：持续演进，避免配置回退到 Adapter | 需要保持 PaymentProvider 接口稳定，避免在 usecase/route 中读取 env |
 | P1-4 | 提升 AI 计费规则的可配置性 | `src/ai/billing-config.ts`、`src/lib/server/usecases/*` | AI chat / analyze / image 路径的计费与免费配额 | 中等：引入 billing rule provider 或配置层 | 需保证现有计费结果不变（或变更可控），并补充针对不同 plan 的测试 |
 | P1-5 | 补齐关键 action 与 UI 测试 | `src/actions/**`、`src/components/layout/navbar.tsx`、settings/credits 页面 | 关键用户流（登录、导航、credits 页面） | 中等：需要挑选代表性 user story 设计用例 | UI 受路由/i18n 影响，测试环境准备（locale、auth 状态）要明确 |
 

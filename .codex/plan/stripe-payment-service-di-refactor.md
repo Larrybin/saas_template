@@ -87,3 +87,56 @@ description: 将 StripePaymentService 从 env/config 与依赖构造中解耦，
 - 单元测试全部通过，特别是 Payment/Billing 相关测试。
 - 本地或测试环境下，`STRIPE_SECRET_KEY` 或 `STRIPE_WEBHOOK_SECRET` 缺失时，错误日志与文档描述的行为一致。
 - Route / Actions / Usecase 对 Payment 的调用点无需改动即可通过编译与测试。
+
+## 后续：PaymentProviderFactory 与多 Provider / 多租户计划（与协议报告对齐）
+
+> 关联：本节是对 `.codex/plan/protocol-future-techdebt-report.md` 中技术债 #6「Payment 多 Provider / 多租户 支撑不足」的落地化拆解，基于当前已存在的 `StripePaymentAdapter` + `createStripePaymentProviderFromEnv` 结构，不再重复历史重构步骤。
+
+### 目标
+
+- 将「选用哪一个 PaymentProvider + 如何构造」从业务/领域层彻底抽离到单一组合根/工厂。
+- 为未来新增 Provider（例如 Creem）与多租户（按 workspace / project 绑定不同 Stripe key）的扩展预留清晰接口，同时保持当前单 Provider 行为不变。
+
+### 设计要点
+
+1. **显式引入 PaymentProviderFactory 抽象**
+   - 类型位置建议：`src/payment/types.ts` 或独立工厂模块：
+     - `type PaymentContext = { tenantId?: string; region?: string }`（当前可选、仅作占位）。
+     - `interface PaymentProviderFactory { getProvider(ctx?: PaymentContext): PaymentProvider; }`
+   - 上层（BillingService / usecases / routes）不直接 new provider，而是依赖 `PaymentProviderFactory` 或工厂函数。
+
+2. **集中 Provider 选择逻辑**
+   - 在 `src/payment/index.ts` 或新建 `src/payment/provider-factory.ts` 中实现：
+     - `createPaymentProviderFactory()`：
+       - 内部根据 `websiteConfig.payment.provider` 作分支：当前仅 `'stripe'` 分支有效；
+       - 通过现有的 `createStripePaymentProviderFromEnv` 构造 `StripePaymentAdapter`；
+       - 为未来 `creem` / 其它 Provider 预留分支（暂时抛 `Unsupported payment provider`）。
+     - 默认实现中忽略 `PaymentContext` 的 tenant/region 字段，仅作为未来扩展位。
+
+3. **为多租户预留上下文，不实现具体租户表结构**
+   - 在 `PaymentContext` 中显式包含 `tenantId` / `region` 字段；
+   - 在 `createPaymentProviderFactory` 内保留扩展点：
+     - 例如通过可选的 `getTenantStripeConfig(ctx)` 回调（暂不实现）获取租户级 Stripe key/secret，再调用 `createStripePaymentProviderFromEnv`。
+   - 当前阶段仅在类型层面透传 context，不添加新的存储依赖，避免过度设计。
+
+4. **与 Billing 组合根对齐**
+   - 在 `src/lib/server/billing-service.ts` 中：
+     - 改为依赖 `PaymentProviderFactory` 或提供 `getPaymentProvider(ctx?: PaymentContext)`，而不是只暴露单例 `PaymentProvider`。
+     - 默认情况下继续以「全局单 Provider + 无租户上下文」配置 BillingService 行为，确保现有用例行为不变。
+
+5. **测试与文档更新**
+   - 为 `createPaymentProviderFactory` 增加小型单元测试：
+     - 验证 `websiteConfig.payment.provider = 'stripe'` 时仍返回 Stripe 实现；
+     - 验证非法 provider 值时抛出清晰错误。
+   - 在 `docs/payment-lifecycle.md` 中补充「PaymentProviderFactory 与多 Provider / 多租户」小节：
+     - 描述工厂的职责、配置来源与未来扩展模式；
+     - 与 `docs/env-and-ops.md` 中 Stripe 配置说明保持一致。
+
+### 执行顺序建议
+
+1. **第一步：引入 PaymentProviderFactory 类型与默认实现**
+   - 不改现有 `getPaymentProvider` 对外签名，实现内部改为使用 factory。
+2. **第二步：在 Billing 组合根中消化工厂抽象**
+   - 将 `createBillingService` 调整为可接收 `PaymentProviderFactory` 或 `getPaymentProvider` 回调。
+3. **第三步（未来需要时）：按租户/Region 注入差异化配置**
+   - 由更上层（例如 workspace 组合根）根据租户配置构造不同的 Stripe env/overrides，并通过工厂上下文注入。

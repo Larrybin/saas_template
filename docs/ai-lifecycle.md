@@ -30,7 +30,9 @@ AI 模块主要职责：
   - 计费规则：
     - 配置源：`src/config/website.tsx` 中的 `websiteConfig.ai.billing.*`  
     - 策略层：`src/ai/billing-policy.ts`（`AiBillingPolicy` / `DefaultAiBillingPolicy`）  
-    - 适配器：`src/ai/billing-config.ts`（向 usecase 暴露 `getAi*BillingRule`）  
+    - 适配器与注入点：`src/ai/billing-config.ts`  
+      - 向 usecase 暴露 `getAi*BillingRule`（保持稳定 API）  
+      - 通过 `setAiBillingPolicy` / `getAiBillingPolicy` 管理当前策略实例，支持在测试或多租户场景下替换策略实现  
   - 使用量统计：`src/ai/usage/ai-usage-service.ts`
 
 ---

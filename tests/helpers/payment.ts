@@ -1,5 +1,5 @@
-import { vi } from 'vitest';
 import type { Logger } from 'pino';
+import { vi } from 'vitest';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { CreditsTransaction } from '@/credits/services/transaction-context';
 import { resolveExecutor } from '@/credits/services/transaction-context';
@@ -9,14 +9,14 @@ import type {
   PaymentRecord,
 } from '@/payment/data-access/payment-repository';
 import type {
+  NotificationGateway,
+  PurchaseNotificationPayload,
+} from '@/payment/services/gateways/notification-gateway';
+import type {
   PaymentRepositoryLike,
   StripeCheckoutSessionLike,
 } from '@/payment/services/stripe-deps';
 import type { handleStripeWebhookEvent } from '@/payment/services/webhook-handler';
-import type {
-  NotificationGateway,
-  PurchaseNotificationPayload,
-} from '@/payment/services/gateways/notification-gateway';
 
 type WebhookDeps = Parameters<typeof handleStripeWebhookEvent>[1];
 type CreditsGatewayMock = CreditsGateway & {
@@ -214,9 +214,9 @@ export function createWebhookDeps(
     });
 
   const creditsGateway = {
-    addCredits: withTransactionGuard<
-      Parameters<CreditsGateway['addCredits']>
-    >((_, tx) => tx),
+    addCredits: withTransactionGuard<Parameters<CreditsGateway['addCredits']>>(
+      (_, tx) => tx
+    ),
     addSubscriptionCredits: withTransactionGuard<
       Parameters<CreditsGateway['addSubscriptionCredits']>
     >((_, __, ___, tx) => tx),
@@ -226,9 +226,7 @@ export function createWebhookDeps(
   } as CreditsGatewayMock;
 
   const notificationGateway = {
-    notifyPurchase: vi.fn(
-      async (_payload: PurchaseNotificationPayload) => {}
-    ),
+    notifyPurchase: vi.fn(async (_payload: PurchaseNotificationPayload) => {}),
   } as NotificationGatewayMock;
 
   const billingService = {

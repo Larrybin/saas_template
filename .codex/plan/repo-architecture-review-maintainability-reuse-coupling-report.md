@@ -1,23 +1,13 @@
-# 仓库架构体检报告：可维护性 / 复用性 / 耦合度 / 测试支撑
+# 仓库架构体检报告：可维护性 / 复用性 / 耦合度 / 测试支撑（2025-12 基线版）
 
-> 范围：基于 `.codex/plan/repo-architecture-review-maintainability-reuse-coupling.md` 约定，对当前仓库从可维护性、高复用、低耦合三个维度进行一次横向审查，并单独评估测试覆盖与可测性。仅输出分析与建议，不进行代码改动。
+> 范围：基于 `.codex/plan/repo-architecture-review-maintainability-reuse-coupling.md` 约定，对当前仓库从可维护性、高复用、低耦合三个维度进行一次横向审查，并单独评估测试覆盖与可测性。本报告为 2025-12 的“第二版基线”，仅输出分析与建议，不进行代码改动。
 
 ## 1. 全局概览
 
-- **整体评价**：
-  - 可维护性：**偏高**。目录结构清晰、领域模块化（credits / payment / billing / storage / ai / newsletter 等），TypeScript 严格（`strict` + `noUncheckedIndexedAccess`），多数复杂逻辑集中在 domain/usecase 层，并有成体系的日志与错误码体系支撑。
-  - 复用性：**较好**。`src/lib` / `src/hooks` / `src/components/ui` / `src/lib/server/usecases` 形成了较稳定的复用层，credits / billing / payment / AI 等核心域抽象了 domain service / gateway / usecase 等层次，减少跨域复制。
-  - 耦合度：**中等偏好**。路由 / actions 大多只面向 domain/usecase 层；infra 层（db / storage / notification）以接口或 provider 方式暴露。支付模块已拆分为 `StripePaymentAdapter` + 工厂 + webhook handler，较大程度消解了原先的“胖服务”耦合，剩余耦合主要集中在配置（`websiteConfig` / env）与部分 usecase 的直接读取上。
-  - 测试支撑：**关键路径较完备，边缘区域有空洞**。credits / billing / payment / AI usecases / 部分 API Route 都有针对性单测/集成测及 e2e，用例量可观；但某些 action、部分 UI 逻辑、以及个别非核心 API（如 `/api/storage/upload`）测试缺口仍然存在。
-
-- **代表性优点**：
-  - 清晰的模块地图（README + `src/routes.ts` + `CLAUDE.md`）以及 credits/payment/billing/AI 的领域分层；
-  - 统一的错误码 + DomainError + envelope + UI-error-registry 机制（`src/lib/domain-errors.ts`、`src/lib/server/error-codes.ts`、`src/lib/domain-error-utils.ts`、`src/lib/domain-error-ui-registry.ts`）；
-  - usecase 层封装业务流程，API Route / Server Action 只做协议与边界处理（例如 `executeAiChatWithBilling`、`analyze-web-content-with-credits` 等）。
-
-- **主要风险点（跨维度）**：
-  - 配置耦合仍需收敛：`websiteConfig` / env 在个别 usecase 中直接读取，后续应继续通过 facade 统一注入（如 pricing/credits 适配层、AI 计费配置）。
-  - 测试覆盖聚焦核心域，对 UI 组件（特别是复杂导航/交互）与部分边缘协议缺乏系统性验证。
+- **可维护性**：偏高。目录与领域分层清晰（credits / payment / billing / storage / ai / mail / newsletter 等），TypeScript 配置严格（`strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` 等），复杂业务集中在 domain/service/usecase 层，并有统一的日志和错误模型支撑。
+- **复用性**：较好。`src/lib`、`src/hooks`、`src/lib/server/usecases`、`src/credits`、`src/payment` 等形成稳定复用层，错误处理、计费、积分、Webhook、storage、mail 等都有成熟抽象；`tests/helpers/*` 进一步提升测试复用度。
+- **耦合度**：中等偏优。UI / actions / API Routes 大多依赖 domain/service/usecase 抽象，infra 通过接口或 provider 暴露；耦合主要集中在对 `websiteConfig` / `serverEnv` 等全局配置的直接读取，以及少量 usecase 与配置模块的耦合。
+- **测试支撑**：关键路径覆盖较全。credits / billing / payment / AI usecases、payment webhook、API Routes、错误 UI hooks、user-lifecycle 等具有成体系单元/集成测试；E2E 覆盖 auth 与部分 credits+AI 流程。复杂 UI 行为与完整支付前端流程仍有进一步加强空间。
 
 ---
 
@@ -25,60 +15,45 @@
 
 ### 2.1 全局评价
 
-- **结构层面**：
-  - 顶层目录与 `README.md`/`CLAUDE.md` 对齐，领域划分清晰：`src/credits`、`src/payment`、`src/domain/billing`、`src/lib/server/usecases` 等边界明确。
-  - `tsconfig.json` 使用 `strict` + `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`，强化类型安全，有利于长期维护。
-  - `src/routes.ts` 集中声明路由常量，避免魔法字符串散落；有清晰的 `protectedRoutes` / `routesNotAllowedByLoggedInUsers` 列表，提升可读性。
+- 结构上，根文档（`README.md`、`docs/architecture-overview.md`、`docs/feature-modules.md`）与代码目录严格对齐：`src/credits`、`src/payment`、`src/domain/billing`、`src/lib/server/usecases`、`src/storage`、`src/mail` 等边界清晰。
+- `src/app/api/**` 集中 API Routes，配套 `src/app/api/__tests__/*.test.ts` 的 route 级测试，对协议和错误模型形成显式约束。
+- 复杂业务逻辑集中在 domain/service/usecase 层（如 `src/credits/domain/credit-ledger-domain-service.ts`、`src/credits/distribution/credit-distribution-service.ts`、`src/lib/server/usecases/*`、`src/payment/services/*`），UI 和 actions 多数保持“薄”层实现。
+- 日志与错误处理统一使用 `getLogger`、`ErrorCodes`、`DomainError`、`domain-error-utils`，降低 ad-hoc 错误处理带来的维护成本。
 
-- **实现层面**：
-  - 复杂逻辑倾向集中在 domain/usecase 层，例如：
-    - `src/credits/domain/credit-ledger-domain-service.ts`：明确职责、良好的方法拆分（验证、事务操作、FIFO 过期处理等），并通过 repository 接口解耦持久化细节。
-    - `src/lib/server/usecases/execute-ai-chat-with-billing.ts`：将 AI chat + 积分计费 + 免费配额 + 日志打点集中在 usecase 中，API Route 只负责协议校验与 envelope。
-  - UI 层（如 `src/app/[locale]/(protected)/settings/credits/layout.tsx` + `credits/page.tsx` + `src/components/settings/credits/credits-page-client.tsx`）职责分层清晰：布局组件负责头部与文案，Page 负责 feature gate（`isCreditsEnabled` 与 redirect），Client 组件负责 tabs 状态与内容组合。
-  - 日志与错误处理使用统一工具（`getLogger`、`ErrorCodes`、`DomainError`），减少散乱 `console.log` 与 ad-hoc 错误处理。
+### 2.2 代表性正面示例
 
-### 2.2 正面示例
-
-1. **Credits 域的领域服务与验证逻辑集中，接口清晰**  
+1. **Credits 领域服务：输入验证和事务处理清晰稳定**  
    - 文件：`src/credits/domain/credit-ledger-domain-service.ts`  
    - 特点：
-     - 构造函数通过 `ICreditLedgerRepository` + `dbProvider` 注入 infra，便于测试与替换实现。
-     - `validateAddCreditsPayload`、`consumeCredits` 等方法对输入进行显式校验，并通过领域错误（`InvalidCreditPayloadError` / `InsufficientCreditsError`）表达业务失败。
-     - `processExpiredCreditsForUsers` 做了“best-effort”批处理，详细注释解释行为与日志记录策略，有利于未来维护。
+     - `validateAddCreditsPayload` 统一验证 `userId` / `amount` / `type` / `expireDays` / `periodKey`，通过 `InvalidCreditPayloadError` 表达业务错误。
+     - `consumeCredits`/`consumeCreditsWithExecutor` 兼容已有事务与非事务场景，使用 `DbExecutor` / `Transaction` 类型守护事务边界；`processExpiredCreditsForUsers` 有详细注释说明 best-effort 语义和日志策略。
 
-2. **AI Chat with billing usecase 单一职责清晰，边界明了**  
+2. **AI Chat + 计费 usecase：职责与边界明确**  
    - 文件：`src/lib/server/usecases/execute-ai-chat-with-billing.ts`  
    - 特点：
-     - 函数注释清晰定义责任（扣费 + 调用 AI）和调用前/调用后的期望行为。
-     - 将免费额度计数（`incrementAiUsageAndCheckWithinFreeQuota`）、credits 扣减（`consumeCredits`）与日志（`getLogger`）都封装在 usecase 内部，避免 API Route 复制逻辑。
-     - 对输入进行了基本校验（messages / model / webSearch），并抛出带错误码的 `DomainError`，与文档和 UI Error Handling 保持一致。
+     - 入参类型清晰，函数开头即对 `messages` / `model` / `webSearch` 做基础校验，异常使用带 code 的 `DomainError` 表达。
+     - 内部串联免费额度检查（`incrementAiUsageAndCheckWithinFreeQuota`）、credits 扣减（`consumeCredits`）和 AI 调用（`streamText`），API Route 层只关注 HTTP 协议与 envelope。
 
-3. **Settings / Credits UI 分层合理，代码简洁易读**  
-   - 文件：
-     - `src/app/[locale]/(protected)/settings/credits/page.tsx`
-     - `src/app/[locale]/(protected)/settings/credits/layout.tsx`
-     - `src/components/settings/credits/credits-page-client.tsx`  
+3. **Payment 测试辅助：In-memory 仓储与事务对齐逻辑易懂**  
+   - 文件：`tests/helpers/payment.ts`  
    - 特点：
-     - Page 层只负责 feature flag + redirect；Layout 负责 breadcrumbs 和文案，Client 组件负责 tabs 状态管理与子组件组合（`CreditsBalanceCard`、`CreditPackages`、`CreditTransactions`）。
-     - `credits-page-client.tsx` 使用 `nuqs` 的 `useQueryState` 管理 URL tab 参数，便于调试与分享，逻辑集中在一个地方。
+     - `InMemoryPaymentRepository` 实现 `PaymentRepositoryLike`，封装 Map 存储、session/subscription 索引与事务句柄校验（`ensureTransaction`），测试只依赖接口，不依赖真实 DB。
+     - `createWebhookDeps` 在一个地方集中构造 `paymentRepository` / `creditsGateway` / `notificationGateway` / `billingService` / `logger`，并通过 `withTransactionGuard` 保证 credits 事务与 payment 事务的一致性，便于维护与调试。
 
-4. **Storage 抽象简洁，易于替换 provider**  
-   - 文件：`src/storage/index.ts`  
+4. **Mail service 测试：配置管理与依赖替换清晰**  
+   - 文件：`src/mail/__tests__/mail-service.test.ts`  
    - 特点：
-     - 通过 `StorageProvider` 接口与 `defaultStorageConfig` 注册 provider，并在 `initializeStorageProvider` 中根据 `websiteConfig.storage.provider` 决定具体实现。
-     - `uploadFile` / `deleteFile` 提供聚合 API，业务只依赖高层接口而非具体 SDK。
+     - 使用 `beforeEach` / `afterEach` 管理 `websiteConfig.mail` 变化，避免测试间污染；`fallbackFromEmail` 处理配置中缺失字段。
+     - 通过 `createMailProviderStub` 和 `ResendProviderMock` 注入 stub，实现对 `initializeMailProvider` 缓存行为和 `sendEmail` 模板/原始邮件路径的可维护验证。
 
-### 2.3 反面 / 需要留意的示例
+### 2.3 需要关注的点
 
-1. **配置读取分散，尚未完全下沉到适配层**  
-   - 文件：`src/ai/billing-config.ts`、部分 usecase 直接使用 `websiteConfig`。  
-   - 问题：配置来源分散，虽已有 `StripePaymentAdapter` + `createStripePaymentProviderFromEnv` 收敛支付依赖，但 AI 计费、credits 定价仍有直接读取配置的分支。  
-   - 影响：后续引入多 Provider / 多租户配置时，需要额外梳理调用点，建议继续推进“配置适配层”方案。
+1. **全局配置对象读写点相对分散**  
+   - 示例：`src/payment/index.ts` 依赖 `websiteConfig.payment` + `serverEnv`；`src/ai/billing-config.ts` 依赖配置与 env；mail 测试直接修改 `websiteConfig.mail`。  
+   - 风险：当前用法集中且可控，但随着多租户、环境切分或配置演进，散落的读写点会放大维护成本。
 
-2. **边缘路径测试空洞**  
-   - 文件：部分 UI 组件与非核心 API（如 `src/app/api/storage/upload/route.ts`）缺少端到端或行为级测试。  
-   - 问题：核心域测试完备，但导航/交互类 UI 与少量 API 的防回归保障不足。  
-   - 影响：未来迭代中容易出现未覆盖的 UI 回归或协议偏差。
+2. **复杂 UI 行为仍然主要依赖人工验证**  
+   - 虽然 API/usecase 层有良好测试，但导航、定价页、AI playground 等 UI 逻辑更多通过文档和约定维护，随着功能增长，维护与重构时的风险会增加。
 
 ---
 
@@ -86,336 +61,130 @@
 
 ### 3.1 全局评价
 
-- `src/lib` 作为复用层组织较好，提供：
-  - domain-error / error codes / error UI 映射（`domain-errors.ts`、`server/error-codes.ts`、`domain-error-utils.ts`、`domain-error-ui-registry.ts`）；
-  - auth / safe-action 封装（`auth.ts`、`auth-domain.ts`、`safe-action.ts`、`auth-client.ts`）；
-  - logging（`logger.ts`、`server/logger.ts`、`user-lifecycle/logger.ts`）；
-  - user lifecycle hooks（`src/lib/user-lifecycle/**`）；
-  - URL / metadata / i18n helpers 等。
-- `src/hooks` 将各领域的错误 UI 处理和数据访问封装为 hooks（`use-ai-error-ui.ts`、`use-credits-error-ui.ts`、`use-storage-error-ui.ts`、`use-auth-error-handler.ts` 等），减少重复的 UI fallback 逻辑。
-- `src/components/ui` 提供一套 Radix + Tailwind UI primitives，复用充分。
+- 错误处理复用链路完备：`src/lib/server/error-codes.ts`、`src/lib/domain-errors.ts`、`src/lib/domain-error-utils.ts`、`src/lib/domain-error-ui-registry.ts` 和前端 hooks（`useAiErrorUi`、`useStorageErrorUi` 等）形成从错误码到 UI 行为的统一抽象。
+- 领域抽象分层明确：credits（domain/service/gateway）、payment（provider/adapter/factory/webhook handler）、AI usecases（chat/analyze/generate）、storage/mail 等都以接口 + adapter 形式暴露能力。
+- 公共工具集中：`src/lib/utils.ts`、`src/lib/formatter.ts`、`src/lib/metadata.ts`、`src/lib/urls/urls.ts` 等承载通用逻辑，减少“复制粘贴式工具函数”。
+- 测试辅助复用充分：`tests/helpers/payment.ts`、`tests/helpers/mail.ts`、`tests/utils/requests.ts` 等大幅减少测试样板代码。
 
-整体来看，**重复逻辑主要集中在个别尚未完全纳入统一抽象的边缘区域（例如部分 action / 部分 API 的错误处理）**，核心域具备良好的抽象与复用。
+### 3.2 代表性正面示例
 
-### 3.2 正面示例
+1. **错误模型与 UI 映射的全链路复用**  
+   - 文件：`src/lib/server/error-codes.ts`、`src/lib/domain-errors.ts`、`src/lib/domain-error-utils.ts`、`src/lib/domain-error-ui-registry.ts`、`src/hooks/__tests__/use-ai-error-ui.test.ts`  
+   - 特点：错误码集中声明，DomainError 封装结构化错误，`unwrapEnvelopeOrThrowDomainError` 统一 envelope 解包；UI registry 与 hooks 将 code 映射为 UI 策略，测试验证了主要路径。
 
-1. **DomainError + ErrorCodes + UI Registry 形成完整复用闭环**  
-   - 文件：
-     - `src/lib/server/error-codes.ts`
-     - `src/lib/domain-errors.ts`
-     - `src/lib/domain-error-utils.ts`
-     - `src/lib/domain-error-ui-registry.ts`  
-   - 特点：
-     - 错误码声明集中在 `error-codes.ts`，DomainError 封装统一结构，`domain-error-utils.ts` 提供 envelope 解包和 i18n 文案解析，UI registry 则负责 code → UI 行为映射。
-     - 前端组件/页面通过 hooks（如 `useAiErrorUi`、`useCreditsErrorUi`）消费这些抽象，避免到处写 `if (code === '...')`。
+2. **Credits 域：domain/service/gateway 分层复用**  
+   - 文件：`src/credits/domain/credit-ledger-domain-service.ts`、`src/credits/services/credit-ledger-service.ts`、`src/credits/services/credits-gateway.ts`、`src/credits/utils/period-key.ts`  
+   - 特点：domain 层负责业务规则；service/gateway 封装对外接口；periodKey/plan 策略在 utils/domain 中复用，避免重复实现。
 
-2. **Credits 域的多层抽象复用**  
-   - 文件：`src/credits/domain/*`、`src/credits/services/*`、`src/credits/data-access/*`、`src/credits/utils/period-key.ts`  
-   - 特点：
-     - clear domain service（`CreditLedgerDomainService`）、service 层（`CreditLedgerService` / `CreditsGateway`）与 data-access 层。
-     - `CreditsGateway` 暴露统一接口给 payment / billing / usecase，并在内部使用 domain service/ repository。
-     - `period-key.ts` & plan-policy/lifetime-membership 等为多处场景的共同逻辑提供可复用工具。
+3. **Payment 模块：provider/adapter/factory 模式**  
+   - 文件：`src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts`、`src/payment/services/stripe-payment-adapter.ts`、`src/payment/services/stripe-webhook-handler.ts`  
+   - 特点：`PaymentProvider` 接口统一对外能力；factory 从 env/config 构造 provider；adapter 隔离 Stripe 细节；webhook handler 使用 data-access 与 `CreditsGateway` 组合，利于复用与替换。
 
-3. **lib/server/usecases 将 AI/credits/billing 的跨域逻辑抽离成可复用用例**  
-   - 文件：`src/lib/server/usecases/execute-ai-chat-with-billing.ts`、`analyze-web-content-with-credits.ts`、`generate-image-with-credits.ts`  
-   - 特点：
-     - API Route / Server Action 只需关心请求解析与 envelope，具体 AI 调用 + 积分扣费由 usecase 处理，减少重复。
-     - 多个 usecase 在 credits / ai-usage / 日志模式上保持一致，复用度高。
+4. **测试辅助模块：高复用、低心智负担**  
+   - 文件：`tests/helpers/payment.ts`、`tests/helpers/mail.ts`  
+   - 特点：集中封装复杂依赖（事务、外部 provider），测试只需调用 helper 即可获得一致、可预测的环境。
 
-4. **Storage / Notification 通过接口抽象 provider**  
-   - 文件：
-     - `src/storage/index.ts` + `src/storage/provider/s3.ts`
-     - `src/notification/notification.ts` + `src/notification/discord.ts` / `feishu.ts`  
-   - 特点：
-     - 统一接口 `StorageProvider` / 通知 gateway，便于扩展其他 provider。
+### 3.3 可改进点
 
-### 3.3 可进一步提升复用性的点
+1. **AI 计费规则的注入方式可以更抽象**  
+   - 文件：`src/lib/server/usecases/execute-ai-chat-with-billing.ts`、`src/ai/billing-config.ts`  
+   - 问题：usecase 直接调用 `getAiChatBillingRule`，使计费策略实现与 usecase 耦合；当按 plan/tenant 动态变更策略时，需要修改 usecase 内部。
+   - 建议：抽象 `AiBillingRuleProvider` 接口，通过参数或依赖注入交给 usecase，usecase 只依赖抽象而不依赖具体配置实现。
 
-1. **继续强化 Payment Provider 工厂化与多 Provider 预留**  
-   - 文件：`src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts`、`stripe-payment-adapter.ts`。  
-   - 现状：支付依赖已集中在 factory；Adapter 与 env/config 解耦，仅消费注入依赖。  
-   - 建议：在 factory 层保持 provider 选择与配置覆盖的单一责任，防止未来引入第二 Provider 或多租户 key 时回退到 Adapter/Usecase 读取 env/config。
-
-2. **AI 计费配置的复用维度不足**  
-   - 文件：`src/ai/billing-config.ts`（未在本报告全文展示，但在其它 plan/report 已分析）  
-   - 现状：计费规则主要是静态常量，缺乏 plan / region 等维度的复用能力。
-   - 建议：
-     - 抽象为 `BillingRuleRepository` 或配置服务，让不同 plan / 环境可以覆盖默认规则，而不是在 usecase 中硬编码。
+2. **actions 中的错误处理模式可以通过 helper 收敛**  
+   - 示例：`src/actions/get-credit-balance.ts` 等使用 `DomainError` + `ErrorCodes.UnexpectedError` 的 actions。  
+   - 建议：在 `safe-action` 或相邻模块提供统一的包装器（如 `withDomainErrorBoundary(span, handler)`），减少重复的 try/catch 模板代码。
 
 ---
 
 ## 4. 耦合度 / 边界清晰度
 
-### 4.1 全局评价
+### 4.1 全局边界与依赖方向
 
-- UI/路由层（`src/app`）整体上只依赖：
-  - Server Actions（`src/actions/**`）进行数据/副作用操作；
-  - 或 `src/lib`、`src/payment` 提供的聚合服务（例如 credits 相关查询/消费）。
-- Domain/service 层（`src/credits`、`src/domain/billing`、`src/payment/services`、`src/lib/server/usecases`）之间有明确依赖方向：
-  - `payment` 依赖 `credits`（通过 gateway/service），反向依赖较少；
-  - `domain/billing` 作为纯领域服务，可被 payment/credits 等复用；
-  - infra（db / storage / notification）通过接口（Repository / Provider）暴露给上层，较少见到 UI 直接依赖 infra。
-- 主要耦合点集中在：
-  - 支付的 provider 选择仍由单一 factory 管理，未来多 Provider / 多租户需要在此扩展（当前 Adapter 已与 env 解耦）；
-  - 计费规则与代码（`ai/billing-config`）硬编码绑定。
+- UI / 路由（`src/app/**`、`src/components/**`）主要依赖 actions、hooks 和 API，不直接访问 db 或第三方 SDK。
+- actions（`src/actions/**`）负责参数校验、用户上下文注入与 envelope 构造，依赖 credits/payment/newsletter 等服务函数。
+- domain/service/usecase（`src/credits/**`、`src/payment/**`、`src/lib/server/usecases/**`、`src/domain/billing/**`）承载业务规则，集中访问 data-access 与 infra。
+- infra 层（`src/db/**`、`src/storage/**`、`src/mail/**`、`src/notification/**`）通过 interface/provider 暴露能力，避免渗透到 UI 或 actions。
 
-### 4.2 边界健康的示例
+### 4.2 代表性正面示例
 
-1. **Credits 域的分层依赖方向清晰**  
-   - 文件：`src/credits/domain/*`、`src/credits/services/*`、`src/credits/data-access/*`  
-   - 特点：
-     - domain service 只依赖 repository 接口与 `DbExecutor` 抽象，不依赖具体 DB 实现。
-     - service 层（如 `CreditLedgerService`）负责将 domain service 与外部调用者（payment/billing/usecases）连接，边界清晰。
+1. **Credits ↔ Billing ↔ Payment 边界明确**  
+   - Credits 专注积分账本与生命周期；Billing 定义计费策略；Payment 集成 Stripe 与 payment/stripe_event 表。Webhook handler 使用 data-access + `CreditsGateway` 驱动积分更新，Route 层保持简单。
 
-2. **AI + Credits 用例层位于 lib/server/usecases，作为跨域编排层**  
-   - 文件：`src/lib/server/usecases/execute-ai-chat-with-billing.ts`  
-   - 特点：
-     - usecase 既依赖 AI 功能（`streamText`、billing config、ai usage）又依赖 credits，但 API Route 只依赖 usecase，不直接感知 credits/billing 细节。
-     - 有利于未来将 AI provider 或 credits 体系替换为其他实现时，只在 usecase/下层调整。
+2. **Storage 抽象隔离第三方实现**  
+   - 文件：`src/storage/index.ts`、`src/storage/provider/s3.ts`  
+   - 特点：`StorageProvider` 抽象上传/删除能力，`initializeStorageProvider` 根据配置选择 provider，业务端不依赖具体 S3 SDK。
 
-3. **Storage 与 WebsiteConfig 之间通过配置解耦业务**  
-   - 文件：`src/storage/index.ts` + `src/config/website.tsx`  
-   - 特点：
-     - `websiteConfig.storage.provider` 决定具体 provider，业务层只通过 `uploadFile`/`deleteFile` 操作。
+3. **Mail 域通过 provider 抽象外部邮件服务**  
+   - 文件：`src/mail/index.ts`、`src/mail/provider/resend.ts`、`src/mail/__tests__/mail-service.test.ts`  
+   - 特点：统一 `initializeMailProvider` / `getMailProvider` 生命周期管理；模板/原始邮件逻辑封装在 mail 域内部，调用方只需传递业务参数。
 
-### 4.3 耦合偏重 / 边界模糊的示例
+4. **测试 helpers 将测试专有耦合限制在测试层**  
+   - 文件：`tests/helpers/payment.ts`、`tests/helpers/mail.ts`  
+   - 特点：将对事务、通知、外部 provider 的特殊处理集中在 helpers，避免生产代码因测试需求而增加额外耦合。
 
-1. **支付配置仍集中在单一工厂，需持续保持 Adapter 去耦**  
-   - 文件：`src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts`、`stripe-payment-adapter.ts`。  
-   - 现状：`StripePaymentAdapter` 已与 env/config 解耦，wiring 下沉到 factory，并通过 `PaymentProvider` 接口暴露给上层。  
-   - 风险：若未来引入多 Provider / 多租户 key，需确保选择逻辑仍只存在于 factory 层，避免 Adapter / usecase 回退到直接读取 env/config。  
-   - 建议：在 factory 中预留 provider 选择与多租户 key 覆盖点，并保持 Adapter 只感知注入的依赖。
+### 4.3 可改进点
 
-2. **AI 计费规则与 usecase 耦合**  
-   - 文件：`src/lib/server/usecases/execute-ai-chat-with-billing.ts` + `src/ai/billing-config.ts`  
-   - 问题：
-     - usecase 内直接调用 `getAiChatBillingRule`，billing rule 实现与 usecase 耦合在同一代码路径，无法基于不同 plan / 促销策略动态调整。
-   - 建议：
-     - 引入 `BillingRuleProvider` 接口，从外部注入；或在 usecase 的参数中加入 `billingRule`，由上层根据当前用户/plan 决定。
+1. **配置/Env 与业务逻辑的耦合可以进一步弱化**  
+   - 示例：`src/payment/index.ts`（使用 `websiteConfig.payment` 与 `serverEnv`）、`src/ai/billing-config.ts`、`src/mail/index.ts`。  
+   - 建议：为 payment、AI billing、mail 等域引入轻量级 `*ConfigProvider` 抽象，由上层整合 `websiteConfig` 与 env 注入，业务代码仅依赖接口。
 
-3. **部分 API 与统一协议的耦合不完善**  
-   - 文件：`src/app/api/distribute-credits/route.ts`（协议与错误码差异的细节见 `protocol-future-techdebt-report.md`）  
-   - 问题（架构层概括）：
-     - 部分路由在非 2xx 场景返回的 payload 形态与统一 envelope 约定不一致，调用方需要写特例逻辑。
-   - 建议：
-     - 将 API Route 的错误响应通过 shared helper 统一封装为 envelope，本报告只给出分层和耦合方向建议，具体字段与错误码取值以协议报告为准。
+2. **测试中对全局配置对象的修改需持续约束**  
+   - 虽然当前 mail 测试通过 lifecycle 恢复配置，但新增测试时应保持这一模式，避免在生产代码中形成对可变全局配置的隐性依赖。
 
 ---
 
 ## 5. 测试覆盖与可测性
 
-### 5.1 现有测试分布（采样）
+### 5.1 测试分布概览
 
-- **Credits 域**：
-  - 单元/服务测试：
-    - `src/credits/domain/__tests__/credit-ledger-domain-service.test.ts`
-    - `src/credits/domain/__tests__/plan-credits-policy.test.ts`
-    - `src/credits/services/__tests__/credit-ledger-service*.test.ts`（多个变体：errors / plan-policy / register-free 等）。
-  - cron / 过期逻辑：
-    - `src/credits/expiry-job.test.ts`
-    - `src/credits/__tests__/distribute-lifetime-membership.test.ts`
-  - 评价：**核心 credits 逻辑测试充分**，验证了 domain service、service、过期任务与终身会员发放路径，可为重构提供安全网。
+- 领域/服务层：
+  - Credits：`src/credits/domain/__tests__/*.test.ts`、`src/credits/services/__tests__/*.test.ts`、`src/credits/distribution/__tests__/credit-distribution-service.test.ts`、`src/credits/expiry-job.test.ts` 覆盖账本、计划策略、分发和过期任务。
+  - Billing：`src/domain/billing/__tests__/billing-service.test.ts`、`billing-to-credits.integration.test.ts`。
+  - Payment：`src/payment/services/__tests__/stripe-payment-service.test.ts`、`webhook-handler*.test.ts` 覆盖支付与 Webhook 行为。
+  - AI：`src/ai/text/utils/__tests__/*.test.ts`、`src/ai/text/utils/analyze-content/__tests__/*.test.ts` 覆盖 analyzer handler、provider factory、scraper 等。
+  - Usecases：`src/lib/server/usecases/__tests__/*.test.ts` 覆盖 chat/analyze/generate 的 credits 计费逻辑。
+- API Routes：`src/app/api/__tests__/analyze-content-route.test.ts`、`chat-route.test.ts`、`distribute-credits-route.test.ts`、`generate-images-route.test.ts`、`search-route.test.ts`、`storage-upload-route.test.ts` 覆盖主要 API 协议。
+- 错误 UI 与 hooks：`src/hooks/__tests__/use-ai-error-ui.test.ts`、`src/hooks/__tests__/use-storage-error-ui.test.ts`、`src/lib/__tests__/domain-error-ui-registry.test.ts` 验证错误码到 UI 策略的映射。
+- Mail/Provider：`src/mail/__tests__/mail-service.test.ts`、`src/mail/provider/__tests__/resend-provider.test.ts`。
+- E2E：`tests/e2e/auth.spec.ts`、`tests/e2e/credits-and-ai-flows.spec.ts` 覆盖认证和部分 credits+AI 用例。
 
-- **Billing / Payment 域**：
-  - billing：`src/domain/billing/__tests__/billing-service.test.ts`、`billing-to-credits.integration.test.ts`，覆盖计费与积分联动逻辑（integration）。
-  - payment / Stripe：`src/payment/services/__tests__/stripe-payment-service.test.ts`，模拟 webhook 事件流，验证 credits 发放、lifetime plan、renewal 等路径（通过大量 mock/stub，依赖注入良好）。
-  - 评价：**支付/计费路径有较强的可测性与覆盖度**。
+### 5.2 可测性总结
 
-- **API Routes**：
-  - `src/app/api/__tests__/chat-route.test.ts` 等，对 chat / analyze-content / distribute-credits / generate-images API 的参数校验、授权、调用 usecase 等有覆盖。
-  - 示例（`chat-route.test.ts`）：通过 vitest 的 mock 方式替换 `ensureApiUser`、`enforceRateLimit`、`executeAiChatWithBilling`，重点验证参数校验与 envelope。
+- 优点：核心域和 API Routes 测试覆盖扎实，usecase/hook 层测试保证错误模型与计费逻辑可靠；测试辅助模块大幅降低测试样板代码。
+- 缺口：
+  1. 复杂 UI 组件（导航、定价页、AI playground 等）的行为主要依赖人工回归，缺少组件/集成层的显式测试。
+  2. 支付前端流程（定价页 → checkout → Webhook 后 UI 状态）尚无完整端到端自动化用例。
 
-- **Actions / 其它**：
-  - `tests/actions/get-active-subscription.test.ts`
-  - `tests/actions/validate-captcha.test.ts`
-  - `tests/proxy-helpers.test.ts`
-  - `tests/env/client-env.test.ts`
+### 5.3 测试改进建议
 
-- **E2E 测试**：
-  - `tests/e2e/auth.spec.ts`：覆盖基本认证流程。
-
-### 5.2 可测性与缺口
-
-- **已具备的可测性优势**：
-  - 多数关键服务通过接口/依赖注入设计（如 PaymentProvider + Stripe factory overrides、`ICreditLedgerRepository`、`DbExecutor` 等），利于通过 mock/stub 构造测试。
-  - Usecase 与 API Route 分离，使得 usecase 可以在不依赖 HTTP 层的情况下进行测试。
-  - 测试目录结构基本遵循“同模块旁边”或 `__tests__` 约定，有利于维护。
-
-- **明显缺口或改进空间**：
-  1. **部分 Server Action / UI 缺少测试**  
-     - 板块：`src/actions/**`（如 `subscribe-newsletter.ts`、`consume-credits.ts` 等）与复杂 UI 组件（如 `Navbar`、credits page 的交互组件）目前尚未看到单测/集成测。  
-     - 风险：未来调整 envelope 或错误码时，前后端交互可能产生回归；复杂 UI 交互的行为（如 locale 路由、登录状态展示、tab 状态持久化）容易在重构中被破坏。
-
-  2. **部分 API（如存储上传）未被 route 测试覆盖**  
-     - `chat` / `analyze-content` / `generate-images` / `search` / `distribute-credits` 等核心路由已有测试，但类似 `/api/storage/upload` 这类非核心 yet 重要的接口目前尚未看到 route 级测试覆盖。
-
-  3. **E2E 覆盖集中在 auth，未覆盖 billing/credits/AI 的关键 happy path**  
-     - 当前 `tests/e2e/auth.spec.ts` 专注认证流程，对 settings/credits 页面、Stripe checkout 流程、AI 功能等尚无端到端验证。
-
-### 5.3 测试改进建议（按优先级）
-
-- **P0 / P1（应优先考虑）**：
-  1. 为 `/api/search` 补充 route 测试（包括正常查询、错误 path、错误码映射）并对齐 envelope。  
-  2. 为 `src/actions/subscribe-newsletter.ts`、`validate-captcha.ts` 等补充 action 级测试，覆盖正常与错误路径，以及 envelope 与错误码行为。
-
-- **P2（中期优化）**：
-  3. 针对重要 UI 流程（如 settings/credits 页面、Navbar 登录状态切换）补充组件/集成测试，至少覆盖：路由条件渲染、tab 状态、权限保护等核心交互。
-  4. 扩展 E2E 测试用例，增加：用户购买 credits、订阅 plan、AI chat 调用成功/失败体验的 happy path 验证，以防止未来重构破坏核心闭环。
+- 短期重点：
+  - 为 1–2 ���高价值 UI 流程（如定价页 CTA、AI playground 主要交互）补充轻量级组件/集成测试，覆盖核心渲染和状态切换。
+  - 在现有 `tests/e2e/credits-and-ai-flows.spec.ts` 基础上强化断言，确保错误码/文案与错误模型一致。
+- 中期目标：
+  - 增加至少一个“支付 → credits 更新 → AI 使用”的完整 e2e 场景，形成支付相关的端到端安全网。
 
 ---
 
 ## 6. 综合改进建议（按优先级）
 
-> 以下建议仅针对当前“可维护性 / 复用性 / 耦合度 / 测试支撑”视角的发现，具体实施可以在独立 plan 中拆解。
+### P0（高优）
 
-### P0（近期建议）
+1. **抽象 AI 计费策略注入接口**  
+   - 目标：让 chat/analyze/generate 等 usecase 依赖 `AiBillingRuleProvider` 而非直接调用配置函数，为 per-plan/per-tenant 策略演进预留空间（协议与计费规则侧的细化建议见 `.codex/plan/protocol-future-techdebt-report.md` 技术债 #5）。
+2. **建立关键 UI 流程的最小测试基线**  
+   - 目标：为定价页 CTA、AI playground 等高风险 UI 增加少量组件/集成测试，降低重构和样式调整带来的行为回归风险。
 
-1. **统一 API Route 与 Server Action 的错误 envelope 与 DomainError 使用**  
-   - 涉及：新扩展的 API / Actions，确保与现有 routes（含 `/api/distribute-credits`）一致。  
-   - 动作：
-     - 将所有 API 400/401/5xx 响应统一包装为 `{ success: false, error, code, retryable }`；
-     - 对 action 中的错误路径统一使用 `DomainError`（或至少补充 `code` 字段并映射到 `ErrorCodes`）；
-     - 更新 `docs/api-reference.md` / `docs/error-codes.md` 保持一致。  
-   - 收益：提升调用方与前端错误处理的一致性，降低后续改动时的回归风险，增强可维护性与复用性。
+### P1（中优）
 
-2. **为“协议敏感”的 API 完善 route 测试**  
-  - 涉及：`/api/storage/upload` 等少量尚未覆盖的路由（已存在的核心路由如 `/api/distribute-credits`、`/api/chat`、`/api/analyze-content` 已有测试，需持续守护）。  
-  - 动作：在 `src/app/api/__tests__` 中补充或扩展对应 route 测试，特别覆盖错误分支（401/4xx/5xx）与 envelope 形态。  
-  - 收益：为未来协议统一/重构提供安全网，防止协议细节回归。
+1. **收敛 action 层错误处理模式**  
+   - 在 `safe-action` 或相邻模块提供统一的 DomainError 包装 helper，减少重复 try/catch，统一日志与错误码行为（对应协议层技术债 #2）。
+2. **为 payment / AI / mail 引入轻量级配置 provider**  
+   - 将 `websiteConfig` / `serverEnv` 的读取集中在少数 adapter，业务代码依赖 `PaymentConfigProvider`、`AiBillingConfigProvider`、`MailConfigProvider` 等抽象（与协议层技术债 #5/#6 联动）。
 
-### P1（中短期建议）
+### P2（低优）
 
-3. **持续守护支付组合根与多 Provider 可插拔性**  
-   - 涉及：`src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts`、`stripe-payment-adapter.ts`。  
-   - 动作：
-     - 保持 env/websiteConfig 解析集中在 factory，避免在 adapter/usecase 中重新读取配置；  
-     - 为未来第二 Provider（或多租户 key）预留选择/注入点，确保 PaymentProvider 接口消费方无需改动。  
-   - 收益：降低支付模块的耦合度，为未来扩展打下基础。
-
-4. **提升 AI 计费规则的可配置性与可测试性**  
-   - 涉及：`src/ai/billing-config.ts` + `src/lib/server/usecases/execute-ai-chat-with-billing.ts` 等。  
-   - 动作：
-     - 抽象 billing rule 为接口 / provider，并在 usecase 中通过参数或依赖注入方式获取；
-     - 为不同 plan/环境提供 override 能力，并增加测试覆盖。  
-   - 收益：降低 usecase 与硬编码配置的耦合，提升在不同商业模型下的可扩展性。
-
-5. **补齐关键 action 与 UI 组件测试**  
-  - 涉及：`src/actions/**` 中尚无测试的 action、`src/components/layout/navbar.tsx`、settings/credits 页面等。  
-  - 动作：
-     - 行为驱动的测试（以“用户故事”为单位），覆盖登录状态、语言切换、tab 切换、credits 消费/展示等核心路径。  
-   - 收益：提升整体可维护性与 refactor 自信度。
-
-### 6.1 P0 / P1 建议影响范围矩阵（概要）
-
-> 详细技术债条目（特别是协议与错误码差异）以 `protocol-future-techdebt-report.md` 为主，本表只从架构与实施成本角度给出概要评估。
-
-| 建议编号 | 建议摘要 | 主要涉及模块/文件 | 影响范围 | 复杂度评估 | 风险点 |
-| --- | --- | --- | --- | --- | --- |
-| P0-1 | 统一 API/Action 错误 envelope + DomainError 使用 | `src/app/api/*`、`src/actions/*` 新增/改动的路由与 Action | 前后端错误处理链路、日志/监控解析 | 中等：字段调整 + 局部错误处理重构 | 需确保前端 hooks 与 i18n 文案同步更新，避免打破现有 UI 行为 |
-| P0-2 | 为协议敏感 API 完善 route 测试 | `src/app/api/storage/upload/route.ts` 等少量未覆盖路由 | 协议回归检测、CI 反馈质量 | 低：新增或扩展测试 + 少量 mock | 测试需覆盖 2xx/4xx/5xx 及 envelope 形态，避免遗漏主干路径 |
-| P1-3 | 守护支付组合根与多 Provider 可插拔性 | `src/payment/index.ts`、`src/payment/services/stripe-payment-factory.ts` | 支付域（checkout、webhook、credits 发放） | 中：持续演进，避免配置回退到 Adapter | 需要保持 PaymentProvider 接口稳定，避免在 usecase/route 中读取 env |
-| P1-4 | 提升 AI 计费规则的可配置性 | `src/ai/billing-config.ts`、`src/lib/server/usecases/*` | AI chat / analyze / image 路径的计费与免费配额 | 中等：引入 billing rule provider 或配置层 | 需保证现有计费结果不变（或变更可控），并补充针对不同 plan 的测试 |
-| P1-5 | 补齐关键 action 与 UI 测试 | `src/actions/**`、`src/components/layout/navbar.tsx`、settings/credits 页面 | 关键用户流（登录、导航、credits 页面） | 中等：需要挑选代表性 user story 设计用例 | UI 受路由/i18n 影响，测试环境准备（locale、auth 状态）要明确 |
-
-### P2（中期架构优化建议）
-
-6. **引入统一的“API/Action envelope helper”层**  
-   - 动作：
-     - 在 `src/lib/server` 或 `src/lib` 内提供 helper，将 `DomainError` → HTTP Response / Action envelope 的转换集中到一处；
-     - 所有 API Route / Actions 通过该 helper 构造响应。  
-   - 收益：进一步去重错误处理与响应构造逻辑，降低耦合度，提高复用性。
-
-7. **根据现有领域边界整理“领域地图”文档**  
-   - 动作：在 `docs/architecture-overview.md` 或新文档中，补充 credits / billing / payment / AI / storage / notification 等模块的依赖关系与职责说明（可复用本报告结构）。  
-   - 收益：降低新成员理解成本，为后续重构或模块裁剪提供决策依据。
-
----
-
-> 本报告聚焦当前代码状态下的架构与代码质量分析，未对未来业务演进做路线图设计。若需要进一步将上述建议拆解为具体重构任务，可在 `.codex/plan` 下新增对应的细化 plan 文档（例如 `credits-billing-payment-refactor.md`），并结合现有 `protocol-future-techdebt-report.md` 统一规划。
-
-## 7. 增量体检（自 v1 报告以来）
-
-> 本节仅覆盖自基线 commit（22b4a723）以来的增量改动，聚焦 Payment / Credits 相关演进，并标记对「可维护性 / 复用性 / 耦合度」的影响。
-
-### 7.1 Payment 域增量：从胖服务到工厂 + Adapter + WebhookHandler
-
-- **变化概览**  
-  - 新增：`src/payment/services/stripe-payment-factory.ts`、`stripe-payment-adapter.ts`、`stripe-webhook-handler.ts`、`stripe-event-mapper.ts`。  
-  - 更新：`src/payment/index.ts`、`src/lib/server/stripe-webhook.ts`、`src/payment/services/__tests__/stripe-payment-service.test.ts`（演进为针对新结构的测试）。  
-  - 旧的胖式 `StripePaymentService` 实现已经移除，职责拆分为：  
-    - **Adapter（业务视角的 PaymentProvider）**：`StripePaymentAdapter` 只负责 checkout / portal / subscription 查询；  
-    - **WebhookHandler（事件视角）**：`StripeWebhookHandler` 只处理 webhook + 事件映射 + credits/billing 协作；  
-    - **Factory（wiring/root）**：`stripe-payment-factory.ts` 从 env/overrides 构建 Stripe client、Repositories、Gateways 与 Handler/Provider。
-
-- **可维护性评价：改善**  
-  - Adapter / WebhookHandler / Factory 的职责边界比原来胖类清晰：  
-    - `StripePaymentAdapter` 的 public surface 完全对齐 `PaymentProvider` 接口，构造函数强制注入 `stripeClient` / `userRepository` / `paymentRepository`，可读性与测试友好度显著提高。  
-    - `StripeWebhookHandler` 限定为 “Stripe Event → 内部 Event + Billing/Credits side effects” 的单一责任；构造函数显式依赖 `StripeClientLike` / `StripeEventRepositoryLike` / `PaymentRepositoryLike` / `CreditsGateway` / `NotificationGateway` / `BillingRenewalPort` / `Logger`，避免隐藏依赖。  
-    - `stripe-payment-factory.ts` 集中处理 env/secret 解析与依赖注入逻辑（`createStripeInfra`），使得 Payment 域内部类可以假设自己的依赖已被正确构造。  
-  - 测试方面：原有针对 `StripePaymentService` 的行为测试被迁移/补充到新的 webhook handler & adapter 测试中，可读性更强，复用程度更高。
-
-- **复用性评价：改善**  
-  - `StripePaymentAdapter` 作为 PaymentProvider 实现，现在可以在不触碰 webhook 逻辑的前提下替换为其他实现（例如不同 Provider 或模拟实现），适合作为 hexagonal architecture 中的 “payment port adapter”。  
-  - `createStripePaymentProviderFromEnv` + `createStripeWebhookHandlerFromEnv` 让 env/wiring 逻辑得以复用：  
-    - 未来如果引入多租户 / 多 Stripe 账号，只需在 Factory 层增加参数/配置，而不需要修改 adapter 或 handler 代码。  
-  - `StripeWebhookHandler` 暴露的 `handleWebhookEvent(payload, signature)`，与 `src/lib/server/stripe-webhook.ts` 中的 `handleStripeWebhook` 组合，使得 Webhook 的处理逻辑对 API Route 来说是一块可替换的 “domain service”。
-
-- **耦合度评价：显著降低**  
-  - 原先支配 Payment 域的环境耦合与 credits/billing 逻辑现已抽离到 Factory 或 BillingService：  
-    - env 读取集中在 `stripe-payment-factory` + `lib/server/stripe-webhook`，Adapter 和 Handler 不再直接依赖 `serverEnv`。  
-    - `DefaultBillingService` 通过 `PaymentProvider` + `CreditsGateway` + `MembershipService` 协作，WebhookHandler 只持有 `BillingRenewalPort`（更窄的接口），降低跨域感知。  
-  - Webhook 事件映射 (`stripe-event-mapper.ts`) 把 Stripe 的原始事件转换为内部统一结构，减少 Handler 对 Stripe SDK 细节的直接依赖，有利于未来替换 provider/版本。
-
-### 7.2 Credits 域增量：统计能力与 hooks 复用
-
-- **新增 Credits 统计服务与 hook**  
-  - 新增：`src/credits/services/credit-stats-service.ts` 提供 `getUserExpiringCreditsAmount(userId)`，封装 Drizzle 查询对 expiring credits 的统计逻辑。  
-  - 新增/增强：  
-    - `src/actions/get-credit-stats.ts`、`get-credit-overview.ts` 暴露积分统计/概览 Action；  
-    - `src/hooks/use-credits.ts` 新增 `useCreditStats` / `useCreditOverview` / `useCreditTransactions` 等 hook，统一通过 `unwrapEnvelopeOrThrowDomainError` + `useAuthErrorHandler` 解耦错误处理与 UI。  
-
-- **可维护性评价：改善**  
-  - 统计逻辑被集中在单一服务文件（`credit-stats-service.ts`），而不是散落在多个 Action 或 hook 中；查询语句集中管理，后续变更表结构/策略时修改点可控。  
-  - hooks 层统一采用 React Query + 通用 envelope 解包 + auth 错误处理模式，相比之前在多个组件内部手写 fetch/错误分支，更利于长期维护。
-
-- **复用性评价：改善**  
-  - `useCreditOverview` 把 “当前余额 + 未来一定时间内即将过期的积分” 组合成单一查询接口，方便在多个页面/组件复用该视图逻辑。  
-  - `creditsKeys` 为 React Query 提供统一的 key 约定，避免重复定义 key 字符串，便于在其它 hook/组件中重用缓存策略。  
-
-- **耦合度评价：健康**  
-  - UI 只通过 Actions/hook 调用 Credits，不直接触达 domain service 或 DB；  
-  - `CreditLedgerDomainService` 与 `credit-stats-service` 仍然通过 `getDb` / Repository 抽象访问数据，未引入新的横向依赖。
-
-### 7.3 Actions 与错误处理增量：DomainError 统一化
-
-- **新增/加强的 DomainError 回归测试**  
-  - 新增：`tests/actions/*-domain-error.test.ts` 系列，覆盖 `create-checkout`、`create-credit-checkout`、`create-customer-portal`、`get-active-subscription`、`get-credit-balance`、`get-credit-stats`、`get-credit-transactions`、`get-lifetime-status`、`get-users`、`send-message`、`subscribe-newsletter`、`unsubscribe-newsletter`、`validate-captcha` 等 Actions。  
-  - 这些测试验证在 `DomainError` 抛出时，safe-action client 会按照 `{ success: false, error, code, retryable }` 的统一 envelope 返回，且 code 来自 `ErrorCodes`。
-
-- **可维护性 / 复用性 / 耦合度评价：显著改善**  
-  - 通过集中的一组测试锁定 Actions 的错误行为，使“错误处理规范”从文档约定升级为可执行契约，降低未来改动破坏 envelope 的风险。  
-  - Actions 继续只依赖 Safe Action client + DomainError + ErrorCodes，不直接耦合 UI 或特定组件，符合单一职责与依赖倒置。
-
-### 7.4 `/api/storage/upload` 与 Credits/Cron 路由增量
-
-- **Storage 上传 API**  
-  - `src/app/api/storage/upload/route.ts` 实现：  
-    - 使用 `ensureApiUser` + `enforceRateLimit` + request logger；  
-    - 对 Content-Type、文件大小、文件类型与目标 folder 做集中校验；  
-    - 所有错误分支均返回 `{ success: false, error, code: Storage*ErrorCode, retryable }` 的统一 envelope；  
-    - 成功时返回 `{ success: true, data: UploadFileResult }`。  
-  - 增量：新增了 `storage-upload-route.test.ts`，验证成功与错误场景的 envelope 形态。  
-  - 评价：协议层完全对齐文档，测试补齐后，该路由不再是“协议敏感但缺测试”的风险点。
-
-- **Credits 分发 API `/api/distribute-credits`**  
-  - 路由仍在 Basic Auth 失败时返回 `NextResponse('Unauthorized', ...)`（纯文本），而 Job 异常分支使用标准 envelope；  
-  - 对照 `docs/error-logging.md`，功能已满足最小需求，但未对齐“所有非流式接口都使用统一 envelope”的严格规范。  
-  - 评价：  
-    - 可维护性：日志与 Job 成功/失败路径清晰，但调用方需要为 401 写特例逻辑。  
-    - 复用性/耦合度：问题集中在协议层，建议按原报告 P0 建议修复。
-
-### 7.5 小结：增量体检结论
-
-- Payment 域：通过引入 Factory + Adapter + WebhookHandler，**从原先的胖服务演进为更符合 hexagonal / SOLID 的结构**，显著改善耦合度与复用性；后续可以围绕 `StripePaymentFactory` 扩展多租户/多 Provider，几乎不需要修改业务代码。  
-- Credits 域：新增统计服务与 hooks，使“积分余额 + 即将过期查询”的逻辑更集中、更易复用；与 Billing / Membership 之间的边界通过 `CreditsGateway` 与 `MembershipService` 进一步明确。  
-- Actions / API：通过新增一批 DomainError 回归测试与 storage upload route 测试，错误 envelope 的统一性从“约定”走向“被测试保护”；仍需修复 `/api/distribute-credits` 的 401 envelope，完成最后一块协议一致性拼图。
+1. **逐步扩展 UI 与 hooks 的测试覆盖**  
+   - 从错误 UI hooks、高复用 UI 组件开始，逐步提高前端可测性。
+2. **扩展 E2E 覆盖更多业务闭环**  
+   - 在已有 auth 与 credits+AI 流程基础上，逐步引入支付/存储等闭环测试，为中长期演进提供回归保障。

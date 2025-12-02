@@ -114,3 +114,8 @@
 - 不在本次任务中进行代码重构，只输出分析与建议。
 - 优先关注 credits / billing / payment / AI 等核心业务路径。
 
+## 五、本轮执行记录（2025-12 基线复核）
+
+- 执行模式：方案 2（完全重跑新基线报告），在保留报告结构的前提下，重新评估可维护性 / 复用性 / 耦合度，对齐当前代码状态。
+- 覆盖范围：根目录文档（`README.md`、`AGENTS.md`、`docs/*`）、核心域模块（`src/credits/**`、`src/payment/**`、`src/domain/**`、`src/lib/**`、`src/ai/**`、`src/storage/**`、`src/mail/**`）、接口与 UI 层（`src/app/**`、`src/actions/**`），以及测试与测试辅助（`src/**/__tests__/**`、`tests/**`）。
+- 输出落点：重写 `.codex/plan/repo-architecture-review-maintainability-reuse-coupling-report.md` 作为 2025-12 新基线版本，为后续架构治理与技术债拆分提供依据。

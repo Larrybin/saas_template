@@ -102,7 +102,7 @@
     - 新增的 Billing / PlanCreditsPolicy / CreditLedgerService 测试均已加入 test suite，并通过；
     - 集成测试 `src/domain/billing/__tests__/billing-to-credits.integration.test.ts` 现包含：
       - 订阅续费路径：`BillingService.handleRenewal` 触发 `CreditLedgerService.addSubscriptionCredits` 并更新余额 + 交易记录；
-      - 终身购买路径：`BillingService.grantLifetimePlan` 触发 `CreditLedgerService.addLifetimeMonthlyCredits`，更新余额 + 交易，并调用 `UserLifetimeMembershipRepository.upsertMembership`。
+      - 终身购买路径：`BillingService.grantLifetimePlan` 触发 `CreditLedgerService.addLifetimeMonthlyCredits`，更新余额 + 交易，并调用 `MembershipService.grantLifetimeMembership` 落库终身会员记录（复用传入事务）。
   - 如有需要，可在后续 CI 中将这些场景列为“核心计费回归测试”。
 
 ### 8. AI 调用前置扣费链路（free quota + Credits）

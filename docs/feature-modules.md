@@ -81,7 +81,7 @@
 - 领域与接口：
   - `src/payment/index.ts`：对外导出的 payment 入口（创建 checkout、customer portal、订阅查询等）
   - `src/payment/types.ts`：支付相关类型（PaymentTypes、PlanIntervals 等）
-  - `src/payment/services/*`：领域服务（`stripe-payment-service.ts`, `stripe-checkout-service.ts`, `webhook-handler.ts` 等）
+  - `src/payment/services/*`：领域服务（如 `stripe-payment-adapter.ts`, `stripe-payment-factory.ts`, `stripe-checkout-service.ts`, `stripe-webhook-handler.ts`, `webhook-handler.ts` 等）
   - `src/payment/data-access/*`：访问 `payment` / `stripe_event` 等表的仓储
 - 前端 & Actions：
   - `src/actions/create-checkout-session.ts`

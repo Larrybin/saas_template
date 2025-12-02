@@ -1,9 +1,6 @@
 import { vi } from 'vitest';
 import type { Logger } from 'pino';
-import type {
-  AddCreditsPayload,
-  CreditsGateway,
-} from '@/credits/services/credits-gateway';
+import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { CreditsTransaction } from '@/credits/services/transaction-context';
 import { resolveExecutor } from '@/credits/services/transaction-context';
 import type {

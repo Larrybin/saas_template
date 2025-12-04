@@ -67,6 +67,3 @@ next-env.d.ts
 .dev.vars
 .dev.vars*
 !.dev.vars.example
-
-# external projects
-raphael-starterkit-v1-main/

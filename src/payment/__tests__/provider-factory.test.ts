@@ -10,7 +10,10 @@ vi.mock('@/payment/services/stripe-payment-factory', () => ({
   })),
 }));
 
-import { DefaultPaymentProviderFactory } from '@/payment/provider-factory';
+import {
+  CREEM_PHASE_GATE_ERROR_MESSAGE,
+  DefaultPaymentProviderFactory,
+} from '@/payment/provider-factory';
 import { createStripePaymentProviderFromEnv } from '@/payment/services/stripe-payment-factory';
 
 describe('DefaultPaymentProviderFactory', () => {
@@ -18,7 +21,7 @@ describe('DefaultPaymentProviderFactory', () => {
     const factory = new DefaultPaymentProviderFactory();
 
     expect(() => factory.getProvider({ providerId: 'creem' })).toThrowError(
-      /Payment provider 'creem' is not yet implemented\./
+      CREEM_PHASE_GATE_ERROR_MESSAGE
     );
   });
 
@@ -34,6 +37,22 @@ describe('DefaultPaymentProviderFactory', () => {
     expect(mockedFactory).toHaveBeenCalledTimes(1);
 
     const provider2 = factory.getProvider({ providerId: 'stripe' });
+    expect(mockedFactory).toHaveBeenCalledTimes(1);
+    expect(provider2).toBe(provider1);
+  });
+
+  it('uses stripe as default provider when providerId is not provided', () => {
+    const factory = new DefaultPaymentProviderFactory();
+    const mockedFactory = createStripePaymentProviderFromEnv as MockedFunction<
+      typeof createStripePaymentProviderFromEnv
+    >;
+
+    expect(mockedFactory).not.toHaveBeenCalled();
+
+    const provider1 = factory.getProvider();
+    expect(mockedFactory).toHaveBeenCalledTimes(1);
+
+    const provider2 = factory.getProvider();
     expect(mockedFactory).toHaveBeenCalledTimes(1);
     expect(provider2).toBe(provider1);
   });

@@ -9,6 +9,9 @@ import type {
   PaymentProviderFactory,
 } from './types';
 
+export const CREEM_PHASE_GATE_ERROR_MESSAGE =
+  "Payment provider 'creem' is not yet implemented. See .codex/plan/creem-payment-integration.md (Phase A) and docs/governance-index.md for current status and usage constraints.";
+
 /**
  * 默认的 PaymentProviderFactory 实现
  *
@@ -51,9 +54,7 @@ export class DefaultPaymentProviderFactory implements PaymentProviderFactory {
         return this.stripeProvider;
       }
       case 'creem': {
-        throw new Error(
-          "Payment provider 'creem' is not yet implemented. See .codex/plan/creem-payment-integration.md (Phase A) and docs/governance-index.md for current status and usage constraints."
-        );
+        throw new Error(CREEM_PHASE_GATE_ERROR_MESSAGE);
       }
       default: {
         throw new Error(`Unsupported payment provider: ${providerId}`);

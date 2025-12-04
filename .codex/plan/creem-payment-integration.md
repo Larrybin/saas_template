@@ -258,6 +258,154 @@ description: 在现有 Stripe 架构下，引入 Creem 作为新的 Payment Prov
   - Raphael 直接返回 `NextResponse` + 文本/JSON；
   - 本模板需要继续沿用 `DomainError` + `ErrorCodes` + Envelope 的错误模型（在 `src/app/api/webhooks/creem/route.ts` 中对齐 Stripe 行为）。
 
+---
+
+## 10. Phase A 方案 1：工厂懒初始化 & 事件仓储抽象详细执行计划
+
+> 本节将“方案 1：保留单工厂，改造为按 Provider 懒初始化 + 显式 Phase Gate”细化为可执行步骤，供 Phase A 实施时使用。
+
+### 10.1 DefaultPaymentProviderFactory 改造（懒初始化 + Phase Gate）
+
+目标：
+
+- 保持现有 `DefaultPaymentProviderFactory` 入口与类型不变；
+- 将 Stripe 初始化从构造函数移动到 `getProvider` 内部的按需懒加载逻辑；
+- 为 `'creem'` 分支增加显式 Phase Gate 错误，引导阅读 `.codex/plan/creem-payment-integration.md`；
+- 为 Phase A 完成后支持 “只启用 Creem、未配置 Stripe env” 铺路。
+
+步骤：
+
+1. 调整构造函数语义（`src/payment/provider-factory.ts`）：
+   - 将当前在构造函数中直接调用 `createStripePaymentProviderFromEnv(...)` 的逻辑拆出为私有工厂方法，如 `private createStripeProviderFromEnv(overrides?: StripeProviderOverrides)`；
+   - 构造函数仅保存 `overrides` 或必要配置引用（如 `serverEnv`），不再抛出 Stripe 配置相关错误。
+2. 引入懒初始化字段：
+   - 在类中增加 `private stripeProvider?: PaymentProvider;` 字段；
+   - 在 `'stripe'` 分支中：
+     - 若 `this.stripeProvider` 未初始化，则调用 `createStripeProviderFromEnv(...)`；
+     - 由 `createStripePaymentProviderFromEnv` 内部负责在 Stripe env 不完整时抛出明确错误（保持现有快速失败行为）。
+3. 为 `'creem'` 分支增加 Phase Gate 错误信息：
+   - 在 `getProvider` 的 `switch (providerId)` 中：
+     - 暂时保留 `'creem'` 分支，但抛出 **更具引导性的错误**，例如：
+       - `"Payment provider 'creem' is not yet implemented. See .codex/plan/creem-payment-integration.md (Phase A) and docs/governance-index.md for progress and usage constraints."`；
+     - 确保错误信息中包含：
+       - `'creem' 仍处于 Phase A 集成阶段，尚不可在 websiteConfig.payment.provider 中启用`；
+       - 指向 `.codex/plan/creem-payment-integration.md` 和 `docs/governance-index.md`。
+4. 默认 provider 行为检查：
+   - 保持 `ctx?.providerId ?? 'stripe'` 作为缺省逻辑；
+   - 在文档中明确：Phase A 期间若未显式配置 `websiteConfig.payment.provider`，系统行为等同 `'stripe'`，Creem 只在显式配置 `'creem'` 时参与选择。
+5. 为未来 Creem 懒初始化预留接口：
+   - 在工厂类中预留 `private creemProvider?: PaymentProvider;` 字段（不在 Phase A 前半段实现实际创建逻辑）；
+   - 预留 `private createCreemProviderFromEnv(...)` 方法签名（具体实现放在 Phase A “CreemPaymentProvider 实现”子任务中）。
+
+预期结果：
+
+- Stripe-only 场景行为保持不变，仍在第一次请求 Stripe Provider 时因 env 不完整快速失败；
+- `websiteConfig.payment.provider = 'creem'` 在 Phase A 未完成前会抛出带指引文档链接的错误，而非简单 `"Unsupported payment provider: creem"`；
+- Phase A 完成后，仅需在 `'creem'` 分支中调用 `createCreemProviderFromEnv` 并初始化 `this.creemProvider`，即可支持 “只配置 Creem env、不配置 Stripe env” 的运行模式。
+
+### 10.2 PaymentEventRepository 抽象与事件表策略
+
+目标：
+
+- 保持现有 `stripe_event` 表 **专用于 Stripe**，不做破坏性迁移；
+- 为 Creem 引入独立的 `creem_event` 表，实现同等级的幂等与审计能力；
+- 在代码层抽象统一的事件仓储接口 `PaymentEventRepository`（或等价命名），让 Webhook Handler 仅依赖抽象而不关心具体表名。
+
+步骤：
+
+1. 抽象事件仓储接口：
+   - 在 `src/payment/data-access` 下新增接口定义文件，例如 `payment-event-repository.ts`：
+     - 定义 `PaymentEventProviderId = 'stripe' | 'creem'`（与 `PaymentProviderId` 对齐或共享）；
+     - 定义 `PaymentEventRepository` 接口，至少包含：
+       - `withEventProcessingLock(providerId: PaymentEventProviderId, eventId: string, handler: () => Promise<void>): Promise<void>`；
+       - 如需要读取事件记录，可增加 `getEventById(providerId, eventId)` 等方法。
+2. 适配现有 `StripeEventRepository`：
+   - 在 `src/payment/data-access/stripe-event-repository.ts` 中：
+     - 保持对 `stripe_event` 表的读写与幂等逻辑不变；
+     - 实现 `PaymentEventRepository` 接口的 Stripe 分支行为：
+       - `withEventProcessingLock('stripe', eventId, handler)` 委托当前实现；
+     - 若已有类型/函数命名紧耦合 Stripe，可通过小范围重构对齐新的接口（例如增加一层适配，而非大改原有实现）。
+3. 预留 Creem 事件仓储实现：
+   - 新增 `src/payment/data-access/creem-event-repository.ts`（Phase A 后半段实现）：
+     - 基于 `creem_event` 表（Phase A 迁移任务中定义 Drizzle schema）；
+     - 实现 `PaymentEventRepository` 接口的 `'creem'` 分支；
+     - 参考 Stripe 仓储的锁定/幂等模式，复用尽可能多的模式与测试思路。
+4. Webhook Handler 依赖调整：
+   - `StripeWebhookHandler`（`src/payment/services/stripe-webhook-handler.ts`）：
+     - 构造函数依赖从 `StripeEventRepository` 过渡到 `PaymentEventRepository` 抽象（或引入一个新的组合根，在内部注入 stripe 专用实现）；
+     - 业务逻辑层面保持不变，仅替换调用接口。
+   - 未来 `CreemWebhookHandler`：
+     - 直接依赖同一 `PaymentEventRepository` 抽象；
+     - 使用 `'creem'` 作为 providerId，复用统一事件幂等框架。
+
+预期结果：
+
+- `stripe_event` 继续只承载 Stripe Webhook 事件，不被 Creem 污染；
+- 代码层事件仓储依赖统一通过 `PaymentEventRepository` 抽象，便于增加新的 Provider；
+- Phase A 在引入 Creem Webhook 时，只需实现 `creem_event` 表及其仓储实现，无需修改 Stripe Webhook 核心逻辑。
+
+### 10.3 文档与 env 协议更新（防误用、明确 Phase Gate）
+
+目标：
+
+- 防止团队成员误认为 `'creem'` 已经可用；
+- 将 “Phase A 才支持 Creem-only” 的约束写入正式文档与示例 env；
+- 在错误信息与文档中形成闭环：错误 → `.codex/plan` → `docs/governance-index.md`。
+
+步骤：
+
+1. `src/payment/types.ts` 注释增强：
+   - 在 `PaymentProviderId = 'stripe' | 'creem'` 的注释中：
+     - 强调 `'creem'` 当前仍处于 Phase A 集成阶段；
+     - 明确指出：在完成本计划 Phase A 之前，将 `websiteConfig.payment.provider` 配置为 `'creem'` 会触发工厂层面的 Phase Gate 错误，而非实际可用 Provider。
+2. `docs/payment-lifecycle.md` 更新：
+   - 在 “2.1 Provider 与服务” 小节中：
+     - 补充说明：
+       - 当前默认 Provider 为 Stripe；
+       - `PaymentProviderId` 类型包含 `'creem'` 仅代表未来支持方向，Phase A 完成前不可在运行时启用；
+       - `DefaultPaymentProviderFactory` 会在 `'creem'` 分支抛出带 `.codex/plan/creem-payment-integration.md` 链接的错误。
+3. `docs/env-and-ops.md` 更新：
+   - 在 Stripe 小节后增加 “Creem（规划中）” 小节：
+     - 列出预期 env：`CREEM_API_KEY`、`CREEM_WEBHOOK_SECRET`、`CREEM_TEST_MODE` 等；
+     - 明确标注：
+       - 这些 env 目前仅用于 Phase A 内部开发和预配置；
+       - 在 `.codex/plan/creem-payment-integration.md` 标记 Phase A 完成之前，将 `websiteConfig.payment.provider` 设置为 `'creem'` 会导致工厂抛出 Phase Gate 错误，而不会启用真实 Creem 支付。
+4. `docs/governance-index.md` 更新：
+   - 在“协议/技术债报告”或“Payment/Billing 协议”部分：
+     - 增加对 `.codex/plan/creem-payment-integration.md` 的显式引用；
+     - 简要说明当前 Creem 集成状态（例如：“状态：设计中 / Phase A 未完成，禁止在生产配置 provider = 'creem'”）。
+
+预期结果：
+
+- 类型、工厂实现、错误信息与文档在 “Creem 仍在 Phase A，不可运行时启用” 这一点上保持一致；
+- 团队成员在看到错误信息时，可以顺利根据提示找到 `.codex/plan` 与治理文档，避免误判 Creem 已可用。
+
+### 10.4 测试计划（围绕工厂与事件仓储）
+
+目标：
+
+- 为工厂懒初始化行为与 Phase Gate 提供单元测试覆盖；
+- 为事件仓储抽象提供基础测试，确保 Stripe 路径回归安全，并为 Creem 实现预留测试用例模板。
+
+步骤：
+
+1. `DefaultPaymentProviderFactory` 测试增强（`src/payment/__tests__/provider-factory.test.ts`）：
+   - 新增用例：
+     - 构造工厂时不触发 Stripe env 校验（缺失 `STRIPE_SECRET_KEY` 也不会在构造阶段抛错）；
+     - 在 `getProvider({ providerId: 'stripe' })` 调用时，缺失 Stripe env 会抛出当前预期的 Stripe 配置错误；
+     - 在 `getProvider({ providerId: 'creem' })` 时，抛出 Phase Gate 错误，且错误 message 包含 `.codex/plan/creem-payment-integration.md` 文本；
+     - 未传 `providerId` 时，仍等价于 `'stripe'` 行为。
+2. PaymentEventRepository 抽象测试：
+   - 为新接口增加最小单元测试：
+     - `StripeEventRepository` 通过 `PaymentEventRepository` 接口执行 `withEventProcessingLock('stripe', ...)` 时，与旧逻辑结果一致；
+     - 幂等行为不变（重复同一 `event.id` 只处理一次）。
+   - 为未来 `CreemEventRepository` 预留测试模板（可在 Phase A 后半段填充）。
+
+预期结果：
+
+- 工厂初始化行为、Phase Gate 逻辑与 Stripe 回归路径都有稳定的单元测试覆盖；
+- 事件仓储抽象不会引入回归，为后续 Creem 实现提供清晰测试支点。
+
 **9.4 对本计划的具体启发**
 
 - 在实现 `CreemWebhookHandler` 时：

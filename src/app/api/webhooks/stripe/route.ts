@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { serverEnv } from '@/env/server';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders } from '@/lib/server/logger';
@@ -11,12 +12,26 @@ import { handleStripeWebhook } from '@/lib/server/stripe-webhook';
  * @param req The incoming request
  * @returns NextResponse
  */
+const isStripeWebhookConfigured = Boolean(
+  serverEnv.stripeSecretKey && serverEnv.stripeWebhookSecret
+);
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const logger = createLoggerFromHeaders(req.headers, {
     span: 'api.webhooks.stripe',
     route: '/api/webhooks/stripe',
     provider: 'stripe',
   });
+
+  if (!isStripeWebhookConfigured) {
+    logger.warn(
+      'Stripe webhook skipped because STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET is not configured'
+    );
+    return NextResponse.json(
+      { success: true, skipped: true },
+      { status: 200 }
+    );
+  }
 
   // Get the request body as text
   const payload = await req.text();

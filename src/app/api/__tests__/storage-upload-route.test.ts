@@ -33,22 +33,14 @@ function createMultipartRequest(
     form.set('folder', options.folder ?? '');
   }
 
-  const headers = new Headers({
-    'content-type': 'multipart/form-data',
-  });
-
-  // In tests we only need the subset of the Request interface that
-  // `POST` actually uses: `headers` and `formData()`. Using a simple
-  // stub here avoids Node's Body stream semantics that cause
-  // "Body is unusable" when re-reading the body.
-  const requestLike: Partial<Request> = {
-    headers,
+  return {
+    headers: new Headers({
+      'content-type': 'multipart/form-data',
+    }),
     async formData() {
       return form;
     },
-  };
-
-  return requestLike as Request;
+  } as Partial<Request> as Request;
 }
 
 describe('/api/storage/upload route', () => {

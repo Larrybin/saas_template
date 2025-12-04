@@ -7,7 +7,8 @@ import {
 } from './domain-error-utils';
 import { DomainError } from './domain-errors';
 import { getSession } from './server';
-import { getLogger, withLogContext } from './server/logger';
+import { type ErrorCode, ErrorCodes } from './server/error-codes';
+import { getLogger, type Logger, withLogContext } from './server/logger';
 
 // -----------------------------------------------------------------------------
 // 1. Base action client – put global error handling / metadata here if needed
@@ -43,6 +44,10 @@ export const actionClient = createSafeActionClient({
     };
   },
 });
+
+export function getUserFromCtx(ctx: unknown): User {
+  return (ctx as { user: User }).user;
+}
 
 // -----------------------------------------------------------------------------
 // 2. Auth-guarded client
@@ -100,3 +105,53 @@ export const adminActionClient = userActionClient.use(async ({ next, ctx }) => {
 
   return next({ ctx });
 });
+
+// -----------------------------------------------------------------------------
+// 4. Action error boundary helper
+// -----------------------------------------------------------------------------
+type SafeActionHandlerArgs = {
+  ctx?: unknown;
+  parsedInput?: unknown;
+  [key: string]: unknown;
+};
+
+export type SafeActionHandler<TArgs extends SafeActionHandlerArgs, TResult> = (
+  args: TArgs
+) => Promise<TResult>;
+
+export type ActionErrorBoundaryOptions<TArgs extends SafeActionHandlerArgs> = {
+  logger: Logger;
+  logMessage: string;
+  getLogContext?: (args: TArgs) => Record<string, unknown>;
+  fallbackMessage: string;
+  code?: ErrorCode;
+  retryable?: boolean;
+};
+
+export function withActionErrorBoundary<
+  TArgs extends SafeActionHandlerArgs,
+  TResult,
+>(
+  options: ActionErrorBoundaryOptions<TArgs>,
+  handler: SafeActionHandler<TArgs, TResult>
+): SafeActionHandler<TArgs, TResult> {
+  return async (args) => {
+    try {
+      return await handler(args);
+    } catch (error) {
+      const context = options.getLogContext?.(args) ?? {};
+      options.logger.error({ error, ...context }, options.logMessage);
+
+      if (error instanceof DomainError) {
+        throw error;
+      }
+
+      throw new DomainError({
+        code: options.code ?? ErrorCodes.UnexpectedError,
+        message:
+          error instanceof Error ? error.message : options.fallbackMessage,
+        retryable: options.retryable ?? true,
+      });
+    }
+  };
+}

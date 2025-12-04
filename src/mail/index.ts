@@ -1,9 +1,9 @@
 import { render } from '@react-email/render';
 import type { Locale, Messages } from 'next-intl';
 import type { ReactElement } from 'react';
-import { websiteConfig } from '@/config/website';
 import { getMessagesForLocale } from '@/i18n/messages';
 import { routing } from '@/i18n/routing';
+import { mailConfigProvider } from './mail-config-provider';
 import { ResendProvider } from './provider/resend';
 import {
   type EmailTemplate,
@@ -37,12 +37,11 @@ export const getMailProvider = (): MailProvider => {
  */
 export const initializeMailProvider = (): MailProvider => {
   if (!mailProvider) {
-    if (websiteConfig.mail.provider === 'resend') {
+    const mailConfig = mailConfigProvider.getMailConfig();
+    if (mailConfig.provider === 'resend') {
       mailProvider = new ResendProvider();
     } else {
-      throw new Error(
-        `Unsupported mail provider: ${websiteConfig.mail.provider}`
-      );
+      throw new Error(`Unsupported mail provider: ${mailConfig.provider}`);
     }
   }
   return mailProvider;

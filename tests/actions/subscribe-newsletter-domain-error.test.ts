@@ -1,17 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { subscribeNewsletterAction } from '@/actions/subscribe-newsletter';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
-
-vi.mock('@/lib/safe-action', () => ({
-  actionClient: {
-    schema: () => ({
-      // In tests, expose the raw implementation instead of safe-action wrapper
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
 
 vi.mock('@/newsletter', () => ({
   subscribe: vi.fn(),
@@ -23,12 +15,6 @@ vi.mock('@/mail', () => ({
 
 vi.mock('next-intl/server', () => ({
   getLocale: vi.fn().mockResolvedValue('en'),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('subscribeNewsletterAction DomainError behavior', () => {
@@ -45,6 +31,7 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
 
     const result = await subscribeNewsletterAction({
       parsedInput: { email },
+      ctx: { user: { id: 'user_1', email } },
     } as never);
 
     expect(result).toEqual({ success: true });
@@ -56,7 +43,10 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
     (subscribe as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(false);
 
     await expect(
-      subscribeNewsletterAction({ parsedInput: { email } } as never)
+      subscribeNewsletterAction({
+        parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
+      } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,
@@ -75,7 +65,10 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
     );
 
     await expect(
-      subscribeNewsletterAction({ parsedInput: { email } } as never)
+      subscribeNewsletterAction({
+        parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
+      } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,
@@ -90,7 +83,10 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
     );
 
     await expect(
-      subscribeNewsletterAction({ parsedInput: { email } } as never)
+      subscribeNewsletterAction({
+        parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
+      } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,

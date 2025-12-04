@@ -4,9 +4,11 @@ import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '@/db';
 import { creditTransaction } from '@/db/schema';
-import type { User } from '@/lib/auth-types';
-import { DomainError } from '@/lib/domain-errors';
-import { userActionClient } from '@/lib/safe-action';
+import {
+  getUserFromCtx,
+  userActionClient,
+  withActionErrorBoundary,
+} from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
@@ -44,99 +46,95 @@ const sortFieldMap = {
 // Create a safe action for getting credit transactions
 export const getCreditTransactionsAction = userActionClient
   .schema(getCreditTransactionsSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const currentUser = (ctx as { user: User }).user;
-    try {
-      const { pageIndex, pageSize, search, sorting } = parsedInput;
-
-      // Search logic: text fields use ilike, and if search is a number, also search amount fields
-      const searchConditions = [];
-      if (search) {
-        // Always search text fields
-        searchConditions.push(
-          ilike(creditTransaction.type, `%${search}%`),
-          ilike(creditTransaction.paymentId, `%${search}%`),
-          ilike(creditTransaction.description, `%${search}%`)
-        );
-
-        // If search is a valid number, also search numeric fields
-        const numericSearch = Number.parseInt(search, 10);
-        if (!Number.isNaN(numericSearch)) {
-          searchConditions.push(
-            eq(creditTransaction.amount, numericSearch),
-            eq(creditTransaction.remainingAmount, numericSearch)
-          );
-        }
-      }
-
-      const where = search
-        ? and(
-            eq(creditTransaction.userId, currentUser.id),
-            or(...searchConditions)
-          )
-        : eq(creditTransaction.userId, currentUser.id);
-
-      const offset = pageIndex * pageSize;
-
-      // Get the sort configuration
-      const sortConfig = sorting[0];
-      const sortField = sortConfig?.id
-        ? sortFieldMap[sortConfig.id as keyof typeof sortFieldMap]
-        : creditTransaction.createdAt;
-      const sortDirection = sortConfig?.desc ? desc : asc;
-
-      const db = await getDb();
-      const [items, countRows] = await Promise.all([
-        db
-          .select({
-            id: creditTransaction.id,
-            userId: creditTransaction.userId,
-            type: creditTransaction.type,
-            description: creditTransaction.description,
-            amount: creditTransaction.amount,
-            remainingAmount: creditTransaction.remainingAmount,
-            paymentId: creditTransaction.paymentId,
-            expirationDate: creditTransaction.expirationDate,
-            expirationDateProcessedAt:
-              creditTransaction.expirationDateProcessedAt,
-            createdAt: creditTransaction.createdAt,
-            updatedAt: creditTransaction.updatedAt,
-          })
-          .from(creditTransaction)
-          .where(where)
-          .orderBy(sortDirection(sortField))
-          .limit(pageSize)
-          .offset(offset),
-        db
-          .select({ count: sql`count(*)` })
-          .from(creditTransaction)
-          .where(where)
-          .limit(1),
-      ]);
-      const totalCount = countRows[0]?.count ?? 0;
-
-      return {
-        success: true,
-        data: {
-          items,
-          total: Number(totalCount),
-        },
-      };
-    } catch (error) {
-      logger.error(
-        { error, userId: currentUser.id },
-        'get credit transactions error'
-      );
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      throw new DomainError({
+  .action(
+    withActionErrorBoundary(
+      {
+        logger,
+        logMessage: 'get credit transactions error',
+        getLogContext: ({ ctx }) => ({
+          userId: getUserFromCtx(ctx).id,
+        }),
+        fallbackMessage: 'Failed to fetch credit transactions',
         code: ErrorCodes.UnexpectedError,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to fetch credit transactions',
         retryable: true,
-      });
-    }
-  });
+      },
+      async ({ parsedInput, ctx }) => {
+        const currentUser = getUserFromCtx(ctx);
+        const { pageIndex, pageSize, search, sorting } = parsedInput;
+
+        // Search logic: text fields use ilike, and if search is a number, also search amount fields
+        const searchConditions = [];
+        if (search) {
+          // Always search text fields
+          searchConditions.push(
+            ilike(creditTransaction.type, `%${search}%`),
+            ilike(creditTransaction.paymentId, `%${search}%`),
+            ilike(creditTransaction.description, `%${search}%`)
+          );
+
+          // If search is a valid number, also search numeric fields
+          const numericSearch = Number.parseInt(search, 10);
+          if (!Number.isNaN(numericSearch)) {
+            searchConditions.push(
+              eq(creditTransaction.amount, numericSearch),
+              eq(creditTransaction.remainingAmount, numericSearch)
+            );
+          }
+        }
+
+        const where = search
+          ? and(
+              eq(creditTransaction.userId, currentUser.id),
+              or(...searchConditions)
+            )
+          : eq(creditTransaction.userId, currentUser.id);
+
+        const offset = pageIndex * pageSize;
+
+        // Get the sort configuration
+        const sortConfig = sorting[0];
+        const sortField = sortConfig?.id
+          ? sortFieldMap[sortConfig.id as keyof typeof sortFieldMap]
+          : creditTransaction.createdAt;
+        const sortDirection = sortConfig?.desc ? desc : asc;
+
+        const db = await getDb();
+        const [items, countRows] = await Promise.all([
+          db
+            .select({
+              id: creditTransaction.id,
+              userId: creditTransaction.userId,
+              type: creditTransaction.type,
+              description: creditTransaction.description,
+              amount: creditTransaction.amount,
+              remainingAmount: creditTransaction.remainingAmount,
+              paymentId: creditTransaction.paymentId,
+              expirationDate: creditTransaction.expirationDate,
+              expirationDateProcessedAt:
+                creditTransaction.expirationDateProcessedAt,
+              createdAt: creditTransaction.createdAt,
+              updatedAt: creditTransaction.updatedAt,
+            })
+            .from(creditTransaction)
+            .where(where)
+            .orderBy(sortDirection(sortField))
+            .limit(pageSize)
+            .offset(offset),
+          db
+            .select({ count: sql`count(*)` })
+            .from(creditTransaction)
+            .where(where)
+            .limit(1),
+        ]);
+        const totalCount = countRows[0]?.count ?? 0;
+
+        return {
+          success: true,
+          data: {
+            items,
+            total: Number(totalCount),
+          },
+        };
+      }
+    )
+  );

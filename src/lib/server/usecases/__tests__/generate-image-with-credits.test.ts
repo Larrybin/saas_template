@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InsufficientCreditsError } from '@/credits/domain/errors';
+import { ErrorCodes } from '@/lib/server/error-codes';
+
+const getImageGenerateBillingRuleMock = vi.fn();
 
 const incrementAiUsageAndCheckWithinFreeQuotaMock = vi.fn();
 const consumeCreditsMock = vi.fn();
@@ -15,6 +18,11 @@ vi.mock('@/ai/usage/ai-usage-service', () => ({
   },
   incrementAiUsageAndCheckWithinFreeQuota: (...args: unknown[]) =>
     incrementAiUsageAndCheckWithinFreeQuotaMock(...args),
+}));
+
+vi.mock('@/ai/billing-config', () => ({
+  getImageGenerateBillingRule: (...args: unknown[]) =>
+    getImageGenerateBillingRuleMock(...args),
 }));
 
 vi.mock('@/credits/credits', () => ({
@@ -83,6 +91,12 @@ describe('generateImageWithCredits - free quota and credits consumption', () => 
     incrementAiUsageAndCheckWithinFreeQuotaMock.mockReset();
     consumeCreditsMock.mockReset();
     generateImageMock.mockReset();
+    getImageGenerateBillingRuleMock.mockReset();
+    getImageGenerateBillingRuleMock.mockReturnValue({
+      enabled: true,
+      creditsPerCall: 1,
+      freeCallsPerPeriod: 8,
+    });
   });
 
   it('skips credits consumption when usage is within free quota', async () => {
@@ -109,6 +123,37 @@ describe('generateImageWithCredits - free quota and credits consumption', () => 
     );
     expect(consumeCreditsMock).not.toHaveBeenCalled();
     expect(generateImageMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes planId via AiBillingContext into billing rule', async () => {
+    // Arrange a billing rule with specific freeCallsPerPeriod
+    getImageGenerateBillingRuleMock.mockReturnValueOnce({
+      enabled: true,
+      creditsPerCall: 2,
+      freeCallsPerPeriod: 5,
+    });
+    incrementAiUsageAndCheckWithinFreeQuotaMock.mockResolvedValueOnce(true);
+    generateImageMock.mockResolvedValueOnce({
+      image: { base64: 'IMAGE_DATA' },
+      warnings: [],
+    });
+
+    const result = await generateImageWithCredits({
+      ...baseInput,
+      // planId 来自上层 Billing/订阅上下文，这里只关心它被透传到计费规则
+      planId: 'pro',
+    } as never);
+
+    expect(result.success).toBe(true);
+    expect(getImageGenerateBillingRuleMock).toHaveBeenCalledTimes(1);
+    expect(getImageGenerateBillingRuleMock).toHaveBeenCalledWith({
+      planId: 'pro',
+    });
+    expect(incrementAiUsageAndCheckWithinFreeQuotaMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        freeCallsPerPeriod: 5,
+      })
+    );
   });
 
   it('consumes credits when free quota is exhausted', async () => {
@@ -139,5 +184,62 @@ describe('generateImageWithCredits - free quota and credits consumption', () => 
       InsufficientCreditsError
     );
     expect(generateImageMock).not.toHaveBeenCalled();
+  });
+
+  it('returns AI_IMAGE_INVALID_PARAMS when request is invalid', async () => {
+    const result = await generateImageWithCredits({
+      userId: 'user-1',
+      request: {
+        // invalid: empty prompt
+        prompt: '',
+        provider: 'openai',
+        modelId: 'dall-e',
+      },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe(ErrorCodes.ImageGenerateInvalidParams);
+    expect(result.retryable).toBe(false);
+    expect(incrementAiUsageAndCheckWithinFreeQuotaMock).not.toHaveBeenCalled();
+    expect(consumeCreditsMock).not.toHaveBeenCalled();
+    expect(generateImageMock).not.toHaveBeenCalled();
+  });
+
+  it('maps timeout-like provider errors to AI_IMAGE_TIMEOUT', async () => {
+    incrementAiUsageAndCheckWithinFreeQuotaMock.mockResolvedValueOnce(false);
+    generateImageMock.mockRejectedValueOnce(
+      new Error('Image request timed out')
+    );
+
+    const result = await generateImageWithCredits(baseInput);
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe(ErrorCodes.ImageTimeout);
+    expect(result.retryable).toBe(true);
+  });
+
+  it('maps generic provider errors to AI_IMAGE_PROVIDER_ERROR', async () => {
+    incrementAiUsageAndCheckWithinFreeQuotaMock.mockResolvedValueOnce(false);
+    generateImageMock.mockRejectedValueOnce(new Error('provider failed'));
+
+    const result = await generateImageWithCredits(baseInput);
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe(ErrorCodes.ImageProviderError);
+    expect(result.retryable).toBe(true);
+  });
+
+  it('returns AI_IMAGE_INVALID_RESPONSE when provider returns empty image', async () => {
+    incrementAiUsageAndCheckWithinFreeQuotaMock.mockResolvedValueOnce(true);
+    generateImageMock.mockResolvedValueOnce({
+      image: { base64: '' },
+      warnings: [],
+    });
+
+    const result = await generateImageWithCredits(baseInput);
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe(ErrorCodes.ImageInvalidResponse);
+    expect(result.retryable).toBe(true);
   });
 });

@@ -5,9 +5,11 @@ import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 import { websiteConfig } from '@/config/website';
 import type { StartSubscriptionCheckoutInput } from '@/domain/billing';
-import type { User } from '@/lib/auth-types';
-import { DomainError } from '@/lib/domain-errors';
-import { userActionClient } from '@/lib/safe-action';
+import {
+  getUserFromCtx,
+  userActionClient,
+  withActionErrorBoundary,
+} from '@/lib/safe-action';
 import { getBillingService } from '@/lib/server/billing-service';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
@@ -30,69 +32,69 @@ const checkoutSchema = z.object({
  */
 export const createCheckoutAction = userActionClient
   .schema(checkoutSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const { planId, priceId, metadata } = parsedInput;
-    const currentUser = (ctx as { user: User }).user;
-
-    try {
-      // Get the current locale from the request
-      const locale = await getLocale();
-
-      // Add user id to metadata, so we can get it in the webhook event
-      const customMetadata: Record<string, string> = {
-        ...metadata,
-        userId: currentUser.id,
-        userName: currentUser.name,
-      };
-
-      // https://datafa.st/docs/stripe-checkout-api
-      // if datafast analytics is enabled, add the revenue attribution to the metadata
-      if (websiteConfig.features.enableDatafastRevenueTrack) {
-        const cookieStore = await cookies();
-        customMetadata.datafast_visitor_id =
-          cookieStore.get('datafast_visitor_id')?.value ?? '';
-        customMetadata.datafast_session_id =
-          cookieStore.get('datafast_session_id')?.value ?? '';
-      }
-
-      // Create the checkout session with localized URLs
-      const successUrl = getUrlWithLocale(
-        `${Routes.SettingsBilling}?session_id={CHECKOUT_SESSION_ID}`,
-        locale
-      );
-      const cancelUrl = getUrlWithLocale(Routes.Pricing, locale);
-      const params: StartSubscriptionCheckoutInput = {
-        planId,
-        priceId,
-        customerEmail: currentUser.email,
-        metadata: customMetadata,
-        successUrl,
-        cancelUrl,
-        locale,
-      };
-
-      const billingService = getBillingService();
-      const result = await billingService.startSubscriptionCheckout(params);
-      // console.log('create checkout session result:', result);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      logger.error(
-        { error, userId: currentUser.id, planId, priceId },
-        'create checkout session error'
-      );
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      throw new DomainError({
+  .action(
+    withActionErrorBoundary(
+      {
+        logger,
+        logMessage: 'create checkout session error',
+        getLogContext: ({ ctx, parsedInput }) => {
+          const { planId, priceId } = parsedInput as {
+            planId: string;
+            priceId: string;
+          };
+          const currentUser = getUserFromCtx(ctx);
+          return { userId: currentUser.id, planId, priceId };
+        },
+        fallbackMessage: 'Failed to create checkout session',
         code: ErrorCodes.UnexpectedError,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to create checkout session',
         retryable: true,
-      });
-    }
-  });
+      },
+      async ({ parsedInput, ctx }) => {
+        const { planId, priceId, metadata } = parsedInput;
+        const currentUser = getUserFromCtx(ctx);
+
+        // Get the current locale from the request
+        const locale = await getLocale();
+
+        // Add user id to metadata, so we can get it in the webhook event
+        const customMetadata: Record<string, string> = {
+          ...metadata,
+          userId: currentUser.id,
+          userName: currentUser.name,
+        };
+
+        // https://datafa.st/docs/stripe-checkout-api
+        // if datafast analytics is enabled, add the revenue attribution to the metadata
+        if (websiteConfig.features.enableDatafastRevenueTrack) {
+          const cookieStore = await cookies();
+          customMetadata.datafast_visitor_id =
+            cookieStore.get('datafast_visitor_id')?.value ?? '';
+          customMetadata.datafast_session_id =
+            cookieStore.get('datafast_session_id')?.value ?? '';
+        }
+
+        // Create the checkout session with localized URLs
+        const successUrl = getUrlWithLocale(
+          `${Routes.SettingsBilling}?session_id={CHECKOUT_SESSION_ID}`,
+          locale
+        );
+        const cancelUrl = getUrlWithLocale(Routes.Pricing, locale);
+        const params: StartSubscriptionCheckoutInput = {
+          planId,
+          priceId,
+          customerEmail: currentUser.email,
+          metadata: customMetadata,
+          successUrl,
+          cancelUrl,
+          locale,
+        };
+
+        const billingService = getBillingService();
+        const result = await billingService.startSubscriptionCheckout(params);
+        return {
+          success: true,
+          data: result,
+        };
+      }
+    )
+  );

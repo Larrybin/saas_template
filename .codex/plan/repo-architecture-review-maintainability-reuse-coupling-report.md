@@ -48,9 +48,9 @@
 
 ### 2.3 需要关注的点
 
-1. **全局配置对象读写点相对分散**  
-   - 示例：`src/payment/index.ts` 依赖 `websiteConfig.payment` + `serverEnv`；`src/ai/billing-config.ts` 依赖配置与 env；mail 测试直接修改 `websiteConfig.mail`。  
-   - 风险：当前用法集中且可控，但随着多租户、环境切分或配置演进，散落的读写点会放大维护成本。
+1. **全局配置对象读写点相对分散（已部分缓解）**  
+   - 初始示例：`src/payment/index.ts` 依赖 `websiteConfig.payment` + `serverEnv`；`src/ai/billing-policy.ts` / `src/ai/billing-config.ts` 直接读取 `websiteConfig.ai.billing`；mail 模块和测试多处直接使用 `websiteConfig.mail`。  
+   - 当前进展：已通过 `PaymentProviderFactory`、`AiConfigProvider`（`src/ai/ai-config-provider.ts`）和 `MailConfigProvider`（`src/mail/mail-config-provider.ts`）将 payment/ai/mail 对 `websiteConfig` 的读取集中在少数 provider 模块；后续如果引入多 plan/多租户扩展，应在这些 provider 之上再注入上下文，而不是重新分散读取点。
 
 2. **复杂 UI 行为仍然主要依赖人工验证**  
    - 虽然 API/usecase 层有良好测试，但导航、定价页、AI playground 等 UI 逻辑更多通过文档和约定维护，随着功能增长，维护与重构时的风险会增加。
@@ -170,17 +170,19 @@
 
 ### P0（高优）
 
-1. **抽象 AI 计费策略注入接口**  
-   - 目标：让 chat/analyze/generate 等 usecase 依赖 `AiBillingRuleProvider` 而非直接调用配置函数，为 per-plan/per-tenant 策略演进预留空间（协议与计费规则侧的细化建议见 `.codex/plan/protocol-future-techdebt-report.md` 技术债 #5）。
-2. **建立关键 UI 流程的最小测试基线**  
-   - 目标：为定价页 CTA、AI playground 等高风险 UI 增加少量组件/集成测试，降低重构和样式调整带来的行为回归风险。
+1. **抽象 AI 计费策略注入接口（基础能力已落地）**  
+   - 当前状态：已通过 `AiBillingPolicy` + `billing-config` 中的 `setAiBillingPolicy` / `getAiBillingPolicy` 实现可替换策略实例，usecase 通过 `getAi*BillingRule` 间接依赖策略，规则来源统一为 `websiteConfig.ai.billing.*`。  
+   - 后续方向：如需 per-plan/per-tenant 策略，可在策略实现中引入 `AiBillingContext` 并在上层组合根注入不同策略实例（协议与计费规则侧的细化建议见 `.codex/plan/protocol-future-techdebt-report.md` 技术债 #5）。
+2. **建立关键 UI 流程的最小测试基线（尚未启动）**  
+   - 目标：为定价页 CTA、AI playground 等高风险 UI 增加少量组件/集成测试，覆盖核心渲染和状态切换，降低重构和样式调整带来的行为回归风险；当前仍主要依赖手工回归，尚未有系统性的 UI 测试基线。
 
 ### P1（中优）
 
-1. **收敛 action 层错误处理模式**  
-   - 在 `safe-action` 或相邻模块提供统一的 DomainError 包装 helper，减少重复 try/catch，统一日志与错误码行为（对应协议层技术债 #2）。
-2. **为 payment / AI / mail 引入轻量级配置 provider**  
-   - 将 `websiteConfig` / `serverEnv` 的读取集中在少数 adapter，业务代码依赖 `PaymentConfigProvider`、`AiBillingConfigProvider`、`MailConfigProvider` 等抽象（与协议层技术债 #5/#6 联动）。
+1. **收敛 action 层错误处理模式（尚未落地）**  
+   - 在 `safe-action` 或相邻模块提供统一的 DomainError 包装 helper，减少重复 try/catch，统一日志与错误码行为（对应协议层技术债 #2）；当前各 action 仍各自实现错误包装逻辑。  
+2. **按领域收敛配置 Provider / Adapter（核心域已完成首轮收口）**  
+   - 当前状态：payment 通过 `PaymentProviderFactory` + Stripe 工厂集中消费 `serverEnv` 中的 Stripe 配置；AI 通过 `AiConfigProvider` + `AiBillingPolicy` / `billing-config` 从 `websiteConfig.ai.billing` 提供计费规则；mail 通过 `MailConfigProvider` 提供邮件配置；storage 领域已通过 `StorageConfig` + `storage/index.ts`（`initializeStorageProvider` / `uploadFile` 等）集中 `websiteConfig.storage` 与 `serverEnv.storage` 的读取。  
+   - 约束与后续方向：将对 `websiteConfig` / `serverEnv` 的读取限制在这些领域级 Provider/Adapter（payment / ai / mail / storage 等）内部，其余 domain/service/usecase/API route 层只能依赖对应 Provider；新增领域（如 newsletter / analytics）应复用同一模式。后续如需引入 plan / tenant 等维度，可在各自 Provider 内按需扩展，刻意避免提前设计全局 AppConfig“大总管”，以保持解耦与可演进性。
 
 ### P2（低优）
 
@@ -188,3 +190,102 @@
    - 从错误 UI hooks、高复用 UI 组件开始，逐步提高前端可测性。
 2. **扩展 E2E 覆盖更多业务闭环**  
    - 在已有 auth 与 credits+AI 流程基础上，逐步引入支付/存储等闭环测试，为中长期演进提供回归保障。
+
+---
+
+## 附录 A：架构视角体检（模块边界 / 依赖关系）
+
+> 侧重于「模块边界是否清晰、依赖方向是否合理，是否存在高耦合热点与结构性技术债」，与前文的可维护性/复用性报告互为补充。
+
+### 一、架构整体印象
+
+- **清晰度：偏高**  
+  - 顶层分层基本稳定：`app`（路由/UI） → `actions/api` → `lib/server/usecases` → `domain` / `credits` / `payment` / `ai` → `db` / 外部 Provider。  
+  - 核心域（credits / payment / billing / ai）均有独立目录与文档（`docs/architecture-overview.md`、`docs/credits-lifecycle.md` 等）支撑，降低理解成本。
+- **演进性：中高**  
+  - 使用 usecase 层封装复杂业务流（如 `execute-ai-chat-with-billing`、`distribute-credits-job`），HTTP/API 层保持「薄控制器」，便于新增调用方（CLI/worker）。
+- **复杂度：集中但可控**  
+  - 复杂度主要集中在 `credits ↔ billing ↔ payment ↔ ai` 协作上，其余模块（newsletter / storage / mail 等）复杂度明显较低。
+
+### 二、模块边界与职责
+
+- **`src/app`（路由与 UI）**  
+  - `[locale]/(marketing)` / `(protected)` 通过 segment 清晰区分开放页面和登录后应用；页面层基本通过组件 + hooks + actions 访问领域能力，没有直接触达 DB 或低层 infra。
+  - API Routes（如 `api/chat`、`api/generate-images`、`api/distribute-credits`、`api/webhooks/stripe`）普遍遵守统一模式：鉴权 → 限流 → 解析/校验 → 调用 usecase → 统一 envelope / error code。
+- **`src/actions`（safe actions）**  
+  - 使用 `actionClient` / `userActionClient` / `adminActionClient` + `withActionErrorBoundary` 形成统一模板，actions 主要承担参数校验与上下文注入职责。
+  - 个别 admin 查询（如 `get-users`）在 action 内直接访问 drizzle DB，属于「简单读操作」的特例，模式上与 usecase/域服务略有差异（但在当前复杂度下仍可接受）。
+- **`src/lib/server` / `src/lib/user-lifecycle`**  
+  - `lib/server` 聚合 API auth、logger、rate-limit、error-codes、usecases 等「应用服务 + 基础设施」能力，是路由/API 层的主要入口。  
+  - `lib/user-lifecycle` 将注册后积分赠送、newsletter 订阅等副作用从 auth/路由剥离出来，作为「生命周期 orchestrator」，符合单一职责。
+- **`src/domain`（billing / membership / plan）**  
+  - `billing-service.ts` 承担计费领域服务角色，接口通过 `BillingService` / `BillingRenewalPort` 暴露，依赖 `PaymentProvider` / `CreditsGateway` / `MembershipService` / `PlanPolicy` 等抽象。
+  - domain 本身不直接操作 Stripe 或 HTTP，而是通过上层 usecase/API 与底层 payment/credits 协作。
+- **`src/credits`**  
+  - 按「domain / data-access / services / jobs」分层：领域规则集中在 `CreditLedgerDomainService`，仓储在 `CreditLedgerRepository`，对外 gateway 在 `CreditLedgerService`，分发/过期 job 在 `distribute.ts` / `expiry-job.ts`。
+  - 领域不变量（余额不能为负、periodKey 约束、过期处理）集中在 domain 层，应用层只做 orchestration。
+- **`src/payment`**  
+  - `services` 中通过 `StripePaymentAdapter`、`StripeWebhookHandler`、`stripe-payment-factory` 封装 Stripe 的全部细节，对外以 `PaymentProvider`/webhook handler 形式暴露。
+  - `data-access` 封装 payment / stripe_event / user 等表的 CRUD，未向上暴露 Drizzle 细节。
+- **`src/ai`**  
+  - 将配置与计费 (`ai-config-provider`, `billing-config`) 与用量计数 (`ai-usage-service`) 从具体 usecase 中抽离；文本分析、图片生成各自有清晰的 utils + provider 组织。
+  - 与 credits 的关系主要在 usecase 层体现（消耗积分/免费次数），AI domain 本身不直接关心积分细节。
+
+### 三、依赖关系与耦合度
+
+- **整体方向基本正确**  
+  - API / actions 大多依赖 `lib/server/usecases` 或领域服务，而不是直接访问 DB 或外部 SDK。  
+  - Credits、payment、billing、AI 之间的协作通过接口（`CreditsGateway`、`PaymentProvider`、`BillingRenewalPort`、`PlanCreditsConfig`）而非直接依赖对方内部实现。
+- **耦合热点 1：`payment ↔ billing ↔ credits` 三角**  
+  - Billing 依赖 `PaymentProvider`（订阅/credits checkout）、`CreditsGateway`（发放积分）、`MembershipService`（终身会员）、`PlanPolicy`。  
+  - Payment 在 webhook handler 中通过 `BillingRenewalPort` 回调 billing 完成续费场景的积分和 membership 变更。  
+  - Credits 通过 `CreditsGateway` 为 billing/payments 提供统一的积分入口。  
+  - 从 DDD 角度看，这是通过端口协作形成的闭环，但在实现上三个模块间的接口和类型散落在不同目录，整体认知难度偏高。
+- **耦合热点 2：错误模型与日志模型的全局渗透**  
+  - `ErrorCodes` + `DomainError` + `getLogger` 几乎被所有层级使用，包括 domain 层（如 `DefaultBillingService`、`CreditLedgerDomainService`）。  
+  - 优点是错误与日志模型高度一致；缺点是 domain 无法在不携带这些实现的情况下复用到别的 runtime（例如浏览器/edge 或独立服务）。
+- **耦合热点 3：`src/lib` 根的「杂物间」倾向**  
+  - `safe-action.ts`、`domain-error-utils.ts`、`credits-settings.ts`、`price-plan.ts`、`metadata.ts` 等都堆在 `lib` 根，其他模块通过 `@/lib/*` 广泛引用。  
+  - 这种扁平布局在规模继续增长时容易形成「一切皆可从 lib 引入」的隐式耦合热点。
+
+### 四、可维护性与演进性（架构视角）
+
+- **新增业务特性**  
+  - 对于「只涉及单一域」的特性（例如新的 AI 分析模式或新的 storage 操作），可以按照既有模式：新增 usecase → 暴露 action/API route → UI 通过 hooks/actions 调用，可维护性良好。
+  - 对于涉及 `credits + billing + payment` 的特性（如新的计费计划或 credits 赠送规则），需要在多个模块间改动；当前边界是清晰的，但缺少一个集中展示三者合作关系的契约层。
+- **替换基础设施实现**  
+  - 支付：通过 `PaymentProvider` 抽象 + Stripe 实现，理论上可替换为其他支付服务；但 `PaymentProvider` 的定义位于 payment 模块，billing/domain 对其有直接依赖，未来若拆包需要调整依赖路径。
+  - AI Provider：目前 usecase 直接调用 `ai.streamText` 等，增加/替换 provider 还停留在配置层；长远看可以考虑在 usecase 与具体 provider 之间加一层「AIProvider」抽象，但短期完全符合 YAGNI。
+- **拆分服务的可行性**  
+  - Credits 部分（domain + data-access + services + jobs）边界最清晰，是最适合未来独立成服务的候选；现有 `CreditsGateway` 已经是天然契约。
+  - Billing/payment 的拆分需要先收敛契约（见「改进建议」），否则会因为接口散落导致迁移成本较高。
+
+### 五、技术债与结构性风险（架构层）
+
+1. **domain 层直接依赖 `lib/server`（error-codes / logger / getDb 默认实现）**  
+   - 原因：为了减少样板代码，直接在 domain 内使用统一错误码和日志实现，并默认使用 `getDb` 获取 DB 连接。  
+   - 风险：domain 很难在无 Node 运行时或独立服务中复用；更换日志或错误模型时，影响面大。  
+   - 等级：中等，短期可接受，但应作为未来「跨服务/多 runtime」演进前的治理点。
+2. **payment / billing / credits 契约分散**  
+   - 原因：三个模块分别定义自己关心的接口与类型（`PaymentProvider`、`CreditsGateway`、`BillingRenewalPort`、`PlanCreditsConfig` 等）。  
+   - 风险：理解和修改计费相关逻辑需要在多个目录间频繁跳转；缺乏一个「单一可信源」描述三者的协作契约。  
+   - 等级：中等偏上，建议纳入中期路线图。
+3. **`src/lib` 根逐步演化为高扇入依赖点**  
+   - 原因：作为共享工具集自然聚集 cross-cutting concerns。  
+   - 风险：随着项目规模扩大，任何模块都能 import `@/lib/*`，使得依赖图更难收敛，增加重构成本。  
+   - 等级：中低，可通过命名规范与目录调整渐进缓解。
+
+### 六、架构级改进建议与演进路径（摘要版）
+
+> 以下建议与前文「综合改进建议」互补，聚焦在「模块边界 / 契约 / 依赖方向」三个方面。
+
+1. **收敛错误与日志模型的依赖边界（中期）**  
+   - 将 `ErrorCodes` 从 `lib/server` 提升到更中性的 shared 模块；为 domain 层注入 logger（构造函数参数），而不是在内部直接调用 `getLogger`，降低对 infra 的静态依赖。
+2. **为 payment/billing/credits 建立显式「契约层」（中期）**  
+   - 新增一个 contracts 子模块，集中定义跨域接口与 DTO（`PaymentProvider`、`CreditsGateway`、`BillingRenewalPort`、`PlanCreditsConfig` 等），并在 docs 中配套「协作契约」说明，降低认知成本。
+3. **整理 `src/lib` 结构，区分 foundation vs domain-adapter（中期）**  
+   - 将 `safe-action`、`domain-errors`、`logger` 等基础能力归类为 foundation；将与具体领域相关的配置（如 credits/price-plan/metadata）分组到 domain-adapter 子目录，避免「所有东西都在 lib 根」的扩散。
+4. **在文档层固化 actions/usecase 的边界约定（短期）**  
+   - 明确约定：复杂业务流程（尤其涉及 credits/billing/payment/AI 的）必须通过 usecase/领域服务暴露；actions 直接访问 DB 仅限简单查询。将该约定写入 `docs/developer-guide.md` 和 review checklist。
+5. **补充一张「credits/billing/payment 协作关系图」（短期）**  
+   - 在 `docs/credits-lifecycle.md` 或 `docs/payment-lifecycle.md` 中新增“Contracts & Ports”小节，用文字或示意图方式展示三者之间的调用和依赖方向，降低心智负担。

@@ -1,20 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('react', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react')>();
-  return {
-    ...actual,
-    useCallback: (fn: unknown) => fn,
-  };
-});
-
-vi.mock('sonner', () => ({
-  toast: {
-    error: vi.fn(),
-  },
-}));
-
-import { toast } from 'sonner';
+import { toastMock } from '../../../tests/helpers/hooks';
 import { useStorageErrorUi } from '../use-storage-error-ui';
 
 describe('useStorageErrorUi', () => {
@@ -30,7 +16,7 @@ describe('useStorageErrorUi', () => {
       message: undefined,
     });
 
-    expect(toast.error).toHaveBeenCalled();
+    expect(toastMock.error).toHaveBeenCalled();
     expect(message).toContain('File size exceeds');
   });
 
@@ -39,7 +25,7 @@ describe('useStorageErrorUi', () => {
 
     const message = handleStorageError(null, 'Upload failed');
 
-    expect(toast.error).toHaveBeenCalledWith('Upload failed');
+    expect(toastMock.error).toHaveBeenCalledWith('Upload failed');
     expect(message).toBe('Upload failed');
   });
 });

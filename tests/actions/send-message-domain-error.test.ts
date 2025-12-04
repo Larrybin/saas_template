@@ -1,25 +1,27 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { sendMessageAction } from '@/actions/send-message';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 
-vi.mock('@/lib/safe-action', () => ({
-  actionClient: {
-    schema: () => ({
-      // 在测试中直接暴露内部实现，绕过 safe-action 封装
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
+vi.mock('@/config/website', async () => {
+  const actual =
+    await vi.importActual<typeof import('@/config/website')>(
+      '@/config/website'
+    );
 
-vi.mock('@/config/website', () => ({
-  websiteConfig: {
-    mail: {
-      supportEmail: 'support@example.com',
+  return {
+    ...actual,
+    websiteConfig: {
+      ...actual.websiteConfig,
+      mail: {
+        ...actual.websiteConfig.mail,
+        supportEmail: 'support@example.com',
+      },
     },
-  },
-}));
+  };
+});
 
 vi.mock('next-intl/server', () => ({
   getLocale: vi.fn().mockResolvedValue('en'),
@@ -27,12 +29,6 @@ vi.mock('next-intl/server', () => ({
 
 vi.mock('@/mail', () => ({
   sendEmail: vi.fn(),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('sendMessageAction DomainError behavior', () => {

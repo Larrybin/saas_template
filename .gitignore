@@ -26,6 +26,9 @@ test-report.json
 .DS_Store
 *.pem
 
+# local starter kit
+/raphael-starterkit-v1-main
+
 # debug
 npm-debug.log*
 yarn-debug.log*

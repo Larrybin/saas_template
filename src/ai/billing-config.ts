@@ -1,4 +1,5 @@
 import {
+  type AiBillingContext,
   type AiBillingPolicy,
   type AiBillingRule,
   defaultAiBillingPolicy,
@@ -14,14 +15,20 @@ export function getAiBillingPolicy(): AiBillingPolicy {
   return currentAiBillingPolicy;
 }
 
-export function getAiChatBillingRule(): AiBillingRule {
-  return currentAiBillingPolicy.getChatRule();
+export function getAiChatBillingRule(
+  context?: AiBillingContext
+): AiBillingRule {
+  return currentAiBillingPolicy.getChatRule(context);
 }
 
-export function getAnalyzeContentBillingRule(): AiBillingRule {
-  return currentAiBillingPolicy.getAnalyzeContentRule();
+export function getAnalyzeContentBillingRule(
+  context?: AiBillingContext
+): AiBillingRule {
+  return currentAiBillingPolicy.getAnalyzeContentRule(context);
 }
 
-export function getImageGenerateBillingRule(): AiBillingRule {
-  return currentAiBillingPolicy.getImageRule();
+export function getImageGenerateBillingRule(
+  context?: AiBillingContext
+): AiBillingRule {
+  return currentAiBillingPolicy.getImageRule(context);
 }

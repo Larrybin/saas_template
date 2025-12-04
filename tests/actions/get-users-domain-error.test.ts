@@ -1,16 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { getUsersAction } from '@/actions/get-users';
 import { DomainError } from '@/lib/domain-errors';
-
-vi.mock('@/lib/safe-action', () => ({
-  adminActionClient: {
-    schema: () => ({
-      // 在测试中直接暴露内部实现，绕过 safe-action 封装
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
 
 vi.mock('@/db', () => ({
   getDb: vi.fn(),
@@ -18,12 +10,6 @@ vi.mock('@/db', () => ({
 
 vi.mock('@/lib/demo', () => ({
   isDemoWebsite: () => false,
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('getUsersAction DomainError behavior', () => {

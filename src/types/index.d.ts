@@ -114,10 +114,32 @@ export interface AiBillingConfig {
 	generateImage?: AiBillingRuleConfig;
 }
 
+export interface AiBillingRuleOverrideConfig {
+	/**
+	 * 针对特定订阅/价格计划的覆盖（如 free/basic/pro 等）。
+	 * 若省略，则对所有 plan 生效。
+	 */
+	planId?: string;
+	/**
+	 * 针对特定 region 的覆盖（如 us/eu/apac 等）。
+	 * 若省略，则对所有 region 生效。
+	 */
+	region?: string;
+	enabled?: boolean;
+	creditsPerCall?: number;
+	freeCallsPerPeriod?: number;
+}
+
 export interface AiBillingRuleConfig {
 	enabled?: boolean;
 	creditsPerCall?: number;
 	freeCallsPerPeriod?: number;
+	/**
+	 * 可选的按 plan/region 细分的规则覆盖。
+	 * DefaultAiBillingPolicy 会根据调用上下文中的 planId/region
+	 * 选择最匹配的条目，并在此基础上覆盖顶层规则。
+	 */
+	rules?: AiBillingRuleOverrideConfig[];
 }
 
 export interface AuthConfig {

@@ -41,6 +41,28 @@ describe('mail service', () => {
   afterEach(() => {
     websiteConfig.mail.provider = originalMailConfig.provider;
     websiteConfig.mail.fromEmail = fallbackFromEmail;
+    vi.doUnmock('@/mail/mail-config-provider');
+  });
+
+  it('throws descriptive error when mail provider is unsupported', async () => {
+    await vi.resetModules();
+
+    vi.doMock('@/mail/mail-config-provider', () => ({
+      mailConfigProvider: {
+        getMailConfig: () =>
+          ({
+            provider: 'invalid',
+            fromEmail: 'alerts@example.com',
+            supportEmail: 'support@example.com',
+          }) as never,
+      },
+    }));
+
+    const mail = await import('../index');
+
+    expect(() => mail.initializeMailProvider()).toThrow(
+      'Unsupported mail provider: invalid'
+    );
   });
 
   it('initializes provider once and reuses cached instance', async () => {

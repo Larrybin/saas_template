@@ -29,11 +29,40 @@ AI 模块主要职责：
   - 图片生成：`src/ai/image/lib/*`  
   - 计费规则：
     - 配置源：`src/config/website.tsx` 中的 `websiteConfig.ai.billing.*`  
-    - 策略层：`src/ai/billing-policy.ts`（`AiBillingPolicy` / `DefaultAiBillingPolicy`）  
-    - 适配器与注入点：`src/ai/billing-config.ts`  
+    - 策略层：`src/ai/billing-policy.ts`（`AiBillingPolicy` / `DefaultAiBillingPolicy` + `AiBillingContext`）  
+    - 适配器与注入点：`src/ai/billing-config.ts` 与 `src/ai/ai-config-provider.ts`  
       - 向 usecase 暴露 `getAi*BillingRule`（保持稳定 API）  
       - 通过 `setAiBillingPolicy` / `getAiBillingPolicy` 管理当前策略实例，支持在测试或多租户场景下替换策略实现  
   - 使用量统计：`src/ai/usage/ai-usage-service.ts`
+
+---
+
+## 1.1 AI 计费上下文（AiBillingContext）责任边界
+
+为支持按 plan/region 等维度细分 AI 计费规则，AI 模块在策略层引入了 `AiBillingContext` 与配置 Provider 抽象：
+
+- 配置Provider：`AiConfigProvider`（`src/ai/ai-config-provider.ts`）
+  - 责任：从 `websiteConfig.ai.billing` 提供原始计费配置（`AiBillingConfig`），不关心具体上下文（plan/region/tenant）。  
+  - 默认实现直接返回 `websiteConfig.ai?.billing`，便于未来在多租户或多品牌场景下替换。
+- 策略层：`DefaultAiBillingPolicy` + `AiBillingContext`（`src/ai/billing-policy.ts`）
+  - 责任：在配置基础上，根据调用上下文（如 `planId` / `region`）选择合适的计费规则：  
+    - 顶层规则：`websiteConfig.ai.billing.chat` / `generateImage` 等；  
+    - 覆盖规则：`rules?: { planId?: string; region?: string; enabled?/creditsPerCall?/freeCallsPerPeriod? }[]`；  
+    - 选择策略：优先匹配 *plan+region*，其次 *plan-only*，最后回退到顶层规则。
+  - 入参：`AiBillingContext` 目前预期字段为：
+    - `planId?: string`：当前用户所属订阅/价格计划标识（由 Billing 层解析）；  
+    - `region?: string`：可选的区域标识（例如 `us`/`eu`），由上层根据业务需要注入；  
+    - 未来如需增加 `tenantId` 等字段，应在此类型中扩展，而不是直接让策略层依赖 `websiteConfig` / `serverEnv`。
+- usecase 层：`getAi*BillingRule`（`src/ai/billing-config.ts`）
+  - 责任：作为 usecase 的唯一入口，从 `AiConfigProvider` + `AiBillingPolicy` 组合中获取计费规则。  
+  - 谁构造 `AiBillingContext`：
+    - 由 usecase / Billing 组合根在调用 `getAi*BillingRule(context)` 时构造，并保证只包含上面约定的字段；  
+    - 不允许在策略层中“反查”用户 / env / config 以构造上下文，避免跨层耦合。
+- 回填到 UI 的责任：
+  - usecase 返回的计费结果（例如每次调用消耗的积分、免费额度剩余等）可按需要映射到 API Route / Actions envelope 中；  
+  - UI 层仅消费这些“已经决策好的计费结果”，不会直接依赖 `AiBillingContext` 或计费策略实现细节。
+
+> 约定：任何关于 plan/region/tenant 的决策输入都应以 `AiBillingContext` 的形式从 usecase/Billing 层显式传入策略层，策略层不直接依赖全局配置或请求对象。这一点在后续多 plan/多区域扩展时必须保持，以降低心智负担与耦合度。
 
 ---
 

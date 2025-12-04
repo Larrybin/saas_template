@@ -1,27 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { getCreditTransactionsAction } from '@/actions/get-credit-transactions';
 import type { User } from '@/lib/auth-types';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 
-vi.mock('@/lib/safe-action', () => ({
-  userActionClient: {
-    schema: () => ({
-      // 在测试中直接暴露内部实现，绕过 safe-action 封装
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
-
 vi.mock('@/db', () => ({
   getDb: vi.fn(),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('getCreditTransactionsAction DomainError behavior', () => {

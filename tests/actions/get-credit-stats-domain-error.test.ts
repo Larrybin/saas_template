@@ -1,33 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { getCreditStatsAction } from '@/actions/get-credit-stats';
+import { getUserExpiringCreditsAmount } from '@/credits/services/credit-stats-service';
 import type { User } from '@/lib/auth-types';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 
-vi.mock('@/lib/safe-action', () => ({
-  userActionClient: {
-    action: (impl: unknown) => impl,
-  },
-}));
-
-vi.mock('@/db', () => ({
-  getDb: vi.fn(),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
+vi.mock('@/credits/services/credit-stats-service', () => ({
+  getUserExpiringCreditsAmount: vi.fn(),
 }));
 
 describe('getCreditStatsAction DomainError behavior', () => {
   const user = { id: 'user_1' } as User;
 
-  it('rethrows DomainError from getDb', async () => {
-    const { getDb } = await import('@/db');
-
-    (getDb as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+  it('rethrows DomainError from getUserExpiringCreditsAmount', async () => {
+    (
+      getUserExpiringCreditsAmount as unknown as ReturnType<typeof vi.fn>
+    ).mockRejectedValueOnce(
       new DomainError({
         code: ErrorCodes.UnexpectedError,
         message: 'domain failure',
@@ -43,11 +33,9 @@ describe('getCreditStatsAction DomainError behavior', () => {
   });
 
   it('wraps non-DomainError into UnexpectedError DomainError', async () => {
-    const { getDb } = await import('@/db');
-
-    (getDb as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error('db down')
-    );
+    (
+      getUserExpiringCreditsAmount as unknown as ReturnType<typeof vi.fn>
+    ).mockRejectedValueOnce(new Error('db down'));
 
     await expect(
       getCreditStatsAction({

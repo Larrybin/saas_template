@@ -1,18 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { createCheckoutAction } from '@/actions/create-checkout-session';
 import type { User } from '@/lib/auth-types';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
-
-vi.mock('@/lib/safe-action', () => ({
-  userActionClient: {
-    schema: () => ({
-      // 在测试中直接暴露内部实现，绕过 safe-action 封装
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
 
 vi.mock('next-intl/server', () => ({
   getLocale: vi.fn(),
@@ -41,12 +33,6 @@ vi.mock('@/lib/server/billing-service', () => ({
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('createCheckoutAction DomainError behavior', () => {

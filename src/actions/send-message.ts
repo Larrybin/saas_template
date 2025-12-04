@@ -4,9 +4,9 @@ import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 import { websiteConfig } from '@/config/website';
 import { DomainError } from '@/lib/domain-errors';
-import { actionClient } from '@/lib/safe-action';
+import { actionClient, withActionErrorBoundary } from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
-import { getLogger } from '@/lib/server/logger';
+import { createEmailLogFields, getLogger } from '@/lib/server/logger';
 import { sendEmail } from '@/mail';
 
 const logger = getLogger({ span: 'actions.send-message' });
@@ -29,15 +29,24 @@ const contactFormSchema = z.object({
 });
 
 // Create a safe action for contact form submission
-export const sendMessageAction = actionClient
-  .schema(contactFormSchema)
-  .action(async ({ parsedInput }) => {
-    // Do not check if the user is authenticated here
-    try {
+export const sendMessageAction = actionClient.schema(contactFormSchema).action(
+  withActionErrorBoundary(
+    {
+      logger,
+      logMessage: 'send message error',
+      getLogContext: ({ parsedInput }) => {
+        const email = (parsedInput as { email: string }).email;
+        return createEmailLogFields(email);
+      },
+      fallbackMessage: 'Failed to send the message',
+      code: ErrorCodes.ContactSendFailed,
+      retryable: true,
+    },
+    async ({ parsedInput }) => {
+      // Do not check if the user is authenticated here
       const { name, email, message } = parsedInput;
 
       if (!websiteConfig.mail.supportEmail) {
-        logger.error('The mail receiver is not set');
         throw new Error('The mail receiver is not set');
       }
 
@@ -56,7 +65,6 @@ export const sendMessageAction = actionClient
       });
 
       if (!result) {
-        logger.error('send message error');
         throw new DomainError({
           code: ErrorCodes.ContactSendFailed,
           message: 'Failed to send the message',
@@ -67,16 +75,6 @@ export const sendMessageAction = actionClient
       return {
         success: true,
       };
-    } catch (error) {
-      logger.error({ error }, 'send message error');
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      throw new DomainError({
-        code: ErrorCodes.ContactSendFailed,
-        message:
-          error instanceof Error ? error.message : 'Failed to send the message',
-        retryable: true,
-      });
     }
-  });
+  )
+);

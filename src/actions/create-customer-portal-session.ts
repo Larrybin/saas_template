@@ -7,7 +7,7 @@ import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
 import { DomainError } from '@/lib/domain-errors';
-import { userActionClient } from '@/lib/safe-action';
+import { userActionClient, withActionErrorBoundary } from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { getUrlWithLocale } from '@/lib/urls/urls';
@@ -28,13 +28,22 @@ const portalSchema = z.object({
 /**
  * Create a customer portal session
  */
-export const createPortalAction = userActionClient
-  .schema(portalSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const { returnUrl } = parsedInput;
-    const currentUser = (ctx as { user: User }).user;
+export const createPortalAction = userActionClient.schema(portalSchema).action(
+  withActionErrorBoundary(
+    {
+      logger,
+      logMessage: 'create customer portal error',
+      getLogContext: ({ ctx }) => ({
+        userId: (ctx as { user: User }).user.id,
+      }),
+      fallbackMessage: 'Failed to create customer portal session',
+      code: ErrorCodes.UnexpectedError,
+      retryable: true,
+    },
+    async ({ parsedInput, ctx }) => {
+      const { returnUrl } = parsedInput;
+      const currentUser = (ctx as { user: User }).user;
 
-    try {
       // Get the user's customer ID from the database
       const db = await getDb();
       const customerResult = await db
@@ -45,7 +54,7 @@ export const createPortalAction = userActionClient
 
       const customer = customerResult[0];
       if (!customer || !customer.customerId) {
-        logger.error({ userId: currentUser.id }, 'No customer found for user');
+        logger.warn({ userId: currentUser.id }, 'No customer found for user');
         throw new DomainError({
           code: ErrorCodes.UnexpectedError,
           message: 'No customer found for user',
@@ -61,7 +70,7 @@ export const createPortalAction = userActionClient
         returnUrl || getUrlWithLocale('/settings/billing', locale);
       const customerId = customer.customerId;
       if (!customerId) {
-        logger.error(
+        logger.warn(
           { userId: currentUser.id },
           'No customer id found for user after validation'
         );
@@ -84,21 +93,6 @@ export const createPortalAction = userActionClient
         success: true,
         data: result,
       };
-    } catch (error) {
-      logger.error(
-        { error, userId: currentUser.id },
-        'create customer portal error'
-      );
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      throw new DomainError({
-        code: ErrorCodes.UnexpectedError,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to create customer portal session',
-        retryable: true,
-      });
     }
-  });
+  )
+);

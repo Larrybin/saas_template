@@ -1,26 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { checkNewsletterStatusAction } from '@/actions/check-newsletter-status';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 
-vi.mock('@/lib/safe-action', () => ({
-  userActionClient: {
-    schema: () => ({
-      // 在测试中直接暴露内部实现，绕过 safe-action 封装
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
-
 vi.mock('@/newsletter', () => ({
   isSubscribed: vi.fn(),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('checkNewsletterStatusAction DomainError behavior', () => {
@@ -35,6 +21,7 @@ describe('checkNewsletterStatusAction DomainError behavior', () => {
 
     const result = await checkNewsletterStatusAction({
       parsedInput: { email },
+      ctx: { user: { id: 'user_1', email } },
     } as never);
 
     expect(result).toEqual({ success: true, subscribed: true });
@@ -54,6 +41,7 @@ describe('checkNewsletterStatusAction DomainError behavior', () => {
     await expect(
       checkNewsletterStatusAction({
         parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
       } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterStatusFailed,
@@ -71,6 +59,7 @@ describe('checkNewsletterStatusAction DomainError behavior', () => {
     await expect(
       checkNewsletterStatusAction({
         parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
       } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterStatusFailed,

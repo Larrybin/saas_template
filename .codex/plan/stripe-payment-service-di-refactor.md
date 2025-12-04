@@ -100,18 +100,20 @@ description: 将 StripePaymentService 从 env/config 与依赖构造中解耦，
 ### 设计要点
 
 1. **显式引入 PaymentProviderFactory 抽象**
-   - 类型位置建议：`src/payment/types.ts` 或独立工厂模块：
-     - `type PaymentContext = { tenantId?: string; region?: string }`（当前可选、仅作占位）。
+   - 在 `src/payment/types.ts` 中补充：
+     - `type PaymentProviderId = 'stripe' | 'creem';`（当前仅实际使用 `'stripe'`）。
+     - `type PaymentContext = { providerId?: PaymentProviderId };`（预留未来扩展位，不提前引入 tenantId/region）。
      - `interface PaymentProviderFactory { getProvider(ctx?: PaymentContext): PaymentProvider; }`
    - 上层（BillingService / usecases / routes）不直接 new provider，而是依赖 `PaymentProviderFactory` 或工厂函数。
 
 2. **集中 Provider 选择逻辑**
-   - 在 `src/payment/index.ts` 或新建 `src/payment/provider-factory.ts` 中实现：
-     - `createPaymentProviderFactory()`：
-       - 内部根据 `websiteConfig.payment.provider` 作分支：当前仅 `'stripe'` 分支有效；
-       - 通过现有的 `createStripePaymentProviderFromEnv` 构造 `StripePaymentAdapter`；
-       - 为未来 `creem` / 其它 Provider 预留分支（暂时抛 `Unsupported payment provider`）。
-     - 默认实现中忽略 `PaymentContext` 的 tenant/region 字段，仅作为未来扩展位。
+   - 在 `src/payment/provider-factory.ts` 中实现：
+     - `DefaultPaymentProviderFactory implements PaymentProviderFactory`：
+       - 构造函数中通过 `createStripePaymentProviderFromEnv` + `serverEnv` 仅构造一次 `stripeProvider`。
+       - `getProvider(ctx?: PaymentContext)`：
+         - 使用 `ctx?.providerId ?? websiteConfig.payment.provider` 作为 providerId；
+         - `switch (providerId)`：当前只支持 `'stripe'`，其余分支抛出 `Unsupported payment provider`。
+   - 默认实现中不处理 tenant/region，仅以 providerId 为粒度集中 Provider 选择。
 
 3. **为多租户预留上下文，不实现具体租户表结构**
    - 在 `PaymentContext` 中显式包含 `tenantId` / `region` 字段；
@@ -121,8 +123,8 @@ description: 将 StripePaymentService 从 env/config 与依赖构造中解耦，
 
 4. **与 Billing 组合根对齐**
    - 在 `src/lib/server/billing-service.ts` 中：
-     - 改为依赖 `PaymentProviderFactory` 或提供 `getPaymentProvider(ctx?: PaymentContext)`，而不是只暴露单例 `PaymentProvider`。
-     - 默认情况下继续以「全局单 Provider + 无租户上下文」配置 BillingService 行为，确保现有用例行为不变。
+     - 可以在后续迭代中将 `createBillingService` 调整为接收 `PaymentProviderFactory` 或 `getPaymentProvider(ctx?: PaymentContext)` 回调，而不是只依赖单例 `PaymentProvider`（当前阶段可保持现状，仅使用新的 factory 驱动全局 provider）。
+     - 默认情况下继续以「全局单 Provider + 无上下文」配置 BillingService 行为，确保现有用例行为不变。
 
 5. **测试与文档更新**
    - 为 `createPaymentProviderFactory` 增加小型单元测试：
@@ -135,8 +137,9 @@ description: 将 StripePaymentService 从 env/config 与依赖构造中解耦，
 ### 执行顺序建议
 
 1. **第一步：引入 PaymentProviderFactory 类型与默认实现**
-   - 不改现有 `getPaymentProvider` 对外签名，实现内部改为使用 factory。
-2. **第二步：在 Billing 组合根中消化工厂抽象**
-   - 将 `createBillingService` 调整为可接收 `PaymentProviderFactory` 或 `getPaymentProvider` 回调。
+   - 已完成：在 `src/payment/types.ts` 定义 `PaymentProviderId` / `PaymentContext` / `PaymentProviderFactory`，在 `src/payment/provider-factory.ts` 实现 `DefaultPaymentProviderFactory` 和 `paymentProviderFactory`。
+   - 不改现有 `getPaymentProvider` 对外签名，仅将内部初始化逻辑改为委托给 factory。
+2. **第二步：在 Billing 组合根中消化工厂抽象（后续迭代）**
+   - 未来可将 `createBillingService` 调整为接收 `PaymentProviderFactory` 或 `getPaymentProvider` 回调，在需要多 Provider/多租户时按上下文选择 provider。
 3. **第三步（未来需要时）：按租户/Region 注入差异化配置**
    - 由更上层（例如 workspace 组合根）根据租户配置构造不同的 Stripe env/overrides，并通过工厂上下文注入。

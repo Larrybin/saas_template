@@ -2,9 +2,7 @@
 
 import { getUserCredits } from '@/credits/credits';
 import { getUserExpiringCreditsAmount } from '@/credits/services/credit-stats-service';
-import type { User } from '@/lib/auth-types';
-import { DomainError } from '@/lib/domain-errors';
-import { userActionClient } from '@/lib/safe-action';
+import { getUserFromCtx, userActionClient, withActionErrorBoundary } from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
@@ -16,10 +14,19 @@ const logger = getLogger({ span: 'actions.get-credit-overview' });
  * - total amount of credits that will expire in the configured window
  */
 export const getCreditOverviewAction = userActionClient.action(
-  async ({ ctx }) => {
-    const currentUser = (ctx as { user: User }).user;
-
-    try {
+  withActionErrorBoundary(
+    {
+      logger,
+      logMessage: 'get credit overview error',
+      getLogContext: ({ ctx }) => ({
+        userId: getUserFromCtx(ctx).id,
+      }),
+      fallbackMessage: 'Failed to fetch credit overview',
+      code: ErrorCodes.UnexpectedError,
+      retryable: true,
+    },
+    async ({ ctx }) => {
+      const currentUser = getUserFromCtx(ctx);
       const [balance, expiringAmount] = await Promise.all([
         getUserCredits(currentUser.id),
         getUserExpiringCreditsAmount(currentUser.id),
@@ -34,22 +41,6 @@ export const getCreditOverviewAction = userActionClient.action(
           },
         },
       };
-    } catch (error) {
-      logger.error(
-        { error, userId: currentUser.id },
-        'get credit overview error'
-      );
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      throw new DomainError({
-        code: ErrorCodes.UnexpectedError,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to fetch credit overview',
-        retryable: true,
-      });
     }
-  }
+  )
 );

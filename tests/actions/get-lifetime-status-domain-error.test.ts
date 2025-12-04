@@ -1,19 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { getLifetimeStatusAction } from '@/actions/get-lifetime-status';
 import type { User } from '@/lib/auth-types';
 import { DomainError } from '@/lib/domain-errors';
 import { getAllPricePlans } from '@/lib/price-plan';
 import { ErrorCodes } from '@/lib/server/error-codes';
-
-vi.mock('@/lib/safe-action', () => ({
-  userActionClient: {
-    schema: () => ({
-      // 在测试中直接暴露内部实现，绕过 safe-action 封装
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
 
 vi.mock('@/lib/price-plan', () => ({
   getAllPricePlans: vi.fn(),
@@ -22,12 +14,6 @@ vi.mock('@/lib/price-plan', () => ({
 
 vi.mock('@/db', () => ({
   getDb: vi.fn(),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('getLifetimeStatusAction DomainError behavior', () => {

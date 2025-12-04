@@ -5,8 +5,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { user } from '@/db/schema';
 import { isDemoWebsite } from '@/lib/demo';
-import { DomainError } from '@/lib/domain-errors';
-import { adminActionClient } from '@/lib/safe-action';
+import { adminActionClient, withActionErrorBoundary } from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
@@ -41,10 +40,16 @@ const sortFieldMap = {
 } as const;
 
 // Create a safe action for getting users
-export const getUsersAction = adminActionClient
-  .schema(getUsersSchema)
-  .action(async ({ parsedInput }) => {
-    try {
+export const getUsersAction = adminActionClient.schema(getUsersSchema).action(
+  withActionErrorBoundary(
+    {
+      logger,
+      logMessage: 'get users error',
+      fallbackMessage: 'Failed to fetch users',
+      code: ErrorCodes.UnexpectedError,
+      retryable: true,
+    },
+    async ({ parsedInput }) => {
       const { pageIndex, pageSize, search, sorting } = parsedInput;
 
       // search by name, email, and customerId
@@ -107,16 +112,6 @@ export const getUsersAction = adminActionClient
           total: Number(totalCount),
         },
       };
-    } catch (error) {
-      logger.error({ error }, 'get users error');
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      throw new DomainError({
-        code: ErrorCodes.UnexpectedError,
-        message:
-          error instanceof Error ? error.message : 'Failed to fetch users',
-        retryable: true,
-      });
     }
-  });
+  )
+);

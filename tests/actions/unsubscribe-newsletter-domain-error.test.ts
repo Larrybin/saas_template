@@ -1,26 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { unsubscribeNewsletterAction } from '@/actions/unsubscribe-newsletter';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 
-vi.mock('@/lib/safe-action', () => ({
-  userActionClient: {
-    schema: () => ({
-      // 在测试中直接暴露内部实现，绕过 safe-action 封装
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
-
 vi.mock('@/newsletter', () => ({
   unsubscribe: vi.fn(),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('unsubscribeNewsletterAction DomainError behavior', () => {

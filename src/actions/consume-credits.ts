@@ -2,9 +2,7 @@
 
 import { z } from 'zod';
 import { consumeCredits } from '@/credits/credits';
-import type { User } from '@/lib/auth-types';
-import { DomainError } from '@/lib/domain-errors';
-import { userActionClient } from '@/lib/safe-action';
+import { getUserFromCtx, userActionClient, withActionErrorBoundary } from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 
@@ -21,30 +19,29 @@ const consumeSchema = z.object({
  */
 export const consumeCreditsAction = userActionClient
   .schema(consumeSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const { amount, description } = parsedInput;
-    const currentUser = (ctx as { user: User }).user;
-
-    try {
-      await consumeCredits({
-        userId: currentUser.id,
-        amount,
-        description: description || `Consume credits: ${amount}`,
-      });
-      return { success: true };
-    } catch (error) {
-      logger.error(
-        { error, userId: currentUser.id, amount },
-        'consume credits error'
-      );
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      throw new DomainError({
+  .action(
+    withActionErrorBoundary(
+      {
+        logger,
+        logMessage: 'consume credits error',
+        getLogContext: ({ ctx, parsedInput }) => ({
+          userId: getUserFromCtx(ctx).id,
+          amount: (parsedInput as { amount: number }).amount,
+        }),
+        fallbackMessage: 'Failed to consume credits',
         code: ErrorCodes.UnexpectedError,
-        message:
-          error instanceof Error ? error.message : 'Failed to consume credits',
         retryable: true,
-      });
-    }
-  });
+      },
+      async ({ parsedInput, ctx }) => {
+        const { amount, description } = parsedInput;
+        const currentUser = getUserFromCtx(ctx);
+
+        await consumeCredits({
+          userId: currentUser.id,
+          amount,
+          description: description || `Consume credits: ${amount}`,
+        });
+        return { success: true };
+      }
+    )
+  );

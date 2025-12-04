@@ -1,17 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { subscribeNewsletterAction } from '@/actions/subscribe-newsletter';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
-
-vi.mock('@/lib/safe-action', () => ({
-  actionClient: {
-    schema: () => ({
-      // In tests, expose the raw implementation instead of safe-action wrapper
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
 
 vi.mock('@/newsletter', () => ({
   subscribe: vi.fn(),
@@ -23,12 +15,6 @@ vi.mock('@/mail', () => ({
 
 vi.mock('next-intl/server', () => ({
   getLocale: vi.fn().mockResolvedValue('en'),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('subscribeNewsletterAction DomainError behavior', () => {

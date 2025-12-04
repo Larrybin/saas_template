@@ -7,7 +7,7 @@ import { payment } from '@/db/schema';
 import type { User } from '@/lib/auth-types';
 import { DomainError } from '@/lib/domain-errors';
 import { findPlanByPriceId, getAllPricePlans } from '@/lib/price-plan';
-import { userActionClient } from '@/lib/safe-action';
+import { userActionClient, withActionErrorBoundary } from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { PaymentTypes } from '@/payment/types';
@@ -27,13 +27,23 @@ const schema = z.object({
  * in order to do this, you have to update the logic to check the lifetime status,
  * for example, just check the planId is `lifetime` or not.
  */
-export const getLifetimeStatusAction = userActionClient
-  .schema(schema)
-  .action(async ({ ctx }) => {
-    const currentUser = (ctx as { user: User }).user;
-    const userId = currentUser.id;
+export const getLifetimeStatusAction = userActionClient.schema(schema).action(
+  withActionErrorBoundary(
+    {
+      logger,
+      logMessage: 'get user lifetime status error',
+      getLogContext: ({ ctx }) => {
+        const currentUser = (ctx as { user: User }).user;
+        return { userId: currentUser.id };
+      },
+      fallbackMessage: 'Failed to fetch lifetime status',
+      code: ErrorCodes.UnexpectedError,
+      retryable: true,
+    },
+    async ({ ctx }) => {
+      const currentUser = (ctx as { user: User }).user;
+      const userId = currentUser.id;
 
-    try {
       // Get lifetime plans
       const plans = getAllPricePlans();
       const lifetimePlanIds = plans
@@ -76,18 +86,6 @@ export const getLifetimeStatusAction = userActionClient
         success: true,
         isLifetimeMember: hasLifetimePayment,
       };
-    } catch (error) {
-      logger.error({ error, userId }, 'get user lifetime status error');
-      if (error instanceof DomainError) {
-        throw error;
-      }
-      throw new DomainError({
-        code: ErrorCodes.UnexpectedError,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to fetch lifetime status',
-        retryable: true,
-      });
     }
-  });
+  )
+);

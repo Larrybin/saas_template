@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import '../helpers/actions';
 
 import { consumeCreditsAction } from '@/actions/consume-credits';
 import { consumeCredits } from '@/credits/credits';
@@ -6,23 +7,8 @@ import type { User } from '@/lib/auth-types';
 import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 
-vi.mock('@/lib/safe-action', () => ({
-  userActionClient: {
-    schema: () => ({
-      // In tests, expose the raw implementation instead of safe-action wrapper
-      action: (impl: unknown) => impl,
-    }),
-  },
-}));
-
 vi.mock('@/credits/credits', () => ({
   consumeCredits: vi.fn(),
-}));
-
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => ({
-    error: vi.fn(),
-  }),
 }));
 
 describe('consumeCreditsAction DomainError behavior', () => {

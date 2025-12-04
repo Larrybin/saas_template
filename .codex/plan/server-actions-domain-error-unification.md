@@ -107,3 +107,119 @@
 - 本计划仅覆盖 Billing/Credits + Newsletter + Contact/Captcha 域的 Server Actions。其它模块（如 Storage、Docs Search 等）保留在后续批次中统一治理。
 - 若后续需要针对 Newsletter/Contact/Captcha 的错误做 UI 级别本地化，可在 `DOMAIN_ERROR_MESSAGES` 中为新错误码补充 i18n key 映射。
 
+### 当前进展（2025-12）
+
+- 已在 `src/lib/safe-action.ts` 中引入统一的 Action 错误包装 helper：`withActionErrorBoundary(options, handler)`，负责：
+  - 记录 `logger.error` 日志（使用调用侧传入的 span 与上下文）；
+  - 对 `DomainError` 直接透传；
+  - 对其它异常统一包装为 `DomainError`（默认 `ErrorCodes.UnexpectedError` + `retryable: true`，或由调用侧覆盖）。
+- 首批完成迁移的 Actions（行为保持兼容，仅收敛样板代码）：
+  - Credits：`get-credit-balance.ts`、`get-credit-overview.ts`、`get-credit-stats.ts`、`get-credit-transactions.ts`、`consume-credits.ts`；
+  - Billing/Payment：`create-checkout-session.ts`、`get-active-subscription.ts`；
+  - Newsletter：`check-newsletter-status.ts`、`subscribe-newsletter.ts`、`unsubscribe-newsletter.ts`；
+  - Contact/Captcha：`send-message.ts`、`validate-captcha.ts`。
+- 后续批次将按同一模式向其它 Billing/Credits + Newsletter + Contact/Captcha Actions 推进迁移，直至本计划覆盖范围内的 Actions 全部收敛到 `withActionErrorBoundary`。
+
+---
+
+## 7. 与规则文档对齐情况（2025-12 二期规划）
+
+本计划需要持续与 `.codex/rules/*` 与 `docs/*` 中的约束保持一致，当前对齐情况如下，并在本节中记录后续迭代方向。
+
+### 7.1 规则对齐现状
+
+- 错误链路与协议：
+  - 与 `.codex/rules/error-handling-and-fallbacks-best-practices.md` 对齐：当前改造方向均采用 `DomainError` + `ErrorCodes` + safe-action envelope 的链路，避免在 Action 层吞掉下游 DomainError 信息。
+  - 与 `.codex/rules/api-protocol-and-error-codes-best-practices.md` 对齐：API routes 与 Actions 使用统一 `{ success, data }` / `{ success: false, error, code, retryable }` Envelope；新增/调整的错误码已同步到 `docs/error-codes.md`。
+- 日志与可观测性：
+  - 与 `.codex/rules/logging-and-observability-best-practices.md` / `docs/error-logging.md` 对齐：所有涉及本计划的 Actions 与 routes 均通过 `getLogger` / `createLoggerFromHeaders` 输出结构化日志，并附带 `span` / `userId` / `route` 等上下文。
+- 测试策略：
+  - 与 `.codex/rules/testing-strategy-best-practices.md` / `docs/testing-strategy.md` 对齐：`tests/actions/*-domain-error.test.ts` 采用官方推荐模式，通过统一 helpers mock safe-action，专注验证 DomainError 行为。
+
+目前未发现违反上述规则的实现，但存在可以进一步收敛的“最佳实践优化点”，在 7.2/7.3 中记录为后续演进目标。
+
+### 7.2 实现约束（Error Boundary 规范）
+
+为保证后续新增/修改的 Server Actions 与规则文档长期一致，补充以下实现约束（在本计划后续批次中逐步达成）：
+
+1. **所有 Server Actions 必须经过 Error Boundary 包裹**
+   - 约定：`actionClient` / `userActionClient` / `adminActionClient` 的 `.action(...)` 调用，其实现均通过：
+     - `actionClient.action(withActionErrorBoundary(options, handler))`
+     - 或 `actionClient.schema(schema).action(withActionErrorBoundary(options, handler))`
+   - 不再允许在 Action 内手写“兜底型 try/catch + logger.error + DomainError 包装”模板代码，减少重复与偏差。
+
+2. **业务级 DomainError 仅在 handler 内部抛出**
+   - handler 可以根据业务条件抛出带 `code` / `retryable` 的 `DomainError`（如 `CreditsInvalidPayload` / `NewsletterSubscribeFailed` 等），作为正常控制流的一部分。
+   - 兜底的“非 DomainError → DomainError 包装”逻辑统一交由 `withActionErrorBoundary` 处理，避免在多个 Action 内重复编写。
+
+3. **日志尽量只打一次（必要时分层）**
+   - 默认由 `withActionErrorBoundary` 负责在错误路径记录 `logger.error({ error, ...context }, logMessage)`。
+   - handler 内仅在需要额外业务语义时记录 `info`/`warn`（例如“user 未订阅但访问某功能”），避免对同一异常重复记录两次 `error` 等级日志。
+
+4. **轻量结构整理：统一 ctx 访问**
+   - 在后续执行阶段，引入小工具函数（示例）：
+     - `getUserFromCtx(ctx): User`
+   - 目标：减少 `(ctx as { user: User }).user` 这类断言在各个 Actions 中散落，便于统一维护与类型收紧。
+
+> 注：本节仅定义约束与目标，不强制要求一次性完成；实际落地节奏由后续执行批次控制。
+
+### 7.3 工具与脚本支撑（check-protocol-and-errors 增强）
+
+为将上述约束转化为可执行的“守门人”，在后续执行阶段对 `scripts/check-protocol-and-errors.ts` 做以下增量改造：
+
+1. **保留现有检查**
+   - 已有检查保持不变：
+     - API routes 使用 `NextResponse.json` 时必须带 `success` 字段；
+     - `src/actions` 下的文件必须 import `@/lib/safe-action`（`schemas.ts` 例外）；
+     - `ErrorCodes` 与 `docs/error-codes.md` / `domain-error-ui-registry` 保持一致；
+     - `DomainError` 子类引用的 `ErrorCodes.X` 必须存在。
+
+2. **新增检查：Actions 必须通过 Error Boundary**
+   - 在 `actionsDir = src/actions` 范围内，扫描所有 `.action(` 调用：
+     - 若 `.action(` 的第一个参数不是 `withActionErrorBoundary(` 调用（考虑多行书写场景），则记录一条 `warn` 级别 violation，提示该 Action 尚未通过统一 Error Boundary 封装。
+   - 初期将此检查标记为 `warn`，在完成大部分迁移后，再视情况升级为 `error`，纳入 CI 强制约束。
+
+3. **CI 集成计划**
+   - `package.json` 中已添加 `check:protocol` 命令；后续在 CI pipeline 中保证 `pnpm check:protocol` 与 `pnpm lint` / `pnpm test` 一同执行。
+   - 当“Actions 全部迁移到 Error Boundary”达成稳定状态后，可以在本计划与 `docs/developer-guide.md` 中公告：未通过 Error Boundary 的 Actions 会导致 CI 失败。
+
+### 7.4 测试与 helpers 的后续优化
+
+结合 `docs/testing-strategy.md` 的推荐模式，对测试与 helpers 规划以下优化：
+
+1. **对齐测试版 Error Boundary 与生产实现**
+   - 当前 `tests/helpers/actions.ts` 内定义了测试版 `withActionErrorBoundary`，行为需要与 `src/lib/safe-action.ts` 保持同步。
+   - 后续执行阶段优先考虑策略：
+     - 直接从 `@/lib/safe-action` 导入真实 `withActionErrorBoundary`，只通过 `vi.mock('@/lib/server/logger')` 控制日志输出；
+     - 若出于隔离原因需要继续使用测试版实现，则需在文件头明确标注“与生产实现保持严格同步”的约定，并在每次修改 `src/lib/safe-action.ts` 时同步审核该 helper。
+
+2. **DomainError 行为测试覆盖**
+   - 对本计划覆盖的每个关键 Action（Billing/Credits + Newsletter + Contact/Captcha），均补充或完善对应的 `tests/actions/*-domain-error.test.ts`：
+     - 验证成功路径（`success: true`）；
+     - 验证 `DomainError` 直接透传（不被二次包装，`code` / `retryable` 保持不变）；
+     - 验证非 `DomainError` 异常被包装为预期的 `ErrorCodes.*` + `retryable`。
+
+### 7.5 后续待办清��（Actions 域二期）
+
+为方便跟踪，本节记录本计划下一个阶段的具体待办（不要求一次性完成）：
+
+1. **盘点与标记 Actions 迁移状态**
+   - 按以下分类整理 `src/actions` 列表，并在本文或独立清单中记录：
+     - A 类：已使用 `withActionErrorBoundary`，且无兜底型 try/catch；
+     - B 类：使用 `withActionErrorBoundary`，但仍存在可以收敛的重复 error 日志或兜底逻辑；
+     - C 类：仍未接入 Error Boundary（保留少量历史实现）。
+
+2. **逐步迁移 B/C 类 Actions**
+   - 按优先级（用户影响 / 复杂度）依次迁移 B/C 类 Actions：
+     - 重构为 `withActionErrorBoundary(options, handler)` 形态；
+     - 移除兜底型 try/catch，仅保留业务 DomainError 分支；
+     - 清理重复 error 日志，必要时下沉为 info/warn。
+
+3. **日志与隐私的精细化审查**
+   - 在迁移过程中顺带检查日志内容，避免在 error 日志中写入过多 PII（如 email 等），优先使用 `userId` / `requestId` 作为关联键。
+
+4. **脚本与 CI 升级**
+   - 在 Actions 基本完成迁移后，将 “Actions 未通过 Error Boundary” 的脚本检查从 `warn` 升级为 `error`，并更新：
+     - 本计划文档；
+     - `docs/developer-guide.md` / `docs/testing-strategy.md` 中的相关说明。
+

@@ -2,14 +2,17 @@
  * Connect to PostgreSQL Database (Supabase/Neon/Local PostgreSQL)
  * https://orm.drizzle.team/docs/tutorials/drizzle-with-supabase
  */
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { serverEnv } from "@/env/server";
 import * as schema from "./schema";
 
-let db: ReturnType<typeof drizzle> | null = null;
+export type Db = PostgresJsDatabase<typeof schema>;
 
-export async function getDb() {
+let db: Db | null = null;
+
+export async function getDb(): Promise<Db> {
 	if (db) return db;
 	const client = postgres(serverEnv.databaseUrl, { prepare: false });
 	db = drizzle(client, { schema });

@@ -9,10 +9,9 @@ export const loggerMock = {
 };
 
 vi.mock('@/lib/server/logger', async () => {
-  const actual =
-    await vi.importActual<typeof import('@/lib/server/logger')>(
-      '@/lib/server/logger'
-    );
+  const actual = await vi.importActual<typeof import('@/lib/server/logger')>(
+    '@/lib/server/logger'
+  );
 
   return {
     ...actual,

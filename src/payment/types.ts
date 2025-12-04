@@ -214,11 +214,13 @@ export interface PaymentProvider {
 /**
  * 标识支付 Provider 类型
  *
- * 当前工厂实现只支持 'stripe'；
+ * 当前默认工厂实现仅在运行时支持 'stripe'；
  * 'creem' 为未来 Creem 集成预留的占位值，尚未在运行时接入。
  * 在完成 `.codex/plan/creem-payment-integration.md` 所述 Phase A 之前，
- * 请勿在 `websiteConfig.payment.provider` 中配置为 'creem'，否则工厂会抛出
- * “Unsupported payment provider: creem” 运行时错误。
+ * 请勿在 `websiteConfig.payment.provider` 中配置为 'creem'，否则
+ * `DefaultPaymentProviderFactory.getProvider({ providerId: 'creem' })` 会抛出带有
+ * `.codex/plan/creem-payment-integration.md` 及 `docs/governance-index.md` 引导信息的
+ * Phase Gate 运行时错误，而非实际返回可用的 PaymentProvider 实例。
  */
 export type PaymentProviderId = 'stripe' | 'creem';
 

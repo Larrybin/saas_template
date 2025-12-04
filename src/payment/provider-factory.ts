@@ -17,19 +17,24 @@ import type {
  * - 多租户/多 Region 等场景可通过扩展 PaymentContext 再引入，不在本轮预先实现。
  */
 export class DefaultPaymentProviderFactory implements PaymentProviderFactory {
-  private readonly stripeProvider: PaymentProvider;
+  private stripeProvider?: PaymentProvider;
+  private readonly overrides: StripeProviderOverrides | undefined;
 
   constructor(overrides?: StripeProviderOverrides) {
-    this.stripeProvider = createStripePaymentProviderFromEnv(
+    this.overrides = overrides;
+  }
+
+  private createStripeProviderFromEnv(): PaymentProvider {
+    return createStripePaymentProviderFromEnv(
       {
         stripeSecretKey:
-          overrides?.stripeSecretKey ?? serverEnv.stripeSecretKey,
+          this.overrides?.stripeSecretKey ?? serverEnv.stripeSecretKey,
         stripeWebhookSecret:
-          overrides?.stripeWebhookSecret ?? serverEnv.stripeWebhookSecret,
+          this.overrides?.stripeWebhookSecret ?? serverEnv.stripeWebhookSecret,
       },
       {
-        stripeSecretKey: overrides?.stripeSecretKey,
-        stripeWebhookSecret: overrides?.stripeWebhookSecret,
+        stripeSecretKey: this.overrides?.stripeSecretKey,
+        stripeWebhookSecret: this.overrides?.stripeWebhookSecret,
       }
     );
   }
@@ -40,7 +45,15 @@ export class DefaultPaymentProviderFactory implements PaymentProviderFactory {
 
     switch (providerId) {
       case 'stripe': {
+        if (!this.stripeProvider) {
+          this.stripeProvider = this.createStripeProviderFromEnv();
+        }
         return this.stripeProvider;
+      }
+      case 'creem': {
+        throw new Error(
+          "Payment provider 'creem' is not yet implemented. See .codex/plan/creem-payment-integration.md (Phase A) and docs/governance-index.md for current status and usage constraints."
+        );
       }
       default: {
         throw new Error(`Unsupported payment provider: ${providerId}`);

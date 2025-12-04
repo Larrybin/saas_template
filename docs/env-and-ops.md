@@ -38,6 +38,8 @@
 - 本地开发：从 `env.example` 拷贝到 `.env.local`，按需填充关键变量（DB、Better Auth、Stripe、Storage）。  
 - CI / 生产环境：通过托管平台（Vercel / Cloudflare / 自建）配置环境变量，保持 `.env*` 文件不提交到仓库。
 
+> 注：当前 Payment Provider 工厂在运行时仅实际支持 Stripe。`PaymentProviderId` 类型中预留了 `'creem'` 作为未来集成占位值，但在 `.codex/plan/creem-payment-integration.md` 所述 Phase A 完成前，`websiteConfig.payment.provider` 必须保持为 `'stripe'`。如误配置为 `'creem'`，`DefaultPaymentProviderFactory` 会抛出带有该 plan 与 `docs/governance-index.md` 引导信息的 Phase Gate 错误，而不会静默退化为其它 Provider。
+
 ---
 
 ## 2. Stripe Webhook 配置

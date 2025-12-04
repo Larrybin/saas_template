@@ -26,7 +26,10 @@ Payment 模块承担的核心职责：
 
 - `src/payment/index.ts`
   - 提供对外入口函数：`getPaymentProvider`, `createCheckout`, `createCreditCheckout`, `createCustomerPortal`, `getSubscriptions` 等（不再承担 Webhook 入口职责）。  
-  - 默认使用 `StripePaymentAdapter` 作为 `PaymentProvider` 实现，由该模块从 `serverEnv` 读取 Stripe 配置并组装依赖。
+  - 通过全局 `paymentProviderFactory`（`DefaultPaymentProviderFactory`，定义于 `src/payment/provider-factory.ts`）获取当前 `PaymentProvider` 实例：
+    - `DefaultPaymentProviderFactory` 负责从 `serverEnv` 读取 Stripe 相关配置（`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`），并使用 `createStripePaymentProviderFromEnv` 组装默认的 `StripePaymentAdapter`；  
+    - `getPaymentProvider` 会根据 `websiteConfig.payment.provider` 组装 `PaymentContext`（目前仅包含 `providerId`），并调用 `paymentProviderFactory.getProvider(ctx)` 选择具体 Provider，默认值为 `'stripe'`；  
+    - 未来接入新的 Provider（例如 Creem）时，只需在 `PaymentProvider` 接口与 `PaymentProviderFactory` 分支中追加实现，并在 `websiteConfig.payment.provider` 中声明即可，无需修改 UI / Actions / Billing 代码。
 
 - `src/payment/services/stripe-payment-adapter.ts`
   - `StripePaymentAdapter`：Stripe 场景下的支付适配器，职责包括：

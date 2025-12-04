@@ -19,9 +19,8 @@ vi.mock('@/payment', () => ({
 }));
 
 vi.mock('@/lib/urls/urls', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/urls/urls')>(
-    '@/lib/urls/urls'
-  );
+  const actual =
+    await vi.importActual<typeof import('@/lib/urls/urls')>('@/lib/urls/urls');
 
   return {
     ...actual,

@@ -13,7 +13,7 @@ import type { StripeClientLike } from './stripe-deps';
 import { StripePaymentAdapter } from './stripe-payment-adapter';
 import { StripeWebhookHandler } from './stripe-webhook-handler';
 
-type StripeProviderOverrides = {
+export type StripeProviderOverrides = {
   stripeClient?: StripeClientLike;
   stripeSecretKey?: string | undefined;
   stripeWebhookSecret?: string | undefined;

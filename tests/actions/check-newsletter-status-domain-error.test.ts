@@ -21,6 +21,7 @@ describe('checkNewsletterStatusAction DomainError behavior', () => {
 
     const result = await checkNewsletterStatusAction({
       parsedInput: { email },
+      ctx: { user: { id: 'user_1', email } },
     } as never);
 
     expect(result).toEqual({ success: true, subscribed: true });
@@ -40,6 +41,7 @@ describe('checkNewsletterStatusAction DomainError behavior', () => {
     await expect(
       checkNewsletterStatusAction({
         parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
       } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterStatusFailed,
@@ -57,6 +59,7 @@ describe('checkNewsletterStatusAction DomainError behavior', () => {
     await expect(
       checkNewsletterStatusAction({
         parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
       } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterStatusFailed,

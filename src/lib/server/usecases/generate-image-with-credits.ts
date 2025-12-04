@@ -63,6 +63,32 @@ const providerConfig: Record<ProviderKey, ProviderConfig> = {
   },
 };
 
+const sanitizeImageResultForLog = (result: unknown) => {
+  if (result == null) {
+    return { type: typeof result };
+  }
+
+  if (Array.isArray(result)) {
+    return { type: 'array', length: result.length };
+  }
+
+  if (typeof result === 'object') {
+    const record = result as Record<string, unknown>;
+    const image = record.image;
+    return {
+      type: 'object',
+      keys: Object.keys(record),
+      hasImage: Boolean(image),
+      imageLength: typeof image === 'string' ? image.length : undefined,
+      warningCount: Array.isArray(record.warnings)
+        ? record.warnings.length
+        : undefined,
+    };
+  }
+
+  return { type: typeof result };
+};
+
 const withTimeout = <T>(
   promise: Promise<T>,
   timeoutMillis: number
@@ -79,6 +105,7 @@ export type GenerateImageWithCreditsInput = {
   userId: string;
   request: GenerateImageRequest;
   requiredCredits?: number;
+  planId?: string;
 };
 
 /**
@@ -96,7 +123,7 @@ export type GenerateImageWithCreditsInput = {
 export async function generateImageWithCredits(
   input: GenerateImageWithCreditsInput
 ): Promise<GenerateImageResponse> {
-  const { userId, request, requiredCredits } = input;
+  const { userId, request, requiredCredits, planId } = input;
   const { prompt, provider, modelId } = request;
 
   // Validate request parameters before touching free quota / credits
@@ -120,7 +147,9 @@ export async function generateImageWithCredits(
     };
   }
 
-  const billingRule = getImageGenerateBillingRule();
+  const billingRule = getImageGenerateBillingRule(
+    planId ? { planId } : undefined
+  );
   const creditsToConsume =
     typeof requiredCredits === 'number'
       ? requiredCredits
@@ -207,7 +236,7 @@ export async function generateImageWithCredits(
       logger.error('Image generation returned invalid result shape', {
         provider,
         modelId,
-        result,
+        resultSummary: sanitizeImageResultForLog(result),
       });
       return {
         success: false,

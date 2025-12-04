@@ -1,8 +1,8 @@
 import { Resend } from 'resend';
-import { websiteConfig } from '@/config/website';
 import { serverEnv } from '@/env/server';
-import { getLogger } from '@/lib/server/logger';
+import { createEmailLogFields, getLogger } from '@/lib/server/logger';
 import { getTemplate } from '@/mail';
+import { mailConfigProvider } from '@/mail/mail-config-provider';
 import type {
   MailProvider,
   SendEmailResult,
@@ -30,14 +30,16 @@ export class ResendProvider implements MailProvider {
       throw new Error('RESEND_API_KEY environment variable is not set.');
     }
 
-    if (!websiteConfig.mail.fromEmail) {
+    const mailConfig = mailConfigProvider.getMailConfig();
+
+    if (!mailConfig.fromEmail) {
       throw new Error(
         'Default from email address is not set in websiteConfig.'
       );
     }
 
     this.resend = new Resend(serverEnv.resendApiKey);
-    this.from = websiteConfig.mail.fromEmail;
+    this.from = mailConfig.fromEmail;
   }
 
   /**
@@ -94,11 +96,13 @@ export class ResendProvider implements MailProvider {
     const { to, subject, html, text } = params;
 
     if (!this.from || !to || !subject || !html) {
-      this.logger.warn('Missing required fields for email send', {
-        from: this.from,
-        to,
-        subject,
-      });
+      this.logger.warn(
+        'Missing required fields for email send',
+        createEmailLogFields(to, {
+          from: this.from,
+          subject,
+        })
+      );
       return {
         success: false,
         error: 'Missing required fields',

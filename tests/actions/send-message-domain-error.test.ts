@@ -6,9 +6,10 @@ import { DomainError } from '@/lib/domain-errors';
 import { ErrorCodes } from '@/lib/server/error-codes';
 
 vi.mock('@/config/website', async () => {
-  const actual = await vi.importActual<typeof import('@/config/website')>(
-    '@/config/website'
-  );
+  const actual =
+    await vi.importActual<typeof import('@/config/website')>(
+      '@/config/website'
+    );
 
   return {
     ...actual,

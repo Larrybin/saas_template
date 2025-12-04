@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { DomainError } from '@/lib/domain-errors';
 import { actionClient, withActionErrorBoundary } from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
-import { emailHashForLog, getLogger } from '@/lib/server/logger';
+import { createEmailLogFields, getLogger } from '@/lib/server/logger';
 import { sendEmail } from '@/mail';
 import { subscribe } from '@/newsletter';
 
@@ -26,19 +26,19 @@ export const subscribeNewsletterAction = actionClient
         logMessage: 'subscribe newsletter error',
         getLogContext: ({ parsedInput }) => {
           const email = (parsedInput as { email: string }).email;
-          return { emailHash: emailHashForLog(email) };
+          return createEmailLogFields(email);
         },
         fallbackMessage: 'Failed to subscribe to the newsletter',
         code: ErrorCodes.NewsletterSubscribeFailed,
         retryable: true,
       },
       async ({ parsedInput: { email } }) => {
-        const emailHash = emailHashForLog(email);
+        const emailLogFields = createEmailLogFields(email);
         // Do not check if the user is authenticated here
         const subscribed = await subscribe(email);
 
         if (!subscribed) {
-          logger.warn({ emailHash }, 'subscribe newsletter error');
+          logger.warn(emailLogFields, 'subscribe newsletter error');
           throw new DomainError({
             code: ErrorCodes.NewsletterSubscribeFailed,
             message: 'Failed to subscribe to the newsletter',

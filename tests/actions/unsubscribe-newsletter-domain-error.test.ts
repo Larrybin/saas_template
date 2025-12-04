@@ -21,6 +21,7 @@ describe('unsubscribeNewsletterAction DomainError behavior', () => {
 
     const result = await unsubscribeNewsletterAction({
       parsedInput: { email },
+      ctx: { user: { id: 'user_1', email: 'user@example.com' } },
     } as never);
 
     expect(result).toEqual({ success: true });
@@ -36,6 +37,7 @@ describe('unsubscribeNewsletterAction DomainError behavior', () => {
     await expect(
       unsubscribeNewsletterAction({
         parsedInput: { email },
+        ctx: { user: { id: 'user_1', email: 'user@example.com' } },
       } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterUnsubscribeFailed,
@@ -57,6 +59,7 @@ describe('unsubscribeNewsletterAction DomainError behavior', () => {
     await expect(
       unsubscribeNewsletterAction({
         parsedInput: { email },
+        ctx: { user: { id: 'user_1', email: 'user@example.com' } },
       } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterUnsubscribeFailed,
@@ -74,6 +77,7 @@ describe('unsubscribeNewsletterAction DomainError behavior', () => {
     await expect(
       unsubscribeNewsletterAction({
         parsedInput: { email },
+        ctx: { user: { id: 'user_1', email: 'user@example.com' } },
       } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterUnsubscribeFailed,

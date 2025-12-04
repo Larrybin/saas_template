@@ -90,7 +90,7 @@ export const LoadingStates = memo(function LoadingStates({
         className={`rounded-lg border p-6 ${config.bgColor} ${config.borderColor} transition-all duration-300`}
       >
         <div className="flex items-center space-x-4">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <div
               className={`rounded-full p-3 ${config.bgColor} ${config.borderColor} border`}
             >

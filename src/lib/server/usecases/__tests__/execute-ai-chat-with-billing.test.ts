@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InsufficientCreditsError } from '@/credits/domain/errors';
+import { ErrorCodes } from '@/lib/server/error-codes';
 import type { ExecuteAiChatWithBillingInput } from '@/lib/server/usecases/execute-ai-chat-with-billing';
 
 const incrementAiUsageAndCheckWithinFreeQuotaMock = vi.fn();
@@ -110,6 +111,20 @@ describe('executeAiChatWithBilling - free quota and credits consumption', () => 
     await expect(executeAiChatWithBilling(baseInput)).rejects.toBeInstanceOf(
       InsufficientCreditsError
     );
+    expect(streamTextMock).not.toHaveBeenCalled();
+  });
+
+  it('throws DomainError with AI_CHAT_INVALID_PARAMS when input is invalid', async () => {
+    const invalidInput: ExecuteAiChatWithBillingInput = {
+      ...baseInput,
+      messages: [], // invalid: empty messages
+    };
+
+    await expect(executeAiChatWithBilling(invalidInput)).rejects.toMatchObject({
+      code: ErrorCodes.AiChatInvalidParams,
+      retryable: false,
+    });
+    expect(consumeCreditsMock).not.toHaveBeenCalled();
     expect(streamTextMock).not.toHaveBeenCalled();
   });
 });

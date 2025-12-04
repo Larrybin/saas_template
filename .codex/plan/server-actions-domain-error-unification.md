@@ -213,13 +213,9 @@
 2. **逐步迁移 B/C 类 Actions**（✅ 已完成）
    - 上述 16 个 Actions 均已完成迁移与兜底清理；后续新增 Actions 必须直接以 `actionClient.schema(...).action(withActionErrorBoundary(...))` 形态落地。
 
-3. **日志与隐私的精细化审查**（⏳ 进行中）
+3. **日志与隐私的精细化审查**（✅ 已完成）
    - 2025-12-05：完成首轮 Server Actions 检查；新增 `emailHashForLog` 并收敛 Actions 层 email 日志。
-   - 2025-12-05 第二轮（全域扫描）：在 Mail / Newsletter / AI usecase 中发现以下待办：
-     - `src/mail/provider/resend.ts`：warn 日志仍输出 `to` 邮箱，应改为 hash 或仅记录域名。
-     - `src/newsletter/provider/resend.ts`：info/error/debug 日志大量直接写入 email，需要统一脱敏字段，并补充 `audienceId` / `status` 等上下文。
-     - `src/lib/server/usecases/generate-image-with-credits.ts:195`：错误日志包含 `result`（包含 base64 图像与 prompt），需裁剪为布尔/长度字段，避免泄露内容。
-   - 结论：模块级审查仍在推进，上述问题待在后续执行批次修复后再将状态标记为完成。
+   - 2025-12-06：引入 `createEmailLogFields`（Mail + Newsletter）和 `sanitizeImageResultForLog`（AI usecase），所有邮箱日志仅保留 hash/domain，图片生成错误日志只记录结构摘要，避免 base64/prompt 泄露。
 
 4. **脚本与 CI 升级**（✅ 已完成）
    - `scripts/check-protocol-and-errors.ts` 中的 “Action 未接入 Error Boundary” 检查已从 `warn` 升级为 `error`，同时 `docs/developer-guide.md` 记录了该强制要求；`pnpm check:protocol` 失败将阻止 CI 通过。

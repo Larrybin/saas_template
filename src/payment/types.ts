@@ -1,4 +1,4 @@
-import type { Locale } from "next-intl";
+import type { Locale } from 'next-intl';
 
 /**
  * Interval types for subscription plans
@@ -6,8 +6,8 @@ import type { Locale } from "next-intl";
 export type PlanInterval = PlanIntervals.MONTH | PlanIntervals.YEAR;
 
 export enum PlanIntervals {
-	MONTH = "month",
-	YEAR = "year",
+  MONTH = 'month',
+  YEAR = 'year',
 }
 
 /**
@@ -16,25 +16,25 @@ export enum PlanIntervals {
 export type PaymentType = PaymentTypes.SUBSCRIPTION | PaymentTypes.ONE_TIME;
 
 export enum PaymentTypes {
-	SUBSCRIPTION = "subscription", // Regular recurring subscription
-	ONE_TIME = "one_time", // One-time payment
+  SUBSCRIPTION = 'subscription', // Regular recurring subscription
+  ONE_TIME = 'one_time', // One-time payment
 }
 
 /**
  * Status of a payment or subscription
  */
 export type PaymentStatus =
-	| "active" // Subscription is active
-	| "canceled" // Subscription has been canceled
-	| "incomplete" // Payment not completed
-	| "incomplete_expired" // Payment not completed and expired
-	| "past_due" // Payment is past due
-	| "paused" // Subscription is paused
-	| "trialing" // In trial period
-	| "unpaid" // Payment failed
-	| "completed" // One-time payment completed
-	| "processing" // Payment is processing
-	| "failed"; // Payment failed
+  | 'active' // Subscription is active
+  | 'canceled' // Subscription has been canceled
+  | 'incomplete' // Payment not completed
+  | 'incomplete_expired' // Payment not completed and expired
+  | 'past_due' // Payment is past due
+  | 'paused' // Subscription is paused
+  | 'trialing' // In trial period
+  | 'unpaid' // Payment failed
+  | 'completed' // One-time payment completed
+  | 'processing' // Payment is processing
+  | 'failed'; // Payment failed
 
 /**
  * Price definition for a plan
@@ -197,8 +197,8 @@ export interface PaymentProvider {
 	 * Create a credit checkout session
 	 */
 	createCreditCheckout(
-		params: CreateCreditCheckoutParams,
-	): Promise<CheckoutResult>;
+    params: CreateCreditCheckoutParams
+  ): Promise<CheckoutResult>;
 
 	/**
 	 * Create a customer portal session
@@ -209,4 +209,34 @@ export interface PaymentProvider {
 	 * Get customer subscriptions
 	 */
 	getSubscriptions(params: getSubscriptionsParams): Promise<Subscription[]>;
+}
+
+/**
+ * 标识支付 Provider 类型
+ *
+ * 当前工厂实现只支持 'stripe'；
+ * 'creem' 为未来 Creem 集成预留的占位值，尚未在运行时接入。
+ * 在完成 `.codex/plan/creem-payment-integration.md` 所述 Phase A 之前，
+ * 请勿在 `websiteConfig.payment.provider` 中配置为 'creem'，否则工厂会抛出
+ * “Unsupported payment provider: creem” 运行时错误。
+ */
+export type PaymentProviderId = 'stripe' | 'creem';
+
+/**
+ * PaymentProvider 选择上下文
+ *
+ * 目前仅包含 providerId，占位为未来扩展（如 tenantId/region 等）预留空间。
+ */
+export type PaymentContext = {
+  providerId?: PaymentProviderId;
+};
+
+/**
+ * PaymentProviderFactory 抽象
+ *
+ * - 负责在集中位置根据上下文选择并返回合适的 PaymentProvider 实例；
+ * - 默认实现只支持 Stripe，未来接入其它 Provider 时在工厂中追加分支即可。
+ */
+export interface PaymentProviderFactory {
+  getProvider(ctx?: PaymentContext): PaymentProvider;
 }

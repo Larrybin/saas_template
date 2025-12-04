@@ -8,9 +8,18 @@ export const loggerMock = {
   error: vi.fn(),
 };
 
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => loggerMock,
-}));
+vi.mock('@/lib/server/logger', async () => {
+  const actual =
+    await vi.importActual<typeof import('@/lib/server/logger')>(
+      '@/lib/server/logger'
+    );
+
+  return {
+    ...actual,
+    getLogger: () => loggerMock,
+    createEmailLogFields: actual.createEmailLogFields,
+  };
+});
 
 function createSafeActionClientMock() {
   const identity = (impl: unknown) => impl;
@@ -29,9 +38,10 @@ export const userActionClientMock = createSafeActionClientMock();
 export const adminActionClientMock = createSafeActionClientMock();
 
 vi.mock('@/lib/safe-action', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/safe-action')>(
-    '@/lib/safe-action'
-  );
+  const actual =
+    await vi.importActual<typeof import('@/lib/safe-action')>(
+      '@/lib/safe-action'
+    );
 
   return {
     ...actual,

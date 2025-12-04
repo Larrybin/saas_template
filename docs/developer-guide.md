@@ -78,6 +78,7 @@
 3. API Route / Server Action：
    - 新建或修改 `src/app/api/foo/route.ts` 或对应 `src/actions/*` 文件：
      - 统一 envelope：`{ success, error, code?, retryable? }`，错误使用 `DomainError` + `ErrorCodes`（参见 `docs/error-logging.md`）。  
+     - 所有 `.action(...)` 必须通过 `withActionErrorBoundary` 包裹，并传入能够输出结构化日志的 `logger` 与 `logContext`；缺少该 helper 会导致 `pnpm check:protocol` 直接失败。  
      - 使用 `createLoggerFromHeaders` / `withLogContext` 绑定 `requestId`/`userId` 等上下文。
 4. UI / Hooks：
    - 若存在前端调用逻辑较复杂场景，优先在 `src/hooks/*` 中封装 Hook（包括数据 fetch、错误处理、loading 状态等）。  
@@ -97,6 +98,7 @@
 - 代码质量：
   - `pnpm lint`
   - `pnpm test`（如改动集中在某个域，可先跑对应子集测试）
+  - `pnpm check:protocol`（新增/修改 API Route、Server Action、错误码、DomainError 时必须跑一次；该命令现在会在检测到未使用 `withActionErrorBoundary` 的 Action 或 envelope 不合规时直接报错，CI 不再放行）
 - 文档同步：
   - 是否新增/修改了错误码？  
     - ✅ 更新了 `ErrorCodes` + `docs/error-codes.md` + `DOMAIN_ERROR_MESSAGES`（如涉及前端文案）。  
@@ -110,5 +112,10 @@
   - 对外部 SDK（如 Stripe、Next Request）：
     - ✅ 是否通过 Like 类型 + 适配层暴露给业务（例如 `StripeClientLike` / `StripeWebhookEventLike` / `Request` 封装），而不是在业务/测试中直接依赖大而全的 SDK 类型？
     - ✅ 测试是否只依赖这些 DTO/Like 类型构造输入，而不是到处 `as any`/`as SomeSdkType`？
+
+- Payment / Provider 工厂（测试建议）：
+  - 在单元/集成测试中，如需基于不同 env/overrides 构造支付 Provider，应优先：
+    - 通过 `new DefaultPaymentProviderFactory(overrides)` 显式创建工厂实例，并调用 `factory.getProvider({ providerId: 'stripe' })` 获取 Provider；
+    - 避免在测试中直接篡改全局的 `paymentProviderFactory` 单例，以免对其它测试产生隐式影响。
 
 这份指南不试图重复所有架构细节，而是提供一个“从哪里开始看”的入口。当你在某个领域进行较大改动时，优先结合本文件与对应领域文档进行检查即可。

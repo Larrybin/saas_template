@@ -120,9 +120,9 @@ function checkActionsUseErrorBoundary(
       const rel = path.relative(repoRoot, filePath).replace(/\\/g, '/');
       violations.push({
         file: rel,
-        level: 'warn',
+        level: 'error',
         message:
-          'Server Action uses `.action(...)` but does not appear to be wrapped in `withActionErrorBoundary(...)`. Consider using the shared error boundary helper, for example: `userActionClient.schema(schema).action(withActionErrorBoundary({ logger, logMessage, ... }, async (args) => { /* handler */ }))`, to keep logging and DomainError handling consistent.',
+          'Server Action uses `.action(...)` but is not wrapped in `withActionErrorBoundary(...)`. All Actions must wrap their handler with the shared error boundary helper (for example: `userActionClient.schema(schema).action(withActionErrorBoundary({ logger, logMessage, ... }, async (args) => { /* handler */ }))`) so CI now treats missing wrappers as an error.',
       });
     }
   }

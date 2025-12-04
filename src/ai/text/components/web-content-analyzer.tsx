@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<
         <div className="w-full max-w-2xl mx-auto">
           <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-6">
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="rounded-full p-2 bg-red-100 dark:bg-red-900/30">
                   <svg
                     className="size-5 text-red-600 dark:text-red-400"
@@ -139,7 +139,7 @@ export function WebContentAnalyzer({ className }: WebContentAnalyzerProps) {
             <div className="w-full max-w-2xl mx-auto">
               <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-6">
                 <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <div className="rounded-full p-2 bg-red-100 dark:bg-red-900/30">
                       <svg
                         className="size-5 text-red-600 dark:text-red-400"

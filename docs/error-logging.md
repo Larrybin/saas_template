@@ -132,6 +132,7 @@ try {
 
 - `safe-action` 与关键 API routes 应通过 `withLogContext` 或 `createLoggerFromHeaders` 设置 `requestId`、`userId`、`span` 等，便于错误定位。
 - Domain 层只需抛出 `DomainError`，不直接关心日志实现。
+- 处理邮箱类字段时，请使用 `createEmailLogFields(email, extra)`（内部调用 `emailHashForLog`）记录 `emailHash` + `emailDomain`，避免在日志中出现明文邮箱。
 
 示例：在 API route 中创建 request logger 并记录 DomainError：
 

@@ -194,7 +194,7 @@ export const AnalysisResults = memo(function AnalysisResults({
                 <div className="space-y-3">
                   {results.features.map((feature) => (
                     <div key={feature} className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-2" />
+                      <div className="shrink-0 w-2 h-2 rounded-full bg-primary mt-2" />
                       <p className="text-sm leading-relaxed text-muted-foreground">
                         {feature}
                       </p>

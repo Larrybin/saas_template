@@ -190,6 +190,7 @@ AI 调用的计费规则不再在业务代码中硬编码，而是集中在 `web
 - `enabled?: boolean`：是否启用该能力的计费逻辑（目前主要用于显式关闭某个能力的计费）。  
 - `creditsPerCall?: number`：单次调用消耗的积分数量。  
 - `freeCallsPerPeriod?: number`：每个周期内的免费调用次数（按「用户 + 功能」计数），超过后才开始扣积分。  
+- `rules?: AiBillingRuleOverrideConfig[]`：可选的 plan/region 级覆盖规则，例如为 `pro` 计划或 `eu` 区域设定不同的单价或免费额度；`DefaultAiBillingPolicy` 会根据 `AiBillingContext` 中的 `planId/region` 自动选择最匹配的条目，并在顶层规则基础上叠加覆盖。  
 
 默认配置示例（节选自 `src/config/website.tsx`）：
 

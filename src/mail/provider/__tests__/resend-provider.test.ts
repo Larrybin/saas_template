@@ -31,9 +31,18 @@ vi.mock('resend', () => ({
 vi.mock('@/env/server', () => ({
   serverEnv: serverEnvState,
 }));
-vi.mock('@/lib/server/logger', () => ({
-  getLogger: () => loggerMock,
-}));
+vi.mock('@/lib/server/logger', async () => {
+  const actual =
+    await vi.importActual<typeof import('@/lib/server/logger')>(
+      '@/lib/server/logger'
+    );
+
+  return {
+    ...actual,
+    getLogger: () => loggerMock,
+    createEmailLogFields: actual.createEmailLogFields,
+  };
+});
 vi.mock('@/mail', () => ({
   getTemplate: (input: unknown) => getTemplateMock(input),
 }));

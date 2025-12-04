@@ -31,6 +31,7 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
 
     const result = await subscribeNewsletterAction({
       parsedInput: { email },
+      ctx: { user: { id: 'user_1', email } },
     } as never);
 
     expect(result).toEqual({ success: true });
@@ -42,7 +43,10 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
     (subscribe as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(false);
 
     await expect(
-      subscribeNewsletterAction({ parsedInput: { email } } as never)
+      subscribeNewsletterAction({
+        parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
+      } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,
@@ -61,7 +65,10 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
     );
 
     await expect(
-      subscribeNewsletterAction({ parsedInput: { email } } as never)
+      subscribeNewsletterAction({
+        parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
+      } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,
@@ -76,7 +83,10 @@ describe('subscribeNewsletterAction DomainError behavior', () => {
     );
 
     await expect(
-      subscribeNewsletterAction({ parsedInput: { email } } as never)
+      subscribeNewsletterAction({
+        parsedInput: { email },
+        ctx: { user: { id: 'user_1', email } },
+      } as never)
     ).rejects.toMatchObject({
       code: ErrorCodes.NewsletterSubscribeFailed,
       retryable: true,

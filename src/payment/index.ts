@@ -1,6 +1,5 @@
 import { websiteConfig } from '@/config/website';
-import { serverEnv } from '@/env/server';
-import { createStripePaymentProviderFromEnv } from './services/stripe-payment-factory';
+import { paymentProviderFactory } from './provider-factory';
 import type {
   CheckoutResult,
   CreateCheckoutParams,
@@ -11,27 +10,6 @@ import type {
   PortalResult,
   Subscription,
 } from './types';
-
-type StripeProviderOverrides = {
-  stripeSecretKey?: string | undefined;
-  stripeWebhookSecret?: string | undefined;
-};
-
-const createStripePaymentProvider = (
-  overrides?: StripeProviderOverrides
-): PaymentProvider => {
-  return createStripePaymentProviderFromEnv(
-    {
-      stripeSecretKey: overrides?.stripeSecretKey ?? serverEnv.stripeSecretKey,
-      stripeWebhookSecret:
-        overrides?.stripeWebhookSecret ?? serverEnv.stripeWebhookSecret,
-    },
-    {
-      stripeSecretKey: overrides?.stripeSecretKey,
-      stripeWebhookSecret: overrides?.stripeWebhookSecret,
-    }
-  );
-};
 
 /**
  * Global payment provider instance
@@ -56,13 +34,9 @@ export const getPaymentProvider = (): PaymentProvider => {
  */
 export const initializePaymentProvider = (): PaymentProvider => {
   if (!paymentProvider) {
-    if (websiteConfig.payment.provider === 'stripe') {
-      paymentProvider = createStripePaymentProvider();
-    } else {
-      throw new Error(
-        `Unsupported payment provider: ${websiteConfig.payment.provider}`
-      );
-    }
+    paymentProvider = paymentProviderFactory.getProvider({
+      providerId: websiteConfig.payment.provider,
+    });
   }
   return paymentProvider;
 };

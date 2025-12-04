@@ -2,7 +2,11 @@
 
 import { z } from 'zod';
 import { DomainError } from '@/lib/domain-errors';
-import { userActionClient, withActionErrorBoundary } from '@/lib/safe-action';
+import {
+  getUserFromCtx,
+  userActionClient,
+  withActionErrorBoundary,
+} from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { unsubscribe } from '@/newsletter';
@@ -22,16 +26,22 @@ export const unsubscribeNewsletterAction = userActionClient
       {
         logger,
         logMessage: 'unsubscribe newsletter error',
-        getLogContext: ({ parsedInput: { email } }) => ({ email }),
+        getLogContext: ({ ctx }) => ({
+          userId: getUserFromCtx(ctx).id,
+        }),
         fallbackMessage: 'Failed to unsubscribe from the newsletter',
         code: ErrorCodes.NewsletterUnsubscribeFailed,
         retryable: true,
       },
-      async ({ parsedInput: { email } }) => {
+      async ({ parsedInput: { email }, ctx }) => {
+        const currentUser = getUserFromCtx(ctx);
         const unsubscribed = await unsubscribe(email);
 
         if (!unsubscribed) {
-          logger.warn({ email }, 'unsubscribe newsletter error');
+          logger.warn(
+            { userId: currentUser.id },
+            'unsubscribe newsletter error'
+          );
           throw new DomainError({
             code: ErrorCodes.NewsletterUnsubscribeFailed,
             message: 'Failed to unsubscribe from the newsletter',

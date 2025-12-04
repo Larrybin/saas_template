@@ -1,7 +1,11 @@
 'use server';
 
 import { z } from 'zod';
-import { userActionClient, withActionErrorBoundary } from '@/lib/safe-action';
+import {
+  getUserFromCtx,
+  userActionClient,
+  withActionErrorBoundary,
+} from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { getLogger } from '@/lib/server/logger';
 import { isSubscribed } from '@/newsletter';
@@ -21,8 +25,8 @@ export const checkNewsletterStatusAction = userActionClient
       {
         logger,
         logMessage: 'check newsletter status error',
-        getLogContext: ({ parsedInput }) => ({
-          email: (parsedInput as { email: string }).email,
+        getLogContext: ({ ctx }) => ({
+          userId: getUserFromCtx(ctx).id,
         }),
         fallbackMessage: 'Failed to check newsletter status',
         code: ErrorCodes.NewsletterStatusFailed,

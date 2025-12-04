@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import pino from 'pino';
 
 export type LogContext = {
@@ -94,4 +94,14 @@ export function createLoggerFromHeaders(
 ) {
   const requestId = resolveRequestId(headers);
   return createRequestLogger({ ...metadata, requestId });
+}
+
+export function emailHashForLog(
+  email: string,
+  length = 12
+): string {
+  return createHash('sha256')
+    .update(email.trim().toLowerCase())
+    .digest('hex')
+    .slice(0, length);
 }

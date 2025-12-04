@@ -199,27 +199,27 @@
      - 验证 `DomainError` 直接透传（不被二次包装，`code` / `retryable` 保持不变）；
      - 验证非 `DomainError` 异常被包装为预期的 `ErrorCodes.*` + `retryable`。
 
-### 7.5 后续待办清��（Actions 域二期）
+### 7.5 后续待办清单（Actions 域二期）
 
-为方便跟踪，本节记录本计划下一个阶段的具体待办（不要求一次性完成）：
+为方便跟踪，本节按照“任务 + 状态”的方式持续更新（最近一次更新：2025-12-05）。
 
-1. **盘点与标记 Actions 迁移状态**
-   - 按以下分类整理 `src/actions` 列表，并在本文或独立清单中记录：
-     - A 类：已使用 `withActionErrorBoundary`，且无兜底型 try/catch；
-     - B 类：使用 `withActionErrorBoundary`，但仍存在可以收敛的重复 error 日志或兜底逻辑；
-     - C 类：仍未接入 Error Boundary（保留少量历史实现）。
+1. **盘点与标记 Actions 迁移状态**（✅ 已完成）
+   - 结果如下（不含 `schemas.ts`，所有条目均直接调用 `*.action(...)`）：
+     - **A 类（16 个，已全部通过 Error Boundary，且无额外兜底）**  
+       `check-newsletter-status.ts`、`consume-credits.ts`、`create-checkout-session.ts`、`create-credit-checkout-session.ts`、`create-customer-portal-session.ts`、`get-active-subscription.ts`、`get-credit-balance.ts`、`get-credit-overview.ts`、`get-credit-stats.ts`、`get-credit-transactions.ts`、`get-lifetime-status.ts`、`get-users.ts`、`send-message.ts`、`subscribe-newsletter.ts`、`unsubscribe-newsletter.ts`、`validate-captcha.ts`
+     - **B 类（0 个）**：无残留重复兜底逻辑。
+     - **C 类（0 个）**：所有 Server Actions 均已接入 `withActionErrorBoundary`。
 
-2. **逐步迁移 B/C 类 Actions**
-   - 按优先级（用户影响 / 复杂度）依次迁移 B/C 类 Actions：
-     - 重构为 `withActionErrorBoundary(options, handler)` 形态；
-     - 移除兜底型 try/catch，仅保留业务 DomainError 分支；
-     - 清理重复 error 日志，必要时下沉为 info/warn。
+2. **逐步迁移 B/C 类 Actions**（✅ 已完成）
+   - 上述 16 个 Actions 均已完成迁移与兜底清理；后续新增 Actions 必须直接以 `actionClient.schema(...).action(withActionErrorBoundary(...))` 形态落地。
 
-3. **日志与隐私的精细化审查**
-   - 在迁移过程中顺带检查日志内容，避免在 error 日志中写入过多 PII（如 email 等），优先使用 `userId` / `requestId` 作为关联键。
+3. **日志与隐私的精细化审查**（⏳ 进行中）
+   - 2025-12-05：完成首轮 Server Actions 检查；新增 `emailHashForLog` 并收敛 Actions 层 email 日志。
+   - 2025-12-05 第二轮（全域扫描）：在 Mail / Newsletter / AI usecase 中发现以下待办：
+     - `src/mail/provider/resend.ts`：warn 日志仍输出 `to` 邮箱，应改为 hash 或仅记录域名。
+     - `src/newsletter/provider/resend.ts`：info/error/debug 日志大量直接写入 email，需要统一脱敏字段，并补充 `audienceId` / `status` 等上下文。
+     - `src/lib/server/usecases/generate-image-with-credits.ts:195`：错误日志包含 `result`（包含 base64 图像与 prompt），需裁剪为布尔/长度字段，避免泄露内容。
+   - 结论：模块级审查仍在推进，上述问题待在后续执行批次修复后再将状态标记为完成。
 
-4. **脚本与 CI 升级**
-   - 在 Actions 基本完成迁移后，将 “Actions 未通过 Error Boundary” 的脚本检查从 `warn` 升级为 `error`，并更新：
-     - 本计划文档；
-     - `docs/developer-guide.md` / `docs/testing-strategy.md` 中的相关说明。
-
+4. **脚本与 CI 升级**（✅ 已完成）
+   - `scripts/check-protocol-and-errors.ts` 中的 “Action 未接入 Error Boundary” 检查已从 `warn` 升级为 `error`，同时 `docs/developer-guide.md` 记录了该强制要求；`pnpm check:protocol` 失败将阻止 CI 通过。

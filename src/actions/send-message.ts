@@ -6,7 +6,7 @@ import { websiteConfig } from '@/config/website';
 import { DomainError } from '@/lib/domain-errors';
 import { actionClient, withActionErrorBoundary } from '@/lib/safe-action';
 import { ErrorCodes } from '@/lib/server/error-codes';
-import { getLogger } from '@/lib/server/logger';
+import { emailHashForLog, getLogger } from '@/lib/server/logger';
 import { sendEmail } from '@/mail';
 
 const logger = getLogger({ span: 'actions.send-message' });
@@ -34,9 +34,10 @@ export const sendMessageAction = actionClient.schema(contactFormSchema).action(
     {
       logger,
       logMessage: 'send message error',
-      getLogContext: ({ parsedInput }) => ({
-        email: (parsedInput as { email: string }).email,
-      }),
+      getLogContext: ({ parsedInput }) => {
+        const email = (parsedInput as { email: string }).email;
+        return { emailHash: emailHashForLog(email) };
+      },
       fallbackMessage: 'Failed to send the message',
       code: ErrorCodes.ContactSendFailed,
       retryable: true,

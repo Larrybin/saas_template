@@ -1,5 +1,5 @@
 import type { MockedFunction } from 'vitest';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/payment/services/stripe-payment-factory', () => ({
   createStripePaymentProviderFromEnv: vi.fn(() => ({
@@ -15,6 +15,10 @@ import {
   DefaultPaymentProviderFactory,
 } from '@/payment/provider-factory';
 import { createStripePaymentProviderFromEnv } from '@/payment/services/stripe-payment-factory';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('DefaultPaymentProviderFactory', () => {
   it('throws a clear error when providerId is creem (not yet supported)', () => {

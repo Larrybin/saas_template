@@ -168,7 +168,99 @@
 
 ---
 
-## 4. 错误模型与测试配合
+## 4. Server Actions 测试策略（actions 层）
+
+本项目大量使用 `next-safe-action` 定义 Server Actions，整体约定是：
+
+- **领域规则、计费和积分逻辑**：在 Domain / Service 层测试（`src/domain/**/__tests__`、`src/credits/**/__tests__`、`src/payment/services/__tests__`）。  
+- **Actions 层**：只关注「入参校验 + 鉴权/上下文 + 错误映射/envelope」，避免在 actions 测试里重复验证业务细节。
+
+### 4.1 覆盖优先级：哪些 actions 需要测试
+
+优先为以下类别的 actions 编写/补充测试（集中放在 `tests/actions/*.test.ts`）：
+
+- a）计费/订阅相关（Payment/Billing）  
+  - 如：`create-customer-portal-session`、`create-checkout`、`create-credit-checkout`、`get-active-subscription`。  
+  - 重点验证：DB/Payment Provider 报错时的 DomainError 映射、用户不匹配/缺少 customerId 等场景。
+- b）积分消耗/分发相关（Credits）  
+  - 如：`consume-credits`、积分余额/交易查询、lifetime 状态查询等。  
+  - 重点验证：`DomainError` 透传与 `UnexpectedError` 包装、必填字段校验。
+- c）AI 调用相关（Chat / 文本分析 / 图片生成）  
+  - 如：聊天、内容分析、图片生成 usecase 对应的 actions（如果存在）。  
+  - 重点验证：积分不足 / 频控 / AI Provider 异常时的错误 envelope 与 code。
+- d）用户/权限相关（User / Profile / Admin 操作）  
+  - 涉及敏感操作（如修改角色、禁用用户等）的 actions，应至少覆盖鉴权与禁止路径。
+
+对于纯 UI 辅助或简单透传的 actions，如果其行为已经由 usecase/domain 层测试覆盖，可以暂缓单独编写 tests。
+
+### 4.2 单元为主，辅以少量集成
+
+Actions 层的测试风格建议统一为：
+
+- **单元视角为主**：  
+  - 通过 `tests/helpers/actions.ts` 集中 mock safe-action 与 logger，在具体测试文件中 `import '../helpers/actions';` 即可将 `userActionClient.action` / `adminActionClient.action` stub 成「直接暴露内部实现」的函数。  
+  - 直接调用 `someAction({ parsedInput, ctx })`，对结果或抛出的错误做断言。  
+  - 通过 `vi.mock` 注入 fake domain/service（如 `consumeCredits`、`createCustomerPortal` 等），只验证 actions 对这些依赖的调用与错误处理。
+- **少量集成视角**：  
+  - 对于跨越多层的关键链路（如「Action → Usecase → Billing/Credits → Repository」），可以增加一两条集成测试，使用真实的 domain/service + InMemory Repository（参考 `tests/helpers/payment.ts`、Credits helpers）。  
+  - 集成测试主要用于验证「组合行为」和事务/幂等性，不必覆盖所有分支。
+
+### 4.3 示例：consume-credits Action
+
+`tests/actions/consume-credits-domain-error.test.ts` 已体现了推荐的写法，关键点总结如下（下例等价于通过 `tests/helpers/actions.ts` 引入的统一 mock）：
+
+```ts
+// 通过 mock safe-action，将 actionClient.action 退化为“原始实现”
+vi.mock('@/lib/safe-action', () => ({
+  userActionClient: {
+    schema: () => ({
+      action: (impl: unknown) => impl,
+    }),
+  },
+}));
+
+// mock 领域服务入口
+vi.mock('@/credits/credits', () => ({
+  consumeCredits: vi.fn(),
+}));
+```
+
+测试用例聚焦在 actions 层职责：
+
+- 正常路径：校验 `consumeCredits` 被正确调用，返回 `{ success: true }`：  
+  - 业务细节（FIFO 消耗、剩余额度等）在 `credits` 模块自己的测试中验证。  
+- 出现 `DomainError` 时：直接 `rethrow`，确保 `code` / `retryable` 被保留，交由上层 envelope/UI 处理。  
+- 出现非 `DomainError`（如 `Error('unexpected')`）时：包装成 `DomainError({ code: ErrorCodes.UnexpectedError, retryable: true })`。
+
+这个模式可以复用到其它 Credits 相关 actions，只需替换被 mock 的 domain/service 函数和输入 schema。
+
+### 4.4 示例：Payment / Billing 相关 Action
+
+以 `tests/actions/create-customer-portal-domain-error.test.ts` 为例，对 `createPortalAction` 的测试可以作为 Payment 相关 actions 的模板：
+
+- mock `userActionClient`，绕过 safe-action：  
+  - 与 Credits 示例相同，通过 `schema().action(impl => impl)` 直接获得内部实现。  
+- mock 基础依赖：  
+  - `@/db.getDb`：模拟 DB 初始化失败或返回 transaction 句柄。  
+  - `next-intl/server.getLocale`：返回固定 locale，避免依赖 i18n 运行时。  
+  - `@/payment.createCustomerPortal`：作为 PaymentProvider 的入口，用于模拟支付系统正常/异常返回。  
+  - `@/lib/urls/urls.getUrlWithLocale`：返回固定 URL，确保断言稳定。
+
+测试重点：
+
+- 当 `getDb` 抛出 `DomainError` 时，action 不做额外包装，直接 `rethrow`，保证上游可以看到原始 `code` / `retryable`。  
+- 当 `getDb` 或 `createCustomerPortal` 抛出普通 `Error` 时，将其统一包装为 `UnexpectedError`，确保：  
+  - 前端或 API Route 可以基于 `code` 做统一 fallback；  
+  - 日志中仍能记录原始错误（通过 `getLogger`，在测试中可 mock 掉）。
+
+对于其它 Payment/Billing actions（如 checkout / credit checkout），建议沿用同样结构：
+
+- actions 测试：mock Payment Provider，验证入参构造、错误包装和 DomainError 透传。  
+- Payment Adapter/Service 测试：在 `src/payment/services/__tests__` 中验证与 Repository / Billing / Credits 的协作。
+
+---
+
+## 5. 错误模型与测试配合
 
 本项目的错误模型围绕 `DomainError` + `ErrorCodes` + envelope 与前端 Hook/registry 展开，测试时建议对齐这套约定：
 

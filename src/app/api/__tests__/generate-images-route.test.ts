@@ -1,16 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ensureApiUserMock = vi.fn();
-const enforceRateLimitMock = vi.fn();
+import { InsufficientCreditsError } from '@/credits/domain/errors';
+import { setupApiAuthAndRateLimit } from '../../../../tests/helpers/api';
+
 const generateImageWithCreditsMock = vi.fn();
-
-vi.mock('@/lib/server/api-auth', () => ({
-  ensureApiUser: (...args: unknown[]) => ensureApiUserMock(...args),
-}));
-
-vi.mock('@/lib/server/rate-limit', () => ({
-  enforceRateLimit: (...args: unknown[]) => enforceRateLimitMock(...args),
-}));
 
 vi.mock('@/lib/server/usecases/generate-image-with-credits', () => ({
   generateImageWithCredits: (...args: unknown[]) =>
@@ -25,13 +18,7 @@ describe('/api/generate-images route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    ensureApiUserMock.mockResolvedValue({
-      ok: true,
-      user: { id: 'user_1' },
-      response: null,
-    });
-
-    enforceRateLimitMock.mockResolvedValue({ ok: true });
+    setupApiAuthAndRateLimit('user_1');
 
     generateImageWithCreditsMock.mockResolvedValue({
       success: true,
@@ -115,5 +102,27 @@ describe('/api/generate-images route', () => {
         modelId: 'dall-e-3',
       },
     });
+  });
+
+  it('maps InsufficientCreditsError from usecase to 400 with CREDITS_INSUFFICIENT_BALANCE', async () => {
+    generateImageWithCreditsMock.mockRejectedValueOnce(
+      new InsufficientCreditsError('Insufficient credits')
+    );
+
+    const req = createJsonPost('http://localhost/api/generate-images', {
+      prompt: 'test',
+      provider: 'openai',
+      modelId: 'dall-e-3',
+    });
+
+    const res = await generateImagesPost(req);
+    const json = (await res.json()) as GenerateImageResponse & {
+      retryable?: boolean;
+    };
+
+    expect(res.status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.code).toBe('CREDITS_INSUFFICIENT_BALANCE');
+    expect(json.retryable).toBe(false);
   });
 });

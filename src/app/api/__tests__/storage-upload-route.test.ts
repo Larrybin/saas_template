@@ -1,20 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { setupApiAuthAndRateLimit } from '../../../../tests/helpers/api';
+// Import route handler after shared auth + rate-limit mocks so vi.mock in tests/helpers/api applies correctly.
 import { POST as storageUploadPost } from '@/app/api/storage/upload/route';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { StorageError } from '@/storage/types';
 
-const ensureApiUserMock = vi.fn();
-const enforceRateLimitMock = vi.fn();
 const uploadFileMock = vi.fn();
-
-vi.mock('@/lib/server/api-auth', () => ({
-  ensureApiUser: (...args: unknown[]) => ensureApiUserMock(...args),
-}));
-
-vi.mock('@/lib/server/rate-limit', () => ({
-  enforceRateLimit: (...args: unknown[]) => enforceRateLimitMock(...args),
-}));
 
 vi.mock('@/storage', () => ({
   uploadFile: (...args: unknown[]) => uploadFileMock(...args),
@@ -26,7 +17,7 @@ type MultipartOptions = {
 };
 
 function createMultipartRequest(
-  url: string,
+  _url: string,
   options: MultipartOptions
 ): Request {
   const form = new FormData();
@@ -42,10 +33,22 @@ function createMultipartRequest(
     form.set('folder', options.folder ?? '');
   }
 
-  return new Request(url, {
-    method: 'POST',
-    body: form,
+  const headers = new Headers({
+    'content-type': 'multipart/form-data',
   });
+
+  // In tests we only need the subset of the Request interface that
+  // `POST` actually uses: `headers` and `formData()`. Using a simple
+  // stub here avoids Node's Body stream semantics that cause
+  // "Body is unusable" when re-reading the body.
+  const requestLike: Partial<Request> = {
+    headers,
+    async formData() {
+      return form;
+    },
+  };
+
+  return requestLike as Request;
 }
 
 describe('/api/storage/upload route', () => {
@@ -54,13 +57,7 @@ describe('/api/storage/upload route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    ensureApiUserMock.mockResolvedValue({
-      ok: true,
-      user: { id: 'user_1' },
-      response: null,
-    });
-
-    enforceRateLimitMock.mockResolvedValue({ ok: true });
+    setupApiAuthAndRateLimit('user_1');
 
     uploadFileMock.mockResolvedValue({
       url: 'https://cdn.example.com/uploads/user_1/file.png',

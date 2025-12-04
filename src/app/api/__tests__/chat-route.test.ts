@@ -1,16 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ensureApiUserMock = vi.fn();
-const enforceRateLimitMock = vi.fn();
+import { InsufficientCreditsError } from '@/credits/domain/errors';
+import { setupApiAuthAndRateLimit } from '../../../../tests/helpers/api';
+
 const executeAiChatWithBillingMock = vi.fn();
-
-vi.mock('@/lib/server/api-auth', () => ({
-  ensureApiUser: (...args: unknown[]) => ensureApiUserMock(...args),
-}));
-
-vi.mock('@/lib/server/rate-limit', () => ({
-  enforceRateLimit: (...args: unknown[]) => enforceRateLimitMock(...args),
-}));
 
 vi.mock('@/lib/server/usecases/execute-ai-chat-with-billing', () => ({
   executeAiChatWithBilling: (...args: unknown[]) =>
@@ -24,13 +17,7 @@ describe('/api/chat route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    ensureApiUserMock.mockResolvedValue({
-      ok: true,
-      user: { id: 'user_1' },
-      response: null,
-    });
-
-    enforceRateLimitMock.mockResolvedValue({ ok: true });
+    setupApiAuthAndRateLimit('user_1');
 
     executeAiChatWithBillingMock.mockResolvedValue({
       toUIMessageStreamResponse: () =>
@@ -104,5 +91,34 @@ describe('/api/chat route', () => {
         webSearch: false,
       })
     );
+  });
+
+  it('maps InsufficientCreditsError to 400 with CREDITS_INSUFFICIENT_BALANCE code', async () => {
+    executeAiChatWithBillingMock.mockRejectedValueOnce(
+      new InsufficientCreditsError('Insufficient credits')
+    );
+
+    const req = new Request('http://localhost/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+        model: 'openai/gpt-4o',
+        webSearch: false,
+      }),
+    });
+
+    const res = await chatPost(req);
+    const json = (await res.json()) as {
+      success: boolean;
+      code?: string;
+      error?: string;
+      retryable?: boolean;
+    };
+
+    expect(res.status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.code).toBe('CREDITS_INSUFFICIENT_BALANCE');
+    expect(json.retryable).toBe(false);
   });
 });

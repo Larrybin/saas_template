@@ -51,6 +51,7 @@ export const actionClient = createSafeActionClient({
 
 - Actions 内尽量不捕获 `DomainError`，直接抛出，由 `handleServerError` 统一封装。
 - 若确需业务分支（如 “找不到 package”），可在 action 内显式返回 `{ success: false, error: '...' }`，但不要重新包装 `DomainError`。
+- 为避免在各个 Action 内重复编写 `try/catch + logger.error + DomainError` 模板代码，推荐使用 `src/lib/safe-action.ts` 中的 `withActionErrorBoundary` helper 统一收敛日志与错误包装逻辑。
 
 ## 3. API Routes 处理
 

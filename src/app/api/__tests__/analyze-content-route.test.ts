@@ -1,16 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ensureApiUserMock = vi.fn();
-const enforceRateLimitMock = vi.fn();
+import { setupApiAuthAndRateLimit } from '../../../../tests/helpers/api';
+
 const analyzeWebContentWithCreditsMock = vi.fn();
-
-vi.mock('@/lib/server/api-auth', () => ({
-  ensureApiUser: (...args: unknown[]) => ensureApiUserMock(...args),
-}));
-
-vi.mock('@/lib/server/rate-limit', () => ({
-  enforceRateLimit: (...args: unknown[]) => enforceRateLimitMock(...args),
-}));
 
 vi.mock('@/lib/server/usecases/analyze-web-content-with-credits', () => ({
   analyzeWebContentWithCredits: (...args: unknown[]) =>
@@ -24,13 +16,7 @@ describe('/api/analyze-content route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    ensureApiUserMock.mockResolvedValue({
-      ok: true,
-      user: { id: 'user_1' },
-      response: null,
-    });
-
-    enforceRateLimitMock.mockResolvedValue({ ok: true });
+    setupApiAuthAndRateLimit('user_1');
 
     analyzeWebContentWithCreditsMock.mockResolvedValue({
       status: 200,

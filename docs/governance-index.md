@@ -51,6 +51,11 @@
   - 计划：`.codex/plan/fix-distribute-credits-401-envelope.md`  
   - 说明：将 `/api/distribute-credits` 的 200/401/5xx 全量统一为 JSON envelope，区分凭证错误与 env 缺失，并同步 `docs/api-reference.md`、`docs/error-codes.md`、`.codex/rules/api-protocol-and-error-codes-best-practices.md`。
 
+- **协议 / 错误模型静态守护（check:protocol）**  
+  - 脚本：`scripts/check-protocol-and-errors.ts`，命令：`pnpm check:protocol`。  
+  - 说明：扫描 `/api/*` 与 `src/actions/*` 的 Envelope 使用、错误码文档同步以及 DomainError/错误 UI 注册表的一致性，是协议与错误模型的基础守门人。  
+  - 建议：在 CI pipeline 中将 `pnpm check:protocol` 与 `pnpm lint` / `pnpm test` 一同执行，防止新增 API / Actions / ErrorCodes 时偏离约定；当脚本新增检查项时，应同步更新相关 plan/report 文档中的说明。
+
 ## 4. 领域专题治理计划索引
 
 > 按领域聚合与架构/协议紧密相关的 plan/report，作为深入治理某一域时的入口。

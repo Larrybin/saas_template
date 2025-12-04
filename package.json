@@ -11,6 +11,7 @@
     "lint:fix": "biome check --fix --unsafe .",
     "format": "biome format --write .",
     "check:env": "node scripts/check-env.js",
+    "check:protocol": "tsx scripts/check-protocol-and-errors.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

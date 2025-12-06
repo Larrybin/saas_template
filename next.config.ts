@@ -4,6 +4,10 @@ import createNextIntlPlugin from 'next-intl/plugin';
 import { imageOptimizationConfig } from './src/config/images';
 import { serverEnv } from './src/env/server';
 
+const emptyTurbopackLoader = require.resolve(
+  'next/dist/build/webpack/loaders/empty-loader'
+);
+
 const turbopackIgnorePatterns = [
   'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/test/**/*',
   'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.test.js',
@@ -16,7 +20,13 @@ const turbopackIgnorePatterns = [
 ] as const;
 
 const turbopackRules = Object.fromEntries(
-  turbopackIgnorePatterns.map((pattern) => [pattern, { loaders: [] }])
+  turbopackIgnorePatterns.map((pattern) => [
+    pattern,
+    {
+      loaders: [emptyTurbopackLoader],
+      as: '*.js',
+    },
+  ])
 ) satisfies NonNullable<NextConfig['turbopack']>['rules'];
 
 /**

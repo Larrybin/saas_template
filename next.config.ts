@@ -9,6 +9,17 @@ const emptyTurbopackLoader = require.resolve(
 );
 
 const turbopackIgnorePatterns = [
+  // CI / build logs show paths starting with \"./node_modules/...\", so we
+  // include both forms to be robust across environments.
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/test/**/*',
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.test.js',
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.test.mjs',
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.test.ts',
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.zip',
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.sh',
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/yarnrc.yml',
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/LICENSE',
+  './node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/bench.js',
   'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/test/**/*',
   'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.test.js',
   'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.test.mjs',
@@ -17,6 +28,7 @@ const turbopackIgnorePatterns = [
   'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/**/*.sh',
   'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/yarnrc.yml',
   'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/LICENSE',
+  'node_modules/.pnpm/thread-stream@*/node_modules/thread-stream/bench.js',
 ] as const;
 
 const turbopackRules = Object.fromEntries(
@@ -55,6 +67,9 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     rules: turbopackRules,
+    resolveAlias: {
+      'thread-stream': './src/lib/server/thread-stream-stub.js',
+    },
   },
 };
 

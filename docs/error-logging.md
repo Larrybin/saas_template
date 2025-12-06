@@ -93,6 +93,13 @@ try {
 - `withLogContext(bindings, fn)`: 在调用栈中附加日志上下文。
 - `createLoggerFromHeaders(headers, metadata)`: 从请求头解析 `x-request-id` / `x-requestid` 并创建带有 `requestId` 的 logger，适用于 API routes / 中间层。
 
+### 4.1 Turbopack 与 pino/thread-stream 兼容性说明
+
+- 由于 Next.js 16 + Turbopack 在解析 `pino` 的 `thread-stream` 依赖（测试资产 + `worker_threads`）时存在兼容性问题，本项目在构建阶段通过 Turbopack `resolveAlias` 将 `thread-stream` 指向本地 stub：`src/lib/server/thread-stream-stub.js`。
+- stub 仅实现了当前 `pino` 使用到的最小接口（`ready` 事件、`write`、`flush`、`flushSync`、`end`、`ref`、`unref`、`closed`），不会真正创建 worker 线程，日志以 best-effort 方式写入 `stdout`。
+- `next.config.ts` 中同时使用 `turbopack.rules` + `empty-loader` 忽略 `thread-stream` 包内的测试文件、`.zip`、`.sh`、`yarnrc.yml` 与 `LICENSE`，以避免这些资产在构建时引入额外的 module type 错误或对 devDependencies（`tap`、`fastbench` 等）的依赖。
+- 这是一个面向 Turbopack 的临时兼容方案：后续升级 Next.js / Turbopack / pino 时，请重点关注构建日志中是否仍出现 `thread-stream` / `worker_threads` 相关错误，并视情况移除或收紧该 alias 与 stub。
+
 建议的 `span` 命名规范（便于日志聚合）：
 
 - HTTP API：`api.<域>.<子域>`，例如：

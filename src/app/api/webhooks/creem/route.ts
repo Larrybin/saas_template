@@ -63,7 +63,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         code: ErrorCodes.UnexpectedError,
         retryable: true,
       },
-      { status: 400 }
+      { status: 500 }
     );
   }
 }

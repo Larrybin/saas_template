@@ -51,17 +51,19 @@ description: 在现有 Stripe 架构下，引入 Creem 作为新的 Payment Prov
   - [ ] `apiKey: string`
   - [ ] `testMode: boolean`
   - [ ] 可选：`baseUrl?: string`（如需覆盖默认 Creem API 根路径）
+  - [ ] 可选：`creemClient?: CreemClientLike`（通过注入 Creem SDK 实例调用 API，而不是在 Provider 内部自行拼装 HTTP 请求）
   - [ ] 可选：`logger?: LoggerLike`
   - [ ] 可选：`planPolicy?: PlanPolicyLike`（如果在 Provider 内部做 plan 校验）
 - [ ] 实现 `class CreemPaymentProvider implements PaymentProvider`：
   - [ ] 构造函数注入 `CreemPaymentProviderDeps`，不直接读取 env。
   - [ ] `createCheckout(params: CreateCheckoutParams): Promise<CheckoutResult>`：
     - [ ] 根据 `params.planId/priceId` 从 `websiteConfig` 或 PlanPolicy 中解析 Creem product/价格标识。
-    - [ ] 调用 Creem API / SDK 创建 checkout（`POST /v1/checkouts` 或 SDK 对应方法）。
+    - [ ] 调用 Creem SDK / API 创建 checkout（优先使用注入的 `creemClient`，例如 `Creem` / `CreemCore` + `createCheckout`）。
+    - [ ] 统一写入 metadata：至少包含 `userId`、`planId` / `priceId`、`providerId: 'creem'` 等字段，Webhook handler 只依赖 metadata 将事件映射回本地用户与业务上下文。
     - [ ] 将返回结果映射为 `{ url, id }`。
   - [ ] `createCreditCheckout(params: CreateCreditCheckoutParams): Promise<CheckoutResult>`：
     - [ ] 根据 `packageId/priceId` 映射 Creem 产品（Credits 套餐）。
-    - [ ] 与 `createCheckout` 相同路径创建一次性 checkout。
+    - [ ] 与 `createCheckout` 相同路径创建一次性 checkout，metadata 中同样携带 `userId`、`packageId` / `priceId`、credits 数量等必要业务字段。
   - [ ] `createCustomerPortal(params: CreatePortalParams): Promise<PortalResult>`：
     - [ ] 调用 Creem 提供的“Customer Portal”或等价功能（如有直接 API），返回 `{ url }`。
   - [ ] `getSubscriptions(params: getSubscriptionsParams): Promise<Subscription[]>`：
@@ -99,7 +101,7 @@ description: 在现有 Stripe 架构下，引入 Creem 作为新的 Payment Prov
 
 ### 4.1 API Route
 
-- [ ] 新增 `src/app/api/webhooks/creem/route.ts`：
+  - [ ] 新增 `src/app/api/webhooks/creem/route.ts`：
   - [ ] 使用 `createLoggerFromHeaders(request.headers, { span: 'api.webhooks.creem', route: '/api/webhooks/creem' })` 初始化 logger。
   - [ ] 读取原始 `payload = await request.text()`。
   - [ ] 从 headers 中读取 Creem 提供的签名字段（例如 `x-creem-signature`，具体名称参考 Creem 文档）。
@@ -108,13 +110,14 @@ description: 在现有 Stripe 架构下，引入 Creem 作为新的 Payment Prov
     - [ ] 映射到标准 JSON envelope：`{ success: false, error, code, retryable }`。
   - [ ] 捕获未知错误：
     - [ ] 记录 `logger.error` 并返回 `{ success: false, error: 'Webhook handler failed', code: 'CREEM_WEBHOOK_UNEXPECTED_ERROR', retryable: true }`。
+  - [ ] 与前端 Return URL 责任边界保持一致：Return URL 仅用于用户体验（如展示成功/失败状态或跳转），**不得在 Return URL handler 中直接发放积分或修改账本**，所有订阅/支付最终状态更新必须由 `/api/webhooks/creem` 驱动。
 
 ### 4.2 组合根 handleCreemWebhook
 
-- [ ] 新增 `src/lib/server/creem-webhook.ts`：
+  - [ ] 新增 `src/lib/server/creem-webhook.ts`：
   - [ ] 导出 `async function handleCreemWebhook(payload: string, headersOrSignature: Headers | string)`：
     - [ ] 从 `serverEnv` 中读取 `creemApiKey` / `creemWebhookSecret`，缺失时抛出明确错误（例如 `CREEM_WEBHOOK_MISCONFIGURED`）。
-    - [ ] 构造 Creem client / webhook 验证器（使用官方 SDK 或 Next.js adapter helper）。
+    - [ ] 构造 Creem client / webhook 验证器（使用官方 SDK 或 Next.js adapter helper），严格按照 Creem 官方签名校验规范（header 名称 + HMAC 算法）完成验签；签名失败映射为 `PAYMENT_SECURITY_VIOLATION` 或未来的 `CREEM_WEBHOOK_SECURITY_VIOLATION`。
     - [ ] 构建依赖对象：
       - [ ] `paymentRepository`（现有 `PaymentRepository` 或其接口）。
       - [ ] `creemEventRepository`（新建，或在现有 `stripe_event` 表上增加 provider 字段以复用）。

@@ -27,9 +27,9 @@ Payment 模块承担的核心职责：
 - `src/payment/index.ts`
   - 提供对外入口函数：`getPaymentProvider`, `createCheckout`, `createCreditCheckout`, `createCustomerPortal`, `getSubscriptions` 等（不再承担 Webhook 入口职责）。  
   - 通过全局 `paymentProviderFactory`（`DefaultPaymentProviderFactory`，定义于 `src/payment/provider-factory.ts`）获取当前 `PaymentProvider` 实例：
-    - `DefaultPaymentProviderFactory` 负责从 `serverEnv` 读取 Stripe 相关配置（`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`），并使用 `createStripePaymentProviderFromEnv` 组装默认的 `StripePaymentAdapter`；  
+    - `DefaultPaymentProviderFactory` 会在首次选择 `'stripe'` Provider 时，从 `serverEnv` 读取 Stripe 相关配置（`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`），并使用 `createStripePaymentProviderFromEnv` 组装默认的 `StripePaymentAdapter`（懒初始化，避免在未使用 Stripe 时强制依赖其 env）；  
     - `getPaymentProvider` 会根据 `websiteConfig.payment.provider` 组装 `PaymentContext`（目前仅包含 `providerId`），并调用 `paymentProviderFactory.getProvider(ctx)` 选择具体 Provider，默认值为 `'stripe'`；  
-    - 未来接入新的 Provider（例如 Creem）时，只需在 `PaymentProvider` 接口与 `PaymentProviderFactory` 分支中追加实现，并在 `websiteConfig.payment.provider` 中声明即可，无需修改 UI / Actions / Billing 代码。
+    - 未来接入新的 Provider（例如 Creem）时，只需在 `PaymentProvider` 接口与 `PaymentProviderFactory` 分支中追加实现，并在 `websiteConfig.payment.provider` 中声明即可，无需修改 UI / Actions / Billing 代码；在完成 `.codex/plan/creem-payment-integration.md` 所述 Phase A 之前，将 `websiteConfig.payment.provider` 配置为 `'creem'` 只会触发工厂层面的 Phase Gate 错误（提示参阅该 plan 与 `docs/governance-index.md`），不会实际启用 Creem Provider。
 
 - `src/payment/services/stripe-payment-adapter.ts`
   - `StripePaymentAdapter`：Stripe 场景下的支付适配器，职责包括：

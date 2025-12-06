@@ -202,8 +202,41 @@ export interface StorageConfig {
 /**
  * Payment configuration
  */
+export interface CreemSubscriptionProductConfig {
+	productId: string;
+	priceId?: string;
+}
+
+export interface CreemCreditProductConfig {
+	productId: string;
+	priceId?: string;
+}
+
+export interface CreemPaymentConfig {
+	/**
+	 * 订阅类商品映射：planId -> priceId -> Creem 产品
+	 */
+	subscriptionProducts?: Record<string, Record<string, CreemSubscriptionProductConfig>>;
+	/**
+	 * 积分包映射：packageId -> Creem 产品
+	 */
+	creditProducts?: Record<string, CreemCreditProductConfig>;
+}
+
 export interface PaymentConfig {
-	provider: "stripe"; // The payment provider, only stripe is supported for now
+	/**
+	 * 支付 Provider 标识
+	 *
+	 * - 生产环境：必须配置为 "stripe"；
+	 * - 非生产环境：可配置为 "creem" 以启用 CreemPaymentProvider，用于 Phase A 开发与测试。
+	 *   实际运行时行为仍受 DefaultPaymentProviderFactory Phase Gate 约束。
+	 */
+	provider: "stripe" | "creem";
+	/**
+	 * Creem 专用配置（plan/price/package → Creem product/price 映射等）。
+	 * 在未启用 Creem 时可以省略。
+	 */
+	creem?: CreemPaymentConfig;
 }
 
 /**

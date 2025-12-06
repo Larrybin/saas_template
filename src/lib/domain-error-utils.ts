@@ -15,6 +15,21 @@ const DOMAIN_ERROR_MESSAGES: Record<string, DomainErrorMessageDefinition> = {
   [ErrorCodes.PaymentSecurityViolation]: {
     key: 'Dashboard.settings.credits.packages.purchaseFailed',
   },
+  [ErrorCodes.CreemWebhookMisconfigured]: {
+    key: 'Dashboard.settings.credits.packages.purchaseFailed',
+  },
+  [ErrorCodes.CreemProviderMisconfigured]: {
+    key: 'Dashboard.settings.credits.packages.purchaseFailed',
+  },
+  [ErrorCodes.CreemCheckoutInvalidRequest]: {
+    key: 'Dashboard.settings.credits.packages.purchaseFailed',
+  },
+  [ErrorCodes.CreemCheckoutDownstreamError]: {
+    key: 'Dashboard.settings.credits.packages.purchaseFailed',
+  },
+  [ErrorCodes.CreemCheckoutNetworkError]: {
+    key: 'Dashboard.settings.credits.packages.purchaseFailed',
+  },
   [ErrorCodes.AuthUnauthorized]: {
     key: 'Common.unauthorized',
     fallback: 'Please sign in to continue.',

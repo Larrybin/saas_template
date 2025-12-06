@@ -101,6 +101,36 @@ const ERROR_UI_STRATEGIES: Record<string, ErrorUiStrategy> = {
     action: 'none',
     source: 'payment',
   },
+  CREEM_WEBHOOK_MISCONFIGURED: {
+    severity: 'error',
+    defaultFallbackMessage: 'Payment provider webhook is misconfigured',
+    action: 'none',
+    source: 'payment',
+  },
+  CREEM_PROVIDER_MISCONFIGURED: {
+    severity: 'error',
+    defaultFallbackMessage: 'Payment provider configuration is invalid',
+    action: 'none',
+    source: 'payment',
+  },
+  CREEM_CHECKOUT_INVALID_REQUEST: {
+    severity: 'error',
+    defaultFallbackMessage: 'Payment request is invalid',
+    action: 'none',
+    source: 'payment',
+  },
+  CREEM_CHECKOUT_DOWNSTREAM_ERROR: {
+    severity: 'error',
+    defaultFallbackMessage: 'Payment service is temporarily unavailable',
+    action: 'none',
+    source: 'payment',
+  },
+  CREEM_CHECKOUT_NETWORK_ERROR: {
+    severity: 'error',
+    defaultFallbackMessage: 'Network error while calling payment service',
+    action: 'none',
+    source: 'payment',
+  },
   STORAGE_INVALID_CONTENT_TYPE: {
     severity: 'error',
     defaultFallbackMessage:

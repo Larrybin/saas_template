@@ -5,14 +5,6 @@ import { vi } from 'vitest';
 export const ensureApiUserMock = vi.fn();
 export const enforceRateLimitMock = vi.fn();
 
-vi.mock('@/lib/server/api-auth', () => ({
-  ensureApiUser: (...args: unknown[]) => ensureApiUserMock(...args),
-}));
-
-vi.mock('@/lib/server/rate-limit', () => ({
-  enforceRateLimit: (...args: unknown[]) => enforceRateLimitMock(...args),
-}));
-
 /**
  * Initialize common auth + rate-limit happy-path behavior.
  *

@@ -1,6 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { setupApiAuthAndRateLimit } from '../../../../tests/helpers/api';
+import {
+  enforceRateLimitMock,
+  ensureApiUserMock,
+  setupApiAuthAndRateLimit,
+} from '../../../../tests/helpers/api';
+
+vi.mock('@/lib/server/api-auth', () => ({
+  ensureApiUser: (...args: unknown[]) => ensureApiUserMock(...args),
+}));
+
+vi.mock('@/lib/server/rate-limit', () => ({
+  enforceRateLimit: (...args: unknown[]) => enforceRateLimitMock(...args),
+}));
 
 const analyzeWebContentWithCreditsMock = vi.fn();
 

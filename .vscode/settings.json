@@ -21,5 +21,6 @@
 		".source": true,
 		".wrangler": true,
 		".open-next": true
-	}
+	},
+	"chatgpt.openOnStartup": true
 }

@@ -30,6 +30,11 @@
 | `BILLING_PLAN_NOT_FOUND`| `BillingPlanNotFound` | Billing | 计费计划不存在或已禁用。                       |
 | `BILLING_PRICE_NOT_FOUND`| `BillingPriceNotFound`| Billing | 计费计划下找不到对应价格。                    |
 | `PAYMENT_SECURITY_VIOLATION` | `PaymentSecurityViolation` | Billing / Payment | 支付安全校验失败（如签名/密钥错误）。        |
+| `CREEM_WEBHOOK_MISCONFIGURED` | `CreemWebhookMisconfigured` | Billing / Payment | Creem Webhook 环境变量未正确配置（如 `CREEM_WEBHOOK_SECRET` 缺失）。 |
+| `CREEM_PROVIDER_MISCONFIGURED` | `CreemProviderMisconfigured` | Billing / Payment | Creem Provider 配置错误（env 或 plan/package 映射缺失、API key 无效等）。 |
+| `CREEM_CHECKOUT_INVALID_REQUEST` | `CreemCheckoutInvalidRequest` | Billing / Payment | 向 Creem 发起的 checkout 请求参数不合法（4xx 请求错误）。 |
+| `CREEM_CHECKOUT_DOWNSTREAM_ERROR` | `CreemCheckoutDownstreamError` | Billing / Payment | Creem 下游服务异常（5xx 或未细分的下游错误）。 |
+| `CREEM_CHECKOUT_NETWORK_ERROR` | `CreemCheckoutNetworkError` | Billing / Payment | 调用 Creem checkout API 时的网络或传输层错误。 |
 | `SUBSCRIPTION_FETCH_FAILED` | `SubscriptionFetchFailed` | Billing / Payment | 查询订阅状态失败（Stripe 调用或配置异常）。 |
 
 ## Credits / 积分

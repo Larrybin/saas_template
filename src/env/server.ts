@@ -11,11 +11,6 @@ const booleanString = z
   .optional()
   .transform((value) => (value === undefined ? true : value === 'true'));
 
-const optionalBooleanString = z
-  .enum(['true', 'false'])
-  .optional()
-  .transform((value) => (value ? value === 'true' : undefined));
-
 const telemetryString = z
   .enum(['0', '1', 'true', 'false'] as const)
   .default('1');
@@ -26,6 +21,9 @@ const serverSchemaInput = z.object({
   NEXT_TELEMETRY_DISABLED: telemetryString,
   STRIPE_SECRET_KEY: optionalString,
   STRIPE_WEBHOOK_SECRET: optionalString,
+  CREEM_API_KEY: optionalString,
+  CREEM_WEBHOOK_SECRET: optionalString,
+  CREEM_API_URL: optionalString,
   RESEND_API_KEY: optionalString,
   RESEND_AUDIENCE_ID: optionalString,
   STORAGE_REGION: optionalString,
@@ -55,7 +53,10 @@ const serverSchemaInput = z.object({
   GOOGLE_CLIENT_SECRET: optionalString,
   UPSTASH_REDIS_REST_URL: optionalString,
   UPSTASH_REDIS_REST_TOKEN: optionalString,
-  RATE_LIMIT_REQUIRE_REDIS: optionalBooleanString,
+  RATE_LIMIT_REQUIRE_REDIS: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => (value ? value === 'true' : undefined)),
 });
 
 const serverSchema = serverSchemaInput.transform((value) => ({
@@ -68,6 +69,9 @@ const serverSchema = serverSchemaInput.transform((value) => ({
   },
   stripeSecretKey: value.STRIPE_SECRET_KEY,
   stripeWebhookSecret: value.STRIPE_WEBHOOK_SECRET,
+  creemApiKey: value.CREEM_API_KEY,
+  creemWebhookSecret: value.CREEM_WEBHOOK_SECRET,
+  creemApiUrl: value.CREEM_API_URL,
   resendApiKey: value.RESEND_API_KEY,
   resendAudienceId: value.RESEND_AUDIENCE_ID,
   storage: {
@@ -131,6 +135,30 @@ if (!parsedServerEnv.success) {
   throw new Error('Invalid server environment variables');
 }
 
-export const serverEnv = parsedServerEnv.data;
+const validatedServerEnv = parsedServerEnv.data;
+
+// Creem env safety checks (Phase A)
+if (validatedServerEnv.creemApiUrl) {
+  const isProd = process.env.NODE_ENV === 'production';
+  const url = validatedServerEnv.creemApiUrl;
+  const isTestEndpoint = url.startsWith('https://test-api.creem.io/');
+  const isLiveEndpoint = url.startsWith('https://api.creem.io/');
+
+  if (isProd && !isLiveEndpoint) {
+    throw new Error(
+      'Invalid CREEM_API_URL for production: expected https://api.creem.io/v1. ' +
+        'See docs/env-and-ops.md for Creem env guidelines.'
+    );
+  }
+
+  if (!isProd && !isTestEndpoint) {
+    throw new Error(
+      'Invalid CREEM_API_URL for non-production: expected https://test-api.creem.io/v1. ' +
+        'See docs/env-and-ops.md for Creem env guidelines.'
+    );
+  }
+}
+
+export const serverEnv = validatedServerEnv;
 
 export type ServerEnv = typeof serverEnv;

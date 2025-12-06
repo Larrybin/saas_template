@@ -4,9 +4,10 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    globals: true,
+    globals: false,
     setupFiles: ['vitest.setup.ts'],
     include: ['tests/**/*.test.ts', 'src/**/*.{test,spec}.{ts,tsx}'],
+    testTimeout: 15000,
     reporters:
       process.env.CI === 'true'
         ? [

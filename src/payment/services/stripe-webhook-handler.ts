@@ -55,6 +55,7 @@ export class StripeWebhookHandler {
     const event = mapStripeEvent(rawEvent);
 
     const processing = await this.stripeEventRepository.withEventProcessingLock(
+      'stripe',
       {
         eventId: event.id,
         type: event.type,

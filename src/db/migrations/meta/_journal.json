@@ -57,6 +57,13 @@
 			"when": 1769376000000,
 			"tag": "0007_add_user_lifetime_membership",
 			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "7",
+			"when": 1770000000000,
+			"tag": "0008_add_creem_event_table",
+			"breakpoints": true
 		}
 	]
 }

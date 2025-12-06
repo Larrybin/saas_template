@@ -23,7 +23,11 @@ type EventProcessingMeta = Parameters<
 
 type EventProcessingHandler = Parameters<
   StripeEventRepositoryLike['withEventProcessingLock']
->[1];
+>[2];
+
+type EventProcessingProvider = Parameters<
+  StripeEventRepositoryLike['withEventProcessingLock']
+>[0];
 
 vi.mock('@/lib/server/logger', () => ({
   getLogger: () => ({
@@ -283,6 +287,7 @@ const createService = (
         .fn()
         .mockImplementation(
           async (
+            _provider: EventProcessingProvider,
             _meta: EventProcessingMeta,
             handler: EventProcessingHandler
           ) => {
@@ -462,6 +467,7 @@ describe('StripePaymentAdapter', () => {
         .fn()
         .mockImplementation(
           async (
+            _provider: EventProcessingProvider,
             _meta: EventProcessingMeta,
             handler: EventProcessingHandler
           ) => {
@@ -528,6 +534,7 @@ describe('StripePaymentAdapter', () => {
         .fn()
         .mockImplementation(
           async (
+            _provider: EventProcessingProvider,
             _meta: EventProcessingMeta,
             handler: EventProcessingHandler
           ) => {
@@ -590,6 +597,7 @@ describe('StripePaymentAdapter', () => {
         .fn()
         .mockImplementation(
           async (
+            _provider: EventProcessingProvider,
             _meta: EventProcessingMeta,
             handler: EventProcessingHandler
           ) => {
@@ -666,6 +674,7 @@ describe('StripePaymentAdapter', () => {
         .fn()
         .mockImplementation(
           async (
+            _provider: EventProcessingProvider,
             _meta: EventProcessingMeta,
             handler: EventProcessingHandler
           ) => {
@@ -730,6 +739,7 @@ describe('StripePaymentAdapter', () => {
         .fn()
         .mockImplementation(
           async (
+            _provider: EventProcessingProvider,
             _meta: EventProcessingMeta,
             handler: EventProcessingHandler
           ) => {

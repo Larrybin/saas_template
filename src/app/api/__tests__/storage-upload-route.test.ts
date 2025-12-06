@@ -1,9 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { setupApiAuthAndRateLimit } from '../../../../tests/helpers/api';
-// Import route handler after shared auth + rate-limit mocks so vi.mock in tests/helpers/api applies correctly.
-import { POST as storageUploadPost } from '@/app/api/storage/upload/route';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { StorageError } from '@/storage/types';
+import {
+  enforceRateLimitMock,
+  ensureApiUserMock,
+  setupApiAuthAndRateLimit,
+} from '../../../../tests/helpers/api';
+
+vi.mock('@/lib/server/api-auth', () => ({
+  ensureApiUser: (...args: unknown[]) => ensureApiUserMock(...args),
+}));
+
+vi.mock('@/lib/server/rate-limit', () => ({
+  enforceRateLimit: (...args: unknown[]) => enforceRateLimitMock(...args),
+}));
+
+// Import route handler after shared auth + rate-limit mocks so vi.mock executes first.
+import { POST as storageUploadPost } from '@/app/api/storage/upload/route';
 
 const uploadFileMock = vi.fn();
 

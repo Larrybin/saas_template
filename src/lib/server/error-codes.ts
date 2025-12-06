@@ -27,6 +27,10 @@ export const ErrorCodes = {
   StorageUnknownError: 'STORAGE_UNKNOWN_ERROR',
   BillingPlanNotFound: 'BILLING_PLAN_NOT_FOUND',
   BillingPriceNotFound: 'BILLING_PRICE_NOT_FOUND',
+  CreemProviderMisconfigured: 'CREEM_PROVIDER_MISCONFIGURED',
+  CreemCheckoutInvalidRequest: 'CREEM_CHECKOUT_INVALID_REQUEST',
+  CreemCheckoutDownstreamError: 'CREEM_CHECKOUT_DOWNSTREAM_ERROR',
+  CreemCheckoutNetworkError: 'CREEM_CHECKOUT_NETWORK_ERROR',
   CreditsInvalidPayload: 'CREDITS_INVALID_PAYLOAD',
   CreditsInsufficientBalance: 'CREDITS_INSUFFICIENT_BALANCE',
   CreditsPlanPolicyMissing: 'CREDITS_PLAN_POLICY_MISSING',
@@ -34,6 +38,7 @@ export const ErrorCodes = {
   AuthUnauthorized: 'AUTH_UNAUTHORIZED',
   AuthBanned: 'AUTH_BANNED',
   PaymentSecurityViolation: 'PAYMENT_SECURITY_VIOLATION',
+  CreemWebhookMisconfigured: 'CREEM_WEBHOOK_MISCONFIGURED',
   AiContentValidationError: 'AI_CONTENT_VALIDATION_ERROR',
   AiContentNetworkError: 'AI_CONTENT_NETWORK_ERROR',
   AiContentTimeout: 'AI_CONTENT_TIMEOUT',
@@ -61,7 +66,13 @@ export type AuthErrorCode =
   | (typeof ErrorCodes)['AuthUnauthorized']
   | (typeof ErrorCodes)['AuthBanned'];
 
-export type PaymentErrorCode = (typeof ErrorCodes)['PaymentSecurityViolation'];
+export type PaymentErrorCode =
+  | (typeof ErrorCodes)['PaymentSecurityViolation']
+  | (typeof ErrorCodes)['CreemWebhookMisconfigured']
+  | (typeof ErrorCodes)['CreemProviderMisconfigured']
+  | (typeof ErrorCodes)['CreemCheckoutInvalidRequest']
+  | (typeof ErrorCodes)['CreemCheckoutDownstreamError']
+  | (typeof ErrorCodes)['CreemCheckoutNetworkError'];
 
 export type StorageErrorCode =
   | (typeof ErrorCodes)['StorageInvalidContentType']

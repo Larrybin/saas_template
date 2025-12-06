@@ -186,6 +186,14 @@ export const stripeEvent = pgTable("stripe_event", {
 	processedAt: timestamp("processed_at"),
 });
 
+export const creemEvent = pgTable("creem_event", {
+	eventId: text("event_id").primaryKey(),
+	type: text("type").notNull(),
+	createdAt: timestamp("created_at").notNull(),
+	processedAt: timestamp("processed_at"),
+	payload: text("payload").notNull(),
+});
+
 export const aiUsage = pgTable(
 	"ai_usage",
 	{

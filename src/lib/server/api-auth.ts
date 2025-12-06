@@ -20,36 +20,40 @@ type ApiAuthResult =
       response: NextResponse;
     };
 
-const unauthorizedResponse = NextResponse.json(
-  {
-    success: false,
-    error: 'Unauthorized',
-    code: 'AUTH_UNAUTHORIZED',
-    retryable: false,
-  },
-  {
-    status: 401,
-    headers: {
-      'WWW-Authenticate': 'Bearer',
+function buildUnauthorizedResponse() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Unauthorized',
+      code: 'AUTH_UNAUTHORIZED',
+      retryable: false,
     },
-  }
-);
+    {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': 'Bearer',
+      },
+    }
+  );
+}
 
-const bannedResponse = NextResponse.json(
-  {
-    success: false,
-    error: getDomainErrorMessage(
-      'AUTH_BANNED',
-      undefined,
-      AUTH_BANNED_FALLBACK_MESSAGE
-    ),
-    code: 'AUTH_BANNED',
-    retryable: false,
-  },
-  {
-    status: 403,
-  }
-);
+function buildBannedResponse() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: getDomainErrorMessage(
+        'AUTH_BANNED',
+        undefined,
+        AUTH_BANNED_FALLBACK_MESSAGE
+      ),
+      code: 'AUTH_BANNED',
+      retryable: false,
+    },
+    {
+      status: 403,
+    }
+  );
+}
 
 /**
  * Ensures the incoming API request has an authenticated Better Auth session.
@@ -77,7 +81,7 @@ export async function ensureApiUser(request: Request): Promise<ApiAuthResult> {
 
         return {
           ok: false,
-          response: bannedResponse,
+          response: buildBannedResponse(),
         };
       }
 
@@ -98,6 +102,6 @@ export async function ensureApiUser(request: Request): Promise<ApiAuthResult> {
 
   return {
     ok: false,
-    response: unauthorizedResponse,
+    response: buildUnauthorizedResponse(),
   };
 }

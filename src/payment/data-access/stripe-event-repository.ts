@@ -1,8 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { stripeEvent } from '@/db/schema';
+import type {
+  PaymentEventProviderId,
+  PaymentEventRepository,
+} from './payment-event-repository';
 
-export class StripeEventRepository {
+export class StripeEventRepository implements PaymentEventRepository {
   async find(eventId: string) {
     const db = await getDb();
     const result = await db
@@ -34,14 +38,30 @@ export class StripeEventRepository {
   }
 
   async withEventProcessingLock<T>(
-    event: { eventId: string; type: string; createdAt: Date },
+    providerId: PaymentEventProviderId,
+    event: {
+      eventId: string;
+      type: string;
+      createdAt: Date;
+      payload?: string;
+    },
     handler: () => Promise<T>
   ): Promise<{ skipped: boolean; result?: T }> {
+    if (providerId !== 'stripe') {
+      throw new Error(
+        `StripeEventRepository only supports providerId 'stripe', got '${providerId}'`
+      );
+    }
+
     const db = await getDb();
     return db.transaction(async (tx) => {
       await tx
         .insert(stripeEvent)
-        .values(event)
+        .values({
+          eventId: event.eventId,
+          type: event.type,
+          createdAt: event.createdAt,
+        })
         .onConflictDoNothing({ target: stripeEvent.eventId });
 
       const result = await tx

@@ -215,9 +215,8 @@ export interface PaymentProvider {
  * 标识支付 Provider 类型
  *
  * - 运行时由 `DefaultPaymentProviderFactory` 解析：
- *   - 默认 provider 为 `'stripe'`，以保证模板在未配置 Creem 时开箱即用；
- *     若需要切换为 Creem，请在 `websiteConfig.payment.provider` 中显式设置 `'creem'`，
- *     并配置 `websiteConfig.payment.creem` 映射及相关环境变量；
+ *   - 默认 provider 为 `'creem'`，适用于优先采用 Creem 的集成场景；
+ *     若需要使用 Stripe，可在 `websiteConfig.payment.provider` 中显式设置 `'stripe'`；
  *   - Creem Provider 连接 Test Mode 还是 Live Mode 取决于环境变量 `CREEM_API_URL` 及其配套
  *     API Key（`https://test-api.creem.io/v1` ↔ Test，`https://api.creem.io/v1` ↔ Live）。
  * - 与 Phase B / Better Auth 集成的关系：

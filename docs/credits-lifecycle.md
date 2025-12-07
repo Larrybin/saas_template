@@ -287,8 +287,9 @@ Stripe       →  /api/webhooks/stripe  →  handleStripeWebhook  →  StripeWeb
    - 消费操作前必须检查余额，余额不足时抛出 `InsufficientCreditsError`（`CREDITS_INSUFFICIENT_BALANCE`），由上层用统一错误 envelope 返回。
 
 2. **周期性积分发放幂等**  
-   - 通过 `periodKey` + `type` 约束，同一用户在同一周期内，type 为 `SUBSCRIPTION_RENEWAL` 或 `LIFETIME_MONTHLY` 的交易至多出现一次。  
-   - 重复调用 `addSubscriptionCredits` / `addLifetimeMonthlyCredits` 不会重复累加余额。
+  - 通过 `periodKey` + `type` 约束，同一用户在同一周期内，type 为 `SUBSCRIPTION_RENEWAL` 或 `LIFETIME_MONTHLY` 的交易至多出现一次。  
+  - 重复调用 `addSubscriptionCredits` / `addLifetimeMonthlyCredits` 不会重复累加余额。
+  - 对于分发 Job（`distributeCreditsToAllUsers`）中按批次生成的周期性发放命令，即使存在并发执行或重试导致的重复插入尝试，也会依赖数据库唯一约束 + 业务层对 `23505` 错误的处理，将重复命令标记为 skipped 而非错误，确保整批 Job 不会因为单个用户的重复发放而失败。
 
 3. **注册赠送仅发放一次**  
    - 注册赠送 hook 必须在发放前检查是否已经存在 type = `REGISTER_GIFT` 的交易记录。  

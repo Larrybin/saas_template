@@ -227,8 +227,8 @@ export interface PaymentConfig {
 	/**
 	 * 支付 Provider 标识
 	 *
-	 * - 默认值建议为 "stripe"，以保证模板在未配置 Creem 时开箱即用；
-	 *   若需要使用 Creem，可显式配置为 "creem" 并补充 `payment.creem` 映射及相关环境变量；
+	 * - 默认值建议为 "creem"，适用于优先采用 Creem 的集成场景；
+	 *   若需要使用 Stripe，可显式配置为 "stripe"；
 	 * - 当 provider 为 "creem" 时，具体连到 Test Mode 还是 Live Mode 由 `CREEM_API_URL` 与 API Key 决定
 	 *   （`https://test-api.creem.io/v1` ↔ 测试，`https://api.creem.io/v1` ↔ 生产）。
 	 */

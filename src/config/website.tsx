@@ -112,7 +112,11 @@ export const websiteConfig: WebsiteConfig = {
     allowedFolders: ['uploads', 'avatars', 'attachments'],
   },
   payment: {
-    provider: 'stripe',
+    provider: 'creem',
+    creem: {
+      subscriptionProducts: {},
+      creditProducts: {},
+    },
   },
   price: {
     plans: {

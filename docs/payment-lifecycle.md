@@ -47,7 +47,7 @@ Creem 集成在 Phase A 中仅覆盖标准 Checkout + Webhook 流程，所有字
   - 通过全局 `paymentProviderFactory`（`DefaultPaymentProviderFactory`，定义于 `src/payment/provider-factory.ts`）获取当前 `PaymentProvider` 实例：
     - `DefaultPaymentProviderFactory` 会在首次选择 `'creem'` Provider 时，通过 `createCreemPaymentProviderFromEnv` 组装 `CreemPaymentProvider`，该 Provider 基于 `CreemClient` 的 REST 调用与 `websiteConfig.payment.creem` 下的映射配置（`subscriptionProducts` / `creditProducts`）。Creem 所连接的 Test Mode / Live Mode 则由 `CREEM_API_URL` 与对应 API Key 决定。  
     - 当 `providerId === 'stripe'` 时，则懒初始化 `StripePaymentAdapter`，从 `serverEnv` 读取 `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`。  
-    - `getPaymentProvider` 会根据 `websiteConfig.payment.provider` 组装 `PaymentContext`（目前仅包含 `providerId`），并调用 `paymentProviderFactory.getProvider(ctx)` 选择具体 Provider。模板默认使用 `'stripe'`，如需切换到 Creem，请在 `websiteConfig` 中显式设为 `'creem'` 并配置 `websiteConfig.payment.creem` 映射及 Creem 相关环境变量。
+    - `getPaymentProvider` 会根据 `websiteConfig.payment.provider` 组装 `PaymentContext`（目前仅包含 `providerId`），并调用 `paymentProviderFactory.getProvider(ctx)` 选择具体 Provider。模板默认使用 `'creem'`，如需改用 Stripe，只需在 `websiteConfig` 中显式设为 `'stripe'`。
 
 - `src/payment/services/stripe-payment-adapter.ts`
   - `StripePaymentAdapter`：Stripe 场景下的支付适配器，职责包括：

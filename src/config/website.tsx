@@ -113,10 +113,6 @@ export const websiteConfig: WebsiteConfig = {
   },
   payment: {
     provider: 'stripe',
-    creem: {
-      subscriptionProducts: {},
-      creditProducts: {},
-    },
   },
   price: {
     plans: {

@@ -10,9 +10,6 @@ import type {
   PaymentProviderFactory,
 } from './types';
 
-export const CREEM_PHASE_GATE_ERROR_MESSAGE =
-  "Payment provider 'creem' is not yet implemented. See .codex/plan/creem-payment-integration.md (Phase A) and docs/governance-index.md for current status and usage constraints.";
-
 /**
  * 默认的 PaymentProviderFactory 实现
  *
@@ -49,27 +46,21 @@ export class DefaultPaymentProviderFactory implements PaymentProviderFactory {
   }
 
   getProvider(ctx?: PaymentContext): PaymentProvider {
-    // 调用方传入的 providerId 作为唯一“真值来源”，未传入时默认回退为 'stripe'
-    const providerId = ctx?.providerId ?? 'stripe';
+    // 调用方传入的 providerId 作为唯一“真值来源”，未传入时默认回退为 'creem'
+    const providerId = ctx?.providerId ?? 'creem';
 
     switch (providerId) {
+      case 'creem': {
+        if (!this.creemProvider) {
+          this.creemProvider = this.createCreemProviderFromEnv();
+        }
+        return this.creemProvider;
+      }
       case 'stripe': {
         if (!this.stripeProvider) {
           this.stripeProvider = this.createStripeProviderFromEnv();
         }
         return this.stripeProvider;
-      }
-      case 'creem': {
-        // Phase Gate：在生产环境仍禁止启用 Creem，避免未完成集成被误用
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error(CREEM_PHASE_GATE_ERROR_MESSAGE);
-        }
-
-        if (!this.creemProvider) {
-          this.creemProvider = this.createCreemProviderFromEnv();
-        }
-
-        return this.creemProvider;
       }
       default: {
         throw new Error(`Unsupported payment provider: ${providerId}`);

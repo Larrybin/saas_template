@@ -22,6 +22,13 @@ vi.mock('@/config/website', () => ({
     features: {
       enableDatafastRevenueTrack: false,
     },
+    payment: {
+      provider: 'stripe',
+      creem: {
+        subscriptionProducts: {},
+        creditProducts: {},
+      },
+    },
   },
 }));
 

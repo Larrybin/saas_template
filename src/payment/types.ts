@@ -214,13 +214,17 @@ export interface PaymentProvider {
 /**
  * 标识支付 Provider 类型
  *
- * 当前默认工厂实现仅在运行时支持 'stripe'；
- * 'creem' 为未来 Creem 集成预留的占位值，尚未在运行时接入。
- * 在完成 `.codex/plan/creem-payment-integration.md` 所述 Phase A 之前，
- * 请勿在 `websiteConfig.payment.provider` 中配置为 'creem'，否则
- * `DefaultPaymentProviderFactory.getProvider({ providerId: 'creem' })` 会抛出带有
- * `.codex/plan/creem-payment-integration.md` 及 `docs/governance-index.md` 引导信息的
- * Phase Gate 运行时错误，而非实际返回可用的 PaymentProvider 实例。
+ * - 运行时由 `DefaultPaymentProviderFactory` 解析：
+ *   - 默认 provider 为 `'stripe'`，以保证模板在未配置 Creem 时开箱即用；
+ *     若需要切换为 Creem，请在 `websiteConfig.payment.provider` 中显式设置 `'creem'`，
+ *     并配置 `websiteConfig.payment.creem` 映射及相关环境变量；
+ *   - Creem Provider 连接 Test Mode 还是 Live Mode 取决于环境变量 `CREEM_API_URL` 及其配套
+ *     API Key（`https://test-api.creem.io/v1` ↔ Test，`https://api.creem.io/v1` ↔ Live）。
+ * - 与 Phase B / Better Auth 集成的关系：
+ *   - Better Auth + Creem 插件以及 `ExternalAccessProvider` 只消费由 Payment/Billing/
+ *     Credits/Membership 写入数据库的账本结果，用于构建 hasAccess/feature 视图；
+ *   - 插件本身不得成为第二套计费事实来源，也不得绕过 Payment/Billing/Credits 安全链路
+ *     直接授予 Subscription/Lifetime/积分能力。
  */
 export type PaymentProviderId = 'stripe' | 'creem';
 

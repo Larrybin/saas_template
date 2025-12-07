@@ -18,10 +18,12 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPricePlans } from '@/config/price-config';
+import { useAccessAndCheckout } from '@/hooks/use-access-and-checkout';
 import { useMounted } from '@/hooks/use-mounted';
 import { useCurrentPlan } from '@/hooks/use-payment';
 import { LocaleLink, useLocaleRouter } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
+import { PLAN_ACCESS_CAPABILITIES } from '@/lib/auth-domain';
 import { formatDate } from '@/lib/formatter';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
@@ -76,6 +78,19 @@ export default function BillingCard() {
   const nextBillingDate = subscription?.currentPeriodEnd
     ? formatDate(subscription.currentPeriodEnd)
     : null;
+
+  const proPlan = plans.find((plan) => plan.id === 'pro');
+  const proMonthlyPrice = proPlan?.prices.find(
+    (price) => price.type === 'subscription' && price.interval === 'month'
+  );
+
+  const { isLoading: isEnsuringProAccess, startCheckout: startProCheckout } =
+    useAccessAndCheckout({
+      capability: PLAN_ACCESS_CAPABILITIES.pro,
+      mode: 'subscription',
+      planId: proPlan?.id,
+      priceId: proMonthlyPrice?.priceId,
+    });
 
   // Retry payment data fetching
   const handleRetry = useCallback(() => {
@@ -265,9 +280,23 @@ export default function BillingCard() {
       <CardFooter className="mt-2 px-6 py-4 flex justify-end items-center bg-muted rounded-none">
         {/* user is on free plan, show upgrade plan button */}
         {isFreePlan && (
-          <Button variant="default" className="cursor-pointer" asChild>
-            <LocaleLink href={Routes.Pricing}>{t('upgradePlan')}</LocaleLink>
-          </Button>
+          <>
+            <Button variant="default" className="cursor-pointer" asChild>
+              <LocaleLink href={Routes.Pricing}>{t('upgradePlan')}</LocaleLink>
+            </Button>
+            {proPlan && proMonthlyPrice && (
+              <Button
+                variant="outline"
+                className="ml-2 cursor-pointer"
+                disabled={isEnsuringProAccess}
+                onClick={async () => {
+                  await startProCheckout();
+                }}
+              >
+                {t('upgradePlan')}
+              </Button>
+            )}
+          </>
         )}
 
         {/* user is lifetime member, show manage billing button */}

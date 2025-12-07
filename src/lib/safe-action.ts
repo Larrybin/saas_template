@@ -52,7 +52,33 @@ export function getUserFromCtx(ctx: unknown): User {
 // -----------------------------------------------------------------------------
 // 2. Auth-guarded client
 // -----------------------------------------------------------------------------
-export const userActionClient = actionClient.use(async ({ next }) => {
+export const userActionClient = actionClient.use(async ({ next, ctx }) => {
+  const existingCtx = ctx as { user?: User } | undefined;
+
+  if (existingCtx?.user) {
+    const user = existingCtx.user;
+
+    if (user.banned) {
+      const logger = getLogger({ span: 'safe-action' });
+      logger.warn({ userId: user.id }, 'Blocked banned user from safe-action');
+
+      return {
+        success: false,
+        error: getDomainErrorMessage(
+          'AUTH_BANNED',
+          undefined,
+          AUTH_BANNED_FALLBACK_MESSAGE
+        ),
+        code: 'AUTH_BANNED',
+        retryable: false,
+      };
+    }
+
+    return await withLogContext({ userId: user.id }, () =>
+      next({ ctx: { user } })
+    );
+  }
+
   const session = await getSession();
   if (!session?.user) {
     return {
@@ -63,8 +89,8 @@ export const userActionClient = actionClient.use(async ({ next }) => {
     };
   }
 
-  const user = session.user;
-  if ((user as User).banned) {
+  const user = session.user as User;
+  if (user.banned) {
     const logger = getLogger({ span: 'safe-action' });
     logger.warn({ userId: user.id }, 'Blocked banned user from safe-action');
 

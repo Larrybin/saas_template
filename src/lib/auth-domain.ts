@@ -1,34 +1,31 @@
-import type { Locale } from 'next-intl';
-import { getLogger } from '@/lib/logger';
-import {
-  createDefaultUserLifecycleHooks,
-  createUserLifecycleManager,
-  type UserLifecycleUserPayload,
-} from '@/lib/user-lifecycle';
+export type AccessCapability = `plan:${string}` | `feature:${string}`;
 
-const userLifecycleManager = createUserLifecycleManager({
-  hooks: createDefaultUserLifecycleHooks(),
-  logger: getLogger({ span: 'user-lifecycle' }),
-});
+export const PLAN_ACCESS_CAPABILITIES = {
+  pro: 'plan:pro' as AccessCapability,
+  lifetime: 'plan:lifetime' as AccessCapability,
+} as const;
 
-export type AuthUserCreatedOptions = {
-  locale?: Locale;
+export const buildFeatureAccessCapability = (key: string): AccessCapability =>
+  `feature:${key}`;
+
+export interface ExternalAccessProvider {
+  hasAccess(userId: string, capability: AccessCapability): Promise<boolean>;
+}
+
+const nullExternalAccessProvider: ExternalAccessProvider = {
+  async hasAccess() {
+    return false;
+  },
 };
 
-/**
- * Handle post-authentication side effects when a user is created.
- *
- * This function acts as the bridge between Better Auth (or any auth provider)
- * and the user lifecycle event system. Call this after a user has been
- * persisted to trigger cross-cutting behaviours like credits and newsletter.
- */
-export async function handleAuthUserCreated(
-  user: UserLifecycleUserPayload,
-  options: AuthUserCreatedOptions = {}
-): Promise<void> {
-  await userLifecycleManager.emit({
-    type: 'user.created',
-    user,
-    ...(options.locale ? { locale: options.locale } : {}),
-  });
-}
+let externalAccessProvider: ExternalAccessProvider = nullExternalAccessProvider;
+
+export const setExternalAccessProvider = (
+  provider: ExternalAccessProvider
+): void => {
+  externalAccessProvider = provider ?? nullExternalAccessProvider;
+};
+
+export const getExternalAccessProvider = (): ExternalAccessProvider => {
+  return externalAccessProvider;
+};

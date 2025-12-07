@@ -19,10 +19,7 @@ vi.mock('@/payment/services/creem-payment-factory', () => ({
   })),
 }));
 
-import {
-  CREEM_PHASE_GATE_ERROR_MESSAGE,
-  DefaultPaymentProviderFactory,
-} from '@/payment/provider-factory';
+import { DefaultPaymentProviderFactory } from '@/payment/provider-factory';
 import { createCreemPaymentProviderFromEnv } from '@/payment/services/creem-payment-factory';
 import { createStripePaymentProviderFromEnv } from '@/payment/services/stripe-payment-factory';
 
@@ -51,10 +48,10 @@ describe('DefaultPaymentProviderFactory', () => {
     expect(provider2).toBe(provider1);
   });
 
-  it('uses stripe as default provider when providerId is not provided', () => {
+  it('uses creem as default provider when providerId is not provided', () => {
     const factory = new DefaultPaymentProviderFactory();
-    const mockedFactory = createStripePaymentProviderFromEnv as MockedFunction<
-      typeof createStripePaymentProviderFromEnv
+    const mockedFactory = createCreemPaymentProviderFromEnv as MockedFunction<
+      typeof createCreemPaymentProviderFromEnv
     >;
 
     expect(mockedFactory).not.toHaveBeenCalled();
@@ -83,15 +80,5 @@ describe('DefaultPaymentProviderFactory', () => {
     const provider2 = factory.getProvider({ providerId: 'creem' });
     expect(mockedFactory).toHaveBeenCalledTimes(1);
     expect(provider2).toBe(provider1);
-  });
-
-  it('throws a Phase Gate error when providerId is creem in production env', () => {
-    vi.stubEnv('NODE_ENV', 'production');
-
-    const factory = new DefaultPaymentProviderFactory();
-
-    expect(() => factory.getProvider({ providerId: 'creem' })).toThrowError(
-      CREEM_PHASE_GATE_ERROR_MESSAGE
-    );
   });
 });

@@ -28,7 +28,7 @@ description: 在现有 Stripe 架构下，引入 Creem 作为新的 Payment Prov
 **当前实现进度（概览）：**
 
 - [x] `DefaultPaymentProviderFactory` 已改为懒初始化 Stripe Provider，构造函数不直接触发 env 校验。
-- [x] `'creem'` 分支已落地 Phase Gate：抛出 `CREEM_PHASE_GATE_ERROR_MESSAGE`，错误文案指向本计划与 `docs/governance-index.md`。
+- [x] `'creem'` 分支已默认启用并完成懒初始化：当 `websiteConfig.payment.provider = 'creem'` （默认值）时，直接返回 `CreemPaymentProvider`，具体接入 Test Mode 还是 Live Mode 由 `CREEM_API_URL` 与配套 API Key 决定。
 - [x] Creem Provider / Webhook / Billing/Credits 主链路（Provider → `/api/webhooks/creem` → Billing/Credits）已完成第一版实现，并通过单元/组合测试验证；本文件其余章节中的细节项与 TODO 继续作为后续打磨清单使用。
 
 ---
@@ -43,7 +43,7 @@ description: 在现有 Stripe 架构下，引入 Creem 作为新的 Payment Prov
   - [x] 可选：`CREEM_API_URL`：Creem API 根路径（开发环境建议为 `https://test-api.creem.io/v1`，生产为 `https://api.creem.io/v1`）。
 - [x] 在 `env.example` 中补充上述变量，并标注“Creem 集成（可选）”说明。
 - [x] 在 `src/config/website.tsx` 或关联配置中确认/补充：
-  - [x] `websiteConfig.payment.provider` 支持 `'creem'` 选项（类型上已在 `PaymentProviderId` 中声明），并在生产环境通过 Phase Gate 限制为 `'stripe'`，非生产环境方可显式选择 `'creem'` 用于 Phase A 联调。
+  - [x] `websiteConfig.payment.provider` 默认值切换为 `'creem'`，若需要改为 Stripe，可显式配置 `provider: 'stripe'`；具体连到 Test Mode / Live Mode 则通过 `CREEM_API_URL` + API Key 组合控制。
   - [x] 增加用于映射 plan/price ↔ Creem product/price 的配置入口（例如 `websiteConfig.payment.creem`）。
 - [x] 更新文档：
   - [x] 在 `docs/env-and-ops.md` 中新增 Creem 小节：
@@ -134,7 +134,7 @@ description: 在现有 Stripe 架构下，引入 Creem 作为新的 Payment Prov
     - [x] `case 'stripe'`：返回现有 `stripeProvider`。
     - [x] `case 'creem'`：
       - [x] 在非 production 环境：懒初始化并返回 `creemProvider`，允许在本地/测试环境真实使用 Creem Provider；
-      - [x] 在 production 环境：抛出 `CREEM_PHASE_GATE_ERROR_MESSAGE`，维持 Phase Gate 行为，防止 Phase A 未完成时在生产启用 Creem。
+      - [x] 在 production 环境：通过配置 `CREEM_API_URL` + Live API Key 连接 Creem 正式环境，无需额外 Phase Gate。
     - [x] `default`：抛出 `Unsupported payment provider: ${providerId}`。
 - [x] 维持现有分层：`src/payment/index.ts` 负责从 `websiteConfig.payment.provider` 读取配置并通过 `paymentProviderFactory.getProvider({ providerId })` 传入上下文，`DefaultPaymentProviderFactory` 不再直接依赖 `websiteConfig`。
 
@@ -320,7 +320,7 @@ description: 在现有 Stripe 架构下，引入 Creem 作为新的 Payment Prov
 
 ## 10. Phase A 方案 1：工厂懒初始化 & 事件仓储抽象详细执行计划
 
-> 本节将“方案 1：保留单工厂，改造为按 Provider 懒初始化 + 显式 Phase Gate”细化为可执行步骤，供 Phase A 实施时使用。
+> 本节保留了最初“按 Provider 懒初始化 + 显式 Phase Gate”的设计细节。当前实现已经改为默认使用 Creem，并通过 `CREEM_API_URL` + API Key 的组合来区分 Test/Live 环境，因此以下步骤可视为历史背景或回溯资料。
 
 ### 10.1 DefaultPaymentProviderFactory 改造（懒初始化 + Phase Gate）
 

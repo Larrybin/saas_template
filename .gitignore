@@ -29,6 +29,9 @@ test-report.json
 # local starter kit
 /raphael-starterkit-v1-main
 
+# shipany template
+/shipany-template-two
+
 # debug
 npm-debug.log*
 yarn-debug.log*

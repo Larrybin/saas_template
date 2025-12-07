@@ -39,7 +39,7 @@
 - 本地开发：从 `env.example` 拷贝到 `.env.local`，按需填充关键变量（DB、Better Auth、Stripe、Storage）。
 - CI / 生产环境：通过托管平台（Vercel / Cloudflare / 自建）配置环境变量，保持 `.env*` 文件不提交到仓库。
 
-> 注：当前 Payment Provider 工厂在运行时始终将生产环境限制为 Stripe。虽然 `PaymentProviderId` 类型中已经包含 `'creem'` 且实现了 Phase A 的 `CreemPaymentProvider`，但当在生产环境中将 `websiteConfig.payment.provider` 配置为 `'creem'` 时，`DefaultPaymentProviderFactory` 会抛出 `CREEM_PHASE_GATE_ERROR_MESSAGE`，提示 Creem 仍处于 Phase A、禁止生产启用，并引导查看 `.codex/plan/creem-payment-integration.md` 与 `docs/governance-index.md`；在非生产环境（`NODE_ENV !== 'production'`）下，才允许显式选择 `'creem'` 进行联调。
+> 注：当前模板默认使用 Creem 作为 Payment Provider，`websiteConfig.payment.provider` 的默认值已经切换为 `'creem'`。如需改回 Stripe，只需在配置中显式设置 `provider: 'stripe'`。Creem 的 Test Mode / Live Mode 由 `CREEM_API_URL` 决定：`https://test-api.creem.io/v1` 对应测试环境，`https://api.creem.io/v1` 对应生产环境；请确保 API Key 与 URL 成对配置。
 
 ### 1.1 Creem 环境变量（Phase A）
 
@@ -66,15 +66,16 @@ Creem 目前处于 Phase A 集成阶段，仅用于内部联调与验证。生�
   - 生产环境：必须使用 Live Endpoint `https://api.creem.io/v1`。
   - 禁止出现 “Test Key + Prod URL” 或 “Live Key + Test URL” 的组合。
 
-**Provider 选择与 Phase Gate**
+**Provider 选择与环境区分**
 
-- `websiteConfig.payment.provider` 目前支持 `'stripe' | 'creem'`：
-  - 生产环境：必须为 `'stripe'`，禁止配置 `'creem'`。
-  - 非生产环境：可将其设为 `'creem'` 以联调 Creem 流程。
-- 在 Phase A 完成前，`DefaultPaymentProviderFactory` 在 `provider = 'creem'` 时会抛出 Phase Gate 错误，错误信息会指向
-  - `.codex/plan/creem-payment-integration.md`
-  - `docs/governance-index.md`
- 以说明当前 Creem 集成状态与后续计划。
+- `websiteConfig.payment.provider` 目前支持 `'stripe' | 'creem'`，默认值为 `'creem'`：
+  - 想使用 Stripe 时，手动将 `provider` 改为 `'stripe'`；
+  - 否则走 Creem Provider（包括本地/测试/生产）。
+- Creem 的 Test Mode / Live Mode 由 `CREEM_API_URL` 与对应 API Key 决定：
+  - 测试环境：`CREEM_API_URL=https://test-api.creem.io/v1` 且使用 Test Mode API Key；
+  - 生产环境：`CREEM_API_URL=https://api.creem.io/v1` 且使用 Live Mode API Key；
+  - 禁止 “Test Key + Live URL” 或 “Live Key + Test URL” 的混搭。
+- 当 `provider='creem'` 时，`DefaultPaymentProviderFactory` 会始终返回 Creem Provider，并根据 `CREEM_API_URL` 连接到相应环境；生产管控与风险评估需要通过配置管理（例如在不同部署环境设置不同的 `CREEM_API_URL` / `CREEM_API_KEY`）来完成。
 
 **官方文档参考**
 
@@ -82,6 +83,22 @@ Creem 目前处于 Phase A 集成阶段，仅用于内部联调与验证。生�
 - Webhooks 与事件类型：<https://docs.creem.io/learn/webhooks/introduction>
 
 本项目仅在内部架构层定义 Creem 集成方式，所有字段含义、事件语义和签名规则以上述官方文档为唯一权威来源。
+
+### 1.2 Creem Better Auth 插件（Phase B-Plugin）
+
+Better Auth 的 Creem 插件在本模板中只负责构建「访问控制视图」，不会成为第二套计费事实来源，也不会替代 Payment/Billing/Credits/Membership 账本。
+
+- `CREEM_BETTER_AUTH_ENABLED`
+  - 类型：`'true' | 'false'`（未设置视为 `false`）。
+  - 非生产环境（本地开发 / 预发布）：
+    - 可以设置为 `true` 以启用 Better Auth Creem 插件与 `ExternalAccessProvider` 的集成；
+    - 插件运行在 Database Mode（`persistSubscriptions: true`），只读取本地同步的 Creem 订阅视图，用于追加 `feature:*` 级访问能力（例如 `feature:creem:any-subscription`）。
+  - 生产环境：
+    - 默认建议保持未设置/`false`，在未经单独评审与压测前不启用该开关；
+    - 即便启用，该插件也只能基于 Webhook + Billing/Credits/Membership 写入数据库后的账本结果构建访问视图，不得绕过 `/api/webhooks/creem`、也不得直接授予 Subscription/Lifetime/积分。
+  - 当未显式设置该变量且 `websiteConfig.payment.provider === 'creem'` 时，系统会默认启用插件；如需关闭，可将该变量显式设为 `'false'`。
+
+> 注意：`CREEM_BETTER_AUTH_ENABLED` 仅控制 Better Auth 插件和 `ExternalAccessProvider` 是否启用，与支付 Provider 的选择无关。支付路径仍由 `websiteConfig.payment.provider` 决定（默认 `'creem'`），而具体连到 Test Mode 还是 Live Mode 则由 `CREEM_API_URL`/`CREEM_API_KEY` 配套配置决定。
 
 ---
 
@@ -112,7 +129,7 @@ Creem 目前处于 Phase A 集成阶段，仅用于内部联调与验证。生�
   - 若缺少 payload 或签名，路由会返回 400 并附带错误信息。
   - 若 `STRIPE_SECRET_KEY` 或 `STRIPE_WEBHOOK_SECRET` 未配置，初始化 Payment Provider（组合根工厂）时会抛出错误（防止静默失败）。
 
-> 注：Creem Webhook 入口为 `/api/webhooks/creem`，当前已通过 `CreemWebhookHandler` 在服务端完成验签、幂等处理，并接入 Payment/Billing/Credits 主链路（与 Stripe 路径在领域层对齐）。在 `.codex/plan/creem-payment-integration.md` 所述 Phase A 标记完成之前，`websiteConfig.payment.provider` 仍必须保持为 `'stripe'`，生产环境只启用 Stripe 作为对外支付 Provider，Creem 仅用于本地/测试环境联调与验证。
+> 注：Creem Webhook 入口为 `/api/webhooks/creem`，当前已通过 `CreemWebhookHandler` 在服务端完成验签、幂等处理，并接入 Payment/Billing/Credits 主链路（与 Stripe 路径在领域层对齐）。Creem 现已作为默认 Provider 使用，但仍需确保 Test Mode/Live Mode 的环境变量配置正确，并在运维流程中纳入相应的监控、风控与对账策略；若想暂时只使用 Stripe，可在 `websiteConfig.payment.provider` 中显式配置 `'stripe'`。
 
 ---
 
@@ -281,3 +298,41 @@ export const websiteConfig: WebsiteConfig = {
 如需在不同环境 / 站点对 AI 计费进行统一调整，优先通过修改 `websiteConfig.ai.billing` 来完成，而不是直接改 usecase 代码或在调用处硬编码数值。
 
 通过以上约定与实践，可以在不同环境下稳定运行本项目，并快速排查与定位与 Payment/Credits/Storage/AI 等相关的问题。
+
+---
+
+## 7. 安全基线与限流策略
+
+本项目在默认配置下提供一套可直接使用的安全基线，运维侧需要关注以下几点：
+
+- **HTTPS 与 HSTS**  
+  - 生产环境必须确保外部访问仅通过 HTTPS（在 Vercel 上启用 “Enforce HTTPS”）；  
+  - `next.config.ts` 中在 `NODE_ENV=production` 时为所有路由添加 `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`，配合平台配置共同生效。
+
+- **安全头（Security Headers）**  
+  - 所有路由统一注入：
+    - `Content-Security-Policy`（限制脚本/样式/图片/连接等资源来源，默认仅允许 `self` + `https:`）；
+    - `X-Content-Type-Options=nosniff`；
+    - `Referrer-Policy=strict-origin-when-cross-origin`；
+    - `Permissions-Policy`（禁用 camera/microphone/geolocation/payment 等高风险能力）；
+    - `X-Frame-Options=DENY` / `frame-ancestors 'none'`。  
+  - 登录页、控制台页与 `/api/*` 路由额外设置 `Cache-Control: private, no-store, no-cache, max-age=0, must-revalidate`，避免浏览器缓存含用户/支付敏感信息的响应。
+
+- **限流（Rate limiting）与 Redis 依赖**  
+  - 高风险接口（AI 调用、Storage 上传、积分分发等）通过 `enforceRateLimit` 做限流，通常基于用户 ID + 窗口计数；  
+  - 推荐在生产及其他长期运行环境中配置 Upstash Redis：
+    - `UPSTASH_REDIS_REST_URL`
+    - `UPSTASH_REDIS_REST_TOKEN`  
+  - 并将 `RATE_LIMIT_REQUIRE_REDIS=true`：在 Redis 未正确配置或不可用时直接抛错，而不是静默回退到进程内内存桶；本地开发与测试环境默认允许缺失 Redis，并退化为单实例内存限流（同时输出警告日志）。
+
+- **文件上传与存储安全**  
+  - 上传入口 `/api/storage/upload`：
+    - 要求登录（`ensureApiUser`）与限流（`enforceRateLimit(scope: 'storage-upload')`）；  
+    - 限制单文件最大 10MB，仅允许 JPEG/PNG/WebP 图片类型；  
+    - 服务端对文件头进行魔数校验，要求 MIME 类型与魔数同时符合白名单。  
+  - 存储路径通过白名单根目录 + 正则校验 + 自动附加 `userId` 做隔离，具体 provider（S3/R2 等）由 `src/storage` 抽象控制，方便运维层按需要选择私有/公开 bucket 与访问策略。
+
+- **错误暴露与日志**  
+  - Server Actions 与 `/api/*` 路由统一使用 `{ success, error, code?, retryable? }` 的 envelope，错误码在 `docs/error-codes.md` 中归档；  
+  - 响应中不返回堆栈、内部 ID 或 token，仅返回用户可见的错误信息与错误码；详细错误（含 `requestId`、`userId`、`span` 等上下文）只写入服务端日志，便于在日志平台聚合与追踪；  
+  - AI/Payment/Storage 等领域的错误模型与前端 UI 降级策略详见 `docs/error-logging.md` 与对应领域文档。

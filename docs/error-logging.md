@@ -258,6 +258,7 @@ toast.error(message);
     - 使用 `getDomainErrorMessage` + `next-intl` 生成文案（映射到 `Common.unauthorized`）。
     - 通过 `sonner.toast.error` 弹出提示。
     - 使用 `useLocaleRouter` 跳转至登录页 `Routes.Login`（带当前 locale）。
+    - 若调用方传入 `callbackUrl` 选项（仅允许站内路径），则在跳转时附带 `?callbackUrl=...`，调用方登录成功后可根据该参数将用户导回原页面；若未显式提供，则默认使用当前路径（带 query），并做基本安全检查防止开放重定向。
 - 使用规范：
   - Credits 域 hooks（`useCreditBalance` / `useCreditStats` / `useConsumeCredits` / `useCreditTransactions`）在收到 `AUTH_UNAUTHORIZED` 时必须先调用 `useAuthErrorHandler`，再抛出业务错误（如有需要）。
   - AI 域：

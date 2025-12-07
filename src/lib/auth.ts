@@ -1,3 +1,4 @@
+import { creem } from '@creem_io/better-auth';
 import type { BetterAuthPlugin } from 'better-auth';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
@@ -9,8 +10,10 @@ import { getDb } from '@/db/index';
 import { serverEnv } from '@/env/server';
 import { defaultMessages } from '@/i18n/messages';
 import { LOCALE_COOKIE_NAME, routing } from '@/i18n/routing';
-import { handleAuthUserCreated } from '@/lib/auth-domain';
+import { handleAuthUserCreated } from '@/lib/server/auth-user-lifecycle';
 import { sendEmail } from '@/mail';
+import './server/auth-access-provider';
+import { isCreemBetterAuthEnabled } from './server/creem-config';
 import { getBaseUrl, getUrlWithLocaleInCallbackUrl } from './urls/urls';
 
 /**
@@ -36,6 +39,16 @@ const googleProvider =
       }
     : undefined;
 
+const creemPlugin: BetterAuthPlugin | undefined =
+  isCreemBetterAuthEnabled && serverEnv.creemApiKey
+    ? (creem({
+        apiKey: serverEnv.creemApiKey,
+        webhookSecret: serverEnv.creemWebhookSecret,
+        persistSubscriptions: true,
+        testMode: process.env.NODE_ENV !== 'production',
+      }) as unknown as BetterAuthPlugin)
+    : undefined;
+
 export const auth = betterAuth({
   baseURL: getBaseUrl(),
   appName: defaultMessages.Metadata.name,
@@ -43,6 +56,13 @@ export const auth = betterAuth({
     provider: 'pg', // or "mysql", "sqlite"
   }),
   session: {
+    /**
+     * Session cookies:
+     * - In production Better Auth issues httpOnly + secure + SameSite=Lax cookies by default,
+     *   as long as baseURL is HTTPS.
+     * - All protected actions/pages must validate the session on the server; cookie existence
+     *   alone must never be treated as sufficient authentication.
+     */
     // https://www.better-auth.com/docs/concepts/session-management#cookie-cache
     cookieCache: {
       enabled: true,
@@ -119,6 +139,14 @@ export const auth = betterAuth({
       enabled: true,
     },
   },
+  /**
+   * Payment / Billing / Credits remain the single source of truth
+   * for commercial state (plans, memberships, credits).
+   *
+   * Better Auth and its plugins (including the Creem plugin) may
+   * project or cache access views for the current user, but must
+   * not be treated as an independent billing ledger.
+   */
   databaseHooks: {
     // https://www.better-auth.com/docs/concepts/database#database-hooks
     user: {
@@ -134,6 +162,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    ...(creemPlugin ? [creemPlugin] : []),
     // https://www.better-auth.com/docs/plugins/admin
     // support user management, ban/unban user, manage user roles, etc.
     admin({

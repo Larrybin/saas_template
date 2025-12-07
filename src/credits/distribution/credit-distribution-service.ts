@@ -81,6 +81,21 @@ export class CreditDistributionService {
         await add(payload);
         result.processed += 1;
       } catch (error) {
+        const isUniqueConstraintViolation =
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          (error as { code?: unknown }).code === '23505';
+
+        if (isUniqueConstraintViolation) {
+          result.skipped += 1;
+          this.logger.warn(
+            { userId: command.userId, type: command.type },
+            'Skipped duplicate periodic credit command due to unique constraint'
+          );
+          continue;
+        }
+
         result.errors.push({
           userId: command.userId,
           type: command.type,

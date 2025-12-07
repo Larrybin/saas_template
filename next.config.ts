@@ -41,6 +41,56 @@ const turbopackRules = Object.fromEntries(
   ])
 ) satisfies NonNullable<NextConfig['turbopack']>['rules'];
 
+export const createSecurityHeaders = (isDev: boolean, isProd: boolean) => {
+  const cspDirectives = [
+    "default-src 'self'",
+    // Allow inline scripts/styles for compatibility; avoid unsafe-eval in production when possible.
+    `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https:`,
+    "style-src 'self' 'unsafe-inline' https:",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self' https:",
+    "font-src 'self' data: https:",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    'base-uri self',
+    'upgrade-insecure-requests',
+  ];
+
+  const headers: { key: string; value: string }[] = [
+    {
+      key: 'Content-Security-Policy',
+      value: cspDirectives.join('; '),
+    },
+    {
+      key: 'X-Content-Type-Options',
+      value: 'nosniff',
+    },
+    {
+      key: 'Referrer-Policy',
+      value: 'strict-origin-when-cross-origin',
+    },
+    {
+      key: 'Permissions-Policy',
+      // Disable high‑risk browser features by default; extend per project needs.
+      value:
+        'camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()',
+    },
+    {
+      key: 'X-Frame-Options',
+      value: 'DENY',
+    },
+  ];
+
+  if (isProd) {
+    headers.push({
+      key: 'Strict-Transport-Security',
+      value: 'max-age=63072000; includeSubDomains; preload',
+    });
+  }
+
+  return headers;
+};
+
 /**
  * https://nextjs.org/docs/app/api-reference/config/next-config-js
  */
@@ -64,6 +114,49 @@ const nextConfig: NextConfig = {
 
   env: {
     NEXT_TELEMETRY_DISABLED: serverEnv.telemetry.disabled ? '1' : '0',
+  },
+  async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
+    const isProd = !isDev;
+    const securityHeaders = createSecurityHeaders(isDev, isProd);
+
+    const sensitiveNoStoreHeaders = [
+      {
+        key: 'Cache-Control',
+        value: 'private, no-store, no-cache, max-age=0, must-revalidate',
+      },
+    ];
+
+    return [
+      // Global baseline security headers for all routes.
+      {
+        source: '/:path*',
+        headers: securityHeaders,
+      },
+      // Auth pages (login / register / reset-password / etc.).
+      {
+        source: '/:locale/auth/:path*',
+        headers: sensitiveNoStoreHeaders,
+      },
+      // Protected application areas (dashboard / settings / admin).
+      {
+        source: '/:locale/dashboard/:path*',
+        headers: sensitiveNoStoreHeaders,
+      },
+      {
+        source: '/:locale/settings/:path*',
+        headers: sensitiveNoStoreHeaders,
+      },
+      {
+        source: '/:locale/admin/:path*',
+        headers: sensitiveNoStoreHeaders,
+      },
+      // API routes, including auth and payment/billing endpoints.
+      {
+        source: '/api/:path*',
+        headers: sensitiveNoStoreHeaders,
+      },
+    ];
   },
   turbopack: {
     rules: turbopackRules,

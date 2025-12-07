@@ -64,7 +64,9 @@
   - 积分 & 计费策略：`.codex/plan/plan-credits-and-current-plan.md`、`.codex/plan/plan-credits-billing-tests.md`、`.codex/plan/credits-gateway-decoupling.md`、`.codex/plan/billing-credits-config-and-error-ui-refactor.md`。  
   - 支付 / 会员架构：`.codex/plan/payment-hexagonal-refactor.md`、`.codex/plan/billing-membership-decoupling-and-stripe-factory-refactor.md`、`.codex/plan/subscription-tx.md`、`.codex/plan/stripe-payment-service-refactor.md`、`.codex/plan/stripe-payment-service-di-refactor.md`、`.codex/plan/membership-domain-service.md`。  
   - 分发与账本演进：`.codex/plan/credit-distribution-stage-b.md`、`.codex/plan/credits-distribute-refactor.md`、`.codex/plan/ledger-domain-stage-a.md`、`.codex/plan/webhook-credit-hardening.md`、`.codex/plan/credit-checkout-price-hardening.md`。
-  - Provider 扩展与 Creem 集成：`.codex/plan/creem-payment-integration.md`（当前处于 Phase A：在非生产环境下提供基于 REST 的 `CreemPaymentProvider` 与 `/api/webhooks/creem` 路径，但明确约束在生产环境禁止将 `websiteConfig.payment.provider` 配置为 `'creem'`；计划中定义了 Stripe-only → Stripe+Creem 过渡期的工厂/事件仓储策略与 Phase Gate 语义，配套说明见 `docs/payment-lifecycle.md` 与 `docs/env-and-ops.md`）。 
+  - Provider 扩展与 Creem 集成：
+    - `.codex/plan/creem-payment-integration.md`（当前处于 Phase A：默认以基于 REST 的 `CreemPaymentProvider` + `/api/webhooks/creem` 路径打通 Payment → Billing → Credits 链路，Stripe 仍可按需配置；计划中定义了 Stripe-only → Stripe+Creem 的演进策略、plan/price 映射与事件仓储约束，对应说明见 `docs/payment-lifecycle.md` 与 `docs/env-and-ops.md`）。 
+    - `.codex/plan/creem-payment-phase-b-better-auth-and-access.md`（Phase B：在 Phase A 稳定的基础上，通过 `auth-domain` 暴露 `AccessCapability` / `getUserAccessCapabilities`，并在 `ensure-access-and-checkout` + `useAccessAndCheckout` 上统一 hasAccess 与 checkout 的消费路径，同时强化「Payment/Billing/Credits 为唯一计费事实来源」与 Creem 官方协议的一致性）。
 
 - **AI / 文本分析 / 计费策略**  
   - AI 计费与策略：`.codex/plan/ai-billing-policy-refactor.md`。  

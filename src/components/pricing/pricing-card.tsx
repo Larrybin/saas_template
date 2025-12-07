@@ -10,9 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useAccessAndCheckout } from '@/hooks/use-access-and-checkout';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useMounted } from '@/hooks/use-mounted';
 import { useLocalePathname } from '@/i18n/navigation';
+import {
+  type AccessCapability,
+  PLAN_ACCESS_CAPABILITIES,
+} from '@/lib/auth-domain';
 import { formatPrice } from '@/lib/formatter';
 import { cn } from '@/lib/utils';
 import {
@@ -83,6 +88,19 @@ export function PricingCard({
   const currentPath = useLocalePathname();
   const mounted = useMounted();
   // console.log('pricing card, currentPath', currentPath);
+
+  const capability: AccessCapability =
+    plan.id === 'pro'
+      ? PLAN_ACCESS_CAPABILITIES.pro
+      : (`plan:${plan.id}` as AccessCapability);
+
+  const { isLoading: isEnsuringAccess, startCheckout } = useAccessAndCheckout({
+    capability,
+    mode: 'subscription',
+    planId: plan.id,
+    priceId: price?.priceId,
+    metadata,
+  });
 
   // generate formatted price and price label
   let formattedPrice = '';
@@ -180,15 +198,28 @@ export function PricingCard({
           </Button>
         ) : isPaidPlan ? (
           mounted && currentUser ? (
-            <CheckoutButton
-              userId={currentUser.id}
-              planId={plan.id}
-              priceId={price.priceId}
-              metadata={metadata}
-              className="mt-4 w-full cursor-pointer"
-            >
-              {plan.isLifetime ? t('getLifetimeAccess') : t('getStarted')}
-            </CheckoutButton>
+            plan.id === 'pro' && paymentType === PaymentTypes.SUBSCRIPTION ? (
+              <Button
+                variant="default"
+                className="mt-4 w-full cursor-pointer"
+                disabled={isEnsuringAccess}
+                onClick={() => {
+                  void startCheckout();
+                }}
+              >
+                {plan.isLifetime ? t('getLifetimeAccess') : t('getStarted')}
+              </Button>
+            ) : (
+              <CheckoutButton
+                userId={currentUser.id}
+                planId={plan.id}
+                priceId={price.priceId}
+                metadata={metadata}
+                className="mt-4 w-full cursor-pointer"
+              >
+                {plan.isLifetime ? t('getLifetimeAccess') : t('getStarted')}
+              </CheckoutButton>
+            )
           ) : (
             <LoginWrapper mode="modal" asChild callbackUrl={currentPath}>
               <Button variant="default" className="mt-4 w-full cursor-pointer">

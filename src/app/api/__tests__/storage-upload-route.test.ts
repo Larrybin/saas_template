@@ -37,7 +37,20 @@ function createMultipartRequest(
 
   if (options.file) {
     const { name, type, size } = options.file;
-    const blob = new Blob(['x'.repeat(size)], { type });
+    let blob: Blob;
+
+    if (type === 'image/png') {
+      // Minimal valid PNG header followed by padding to reach the desired size.
+      const pngHeader = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      ]);
+      const paddingSize = Math.max(size - pngHeader.length, 0);
+      const padding = new Uint8Array(paddingSize);
+      blob = new Blob([pngHeader, padding], { type });
+    } else {
+      blob = new Blob(['x'.repeat(size)], { type });
+    }
+
     const file = new File([blob], name, { type });
     form.set('file', file);
   }

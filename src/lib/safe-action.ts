@@ -52,7 +52,33 @@ export function getUserFromCtx(ctx: unknown): User {
 // -----------------------------------------------------------------------------
 // 2. Auth-guarded client
 // -----------------------------------------------------------------------------
-export const userActionClient = actionClient.use(async ({ next }) => {
+export const userActionClient = actionClient.use(async ({ next, ctx }) => {
+  const existingCtx = ctx as { user?: User } | undefined;
+
+  if (existingCtx?.user) {
+    const user = existingCtx.user;
+
+    if (user.banned) {
+      const logger = getLogger({ span: 'safe-action' });
+      logger.warn({ userId: user.id }, 'Blocked banned user from safe-action');
+
+      return {
+        success: false,
+        error: getDomainErrorMessage(
+          'AUTH_BANNED',
+          undefined,
+          AUTH_BANNED_FALLBACK_MESSAGE
+        ),
+        code: 'AUTH_BANNED',
+        retryable: false,
+      };
+    }
+
+    return await withLogContext({ userId: user.id }, () =>
+      next({ ctx: { user } })
+    );
+  }
+
   const session = await getSession();
   if (!session?.user) {
     return {
@@ -63,8 +89,8 @@ export const userActionClient = actionClient.use(async ({ next }) => {
     };
   }
 
-  const user = session.user;
-  if ((user as User).banned) {
+  const user = session.user as User;
+  if (user.banned) {
     const logger = getLogger({ span: 'safe-action' });
     logger.warn({ userId: user.id }, 'Blocked banned user from safe-action');
 
@@ -128,6 +154,32 @@ export type ActionErrorBoundaryOptions<TArgs extends SafeActionHandlerArgs> = {
   retryable?: boolean;
 };
 
+const SENSITIVE_LOG_KEYS = [
+  'password',
+  'token',
+  'secret',
+  'apikey',
+  'authorization',
+  'cookie',
+] as const;
+
+function sanitizeContext(context: Record<string, unknown>) {
+  const sanitized: Record<string, unknown> = { ...context };
+
+  for (const key of Object.keys(sanitized)) {
+    const lowerKey = key.toLowerCase();
+    const isSensitive = SENSITIVE_LOG_KEYS.some((sensitive) =>
+      lowerKey.includes(sensitive)
+    );
+
+    if (isSensitive) {
+      sanitized[key] = '[REDACTED]';
+    }
+  }
+
+  return sanitized;
+}
+
 export function withActionErrorBoundary<
   TArgs extends SafeActionHandlerArgs,
   TResult,
@@ -139,7 +191,8 @@ export function withActionErrorBoundary<
     try {
       return await handler(args);
     } catch (error) {
-      const context = options.getLogContext?.(args) ?? {};
+      const rawContext = options.getLogContext?.(args) ?? {};
+      const context = sanitizeContext(rawContext);
       options.logger.error({ error, ...context }, options.logMessage);
 
       if (error instanceof DomainError) {

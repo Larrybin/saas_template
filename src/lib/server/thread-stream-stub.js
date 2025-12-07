@@ -1,6 +1,4 @@
-'use strict';
-
-const { EventEmitter } = require('events');
+const { EventEmitter } = require('node:events');
 
 /**
  * Minimal stub for `thread-stream` to keep pino transports working in
@@ -18,7 +16,7 @@ class ThreadStreamStub extends EventEmitter {
     super();
 
     this._closed = false;
-    this._sync = !!(opts && opts.sync);
+    this._sync = !!opts?.sync;
 
     // Behave similarly to real thread-stream, which emits `ready`
     // asynchronously once the worker is initialized.
@@ -71,4 +69,3 @@ class ThreadStreamStub extends EventEmitter {
 }
 
 module.exports = ThreadStreamStub;
-

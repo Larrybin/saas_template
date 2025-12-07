@@ -8,7 +8,6 @@ import { uploadFile } from '@/storage';
 import { StorageError } from '@/storage/types';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const SAFE_FOLDER_REGEX = /^[a-z0-9/_-]+$/i;
 const FALLBACK_ALLOWED_FOLDER_ROOTS = ['uploads', 'avatars', 'attachments'];
 const configuredFolderRoots =
@@ -64,6 +63,26 @@ function resolveTargetFolder(
     folder: hasUserSuffix ? basePath : `${basePath}/${userId}`,
   };
 }
+
+const IMAGE_TYPE_VALIDATORS: Record<string, (buffer: Buffer) => boolean> = {
+  'image/png': (buffer) => {
+    const pngMagic = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    if (buffer.length < pngMagic.length) return false;
+    return pngMagic.every((byte, index) => buffer[index] === byte);
+  },
+  'image/jpeg': (buffer) => {
+    // JPEG files start with FF D8 FF and end with FF D9; we only check the header here.
+    if (buffer.length < 3) return false;
+    return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  },
+  'image/webp': (buffer) => {
+    // WebP is RIFF-based: \"RIFF\"....\"WEBP\"
+    if (buffer.length < 12) return false;
+    const riff = buffer.toString('ascii', 0, 4);
+    const webp = buffer.toString('ascii', 8, 12);
+    return riff === 'RIFF' && webp === 'WEBP';
+  },
+};
 
 export async function POST(request: NextRequest) {
   const requestId = resolveRequestId(request.headers);
@@ -143,8 +162,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type (optional, based on your requirements)
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    // Validate file type using the shared validator map
+    const validator = IMAGE_TYPE_VALIDATORS[file.type];
+    if (!validator) {
       logger.warn('Upload failed: unsupported file type', {
         type: file.type,
       });
@@ -178,6 +198,22 @@ export async function POST(request: NextRequest) {
 
     // Convert File to Buffer
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Basic magic number validation for supported image types
+    if (!validator(buffer)) {
+      logger.warn('Upload failed: file magic number does not match type', {
+        type: file.type,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'File type not supported',
+          code: ErrorCodes.StorageUnsupportedType,
+          retryable: false,
+        },
+        { status: 400 }
+      );
+    }
 
     // Upload to storage
     const result = await uploadFile(

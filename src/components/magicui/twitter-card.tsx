@@ -2,14 +2,11 @@ import { Suspense } from "react";
 import { type TweetProps } from "react-tweet";
 import { getTweet } from "react-tweet/api";
 
-import { getLogger } from "@/lib/server/logger";
 import {
 	MagicTweet,
 	TweetNotFound,
 	TweetSkeleton,
 } from "@/components/magicui/twitter-card-ui";
-
-const logger = getLogger({ span: "magicui.twitter-card" });
 
 /**
  * TweetCard (Server Side Only)
@@ -28,7 +25,8 @@ export const TweetCard = async ({
 				if (onError) {
 					onError(err);
 				} else {
-					logger.error({ error: err }, "Failed to fetch tweet");
+					// eslint-disable-next-line no-console
+					console.error("Failed to fetch tweet", err);
 				}
 			})
 		: undefined;

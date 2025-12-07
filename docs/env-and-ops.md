@@ -298,3 +298,41 @@ export const websiteConfig: WebsiteConfig = {
 如需在不同环境 / 站点对 AI 计费进行统一调整，优先通过修改 `websiteConfig.ai.billing` 来完成，而不是直接改 usecase 代码或在调用处硬编码数值。
 
 通过以上约定与实践，可以在不同环境下稳定运行本项目，并快速排查与定位与 Payment/Credits/Storage/AI 等相关的问题。
+
+---
+
+## 7. 安全基线与限流策略
+
+本项目在默认配置下提供一套可直接使用的安全基线，运维侧需要关注以下几点：
+
+- **HTTPS 与 HSTS**  
+  - 生产环境必须确保外部访问仅通过 HTTPS（在 Vercel 上启用 “Enforce HTTPS”）；  
+  - `next.config.ts` 中在 `NODE_ENV=production` 时为所有路由添加 `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`，配合平台配置共同生效。
+
+- **安全头（Security Headers）**  
+  - 所有路由统一注入：
+    - `Content-Security-Policy`（限制脚本/样式/图片/连接等资源来源，默认仅允许 `self` + `https:`）；
+    - `X-Content-Type-Options=nosniff`；
+    - `Referrer-Policy=strict-origin-when-cross-origin`；
+    - `Permissions-Policy`（禁用 camera/microphone/geolocation/payment 等高风险能力）；
+    - `X-Frame-Options=DENY` / `frame-ancestors 'none'`。  
+  - 登录页、控制台页与 `/api/*` 路由额外设置 `Cache-Control: private, no-store, no-cache, max-age=0, must-revalidate`，避免浏览器缓存含用户/支付敏感信息的响应。
+
+- **限流（Rate limiting）与 Redis 依赖**  
+  - 高风险接口（AI 调用、Storage 上传、积分分发等）通过 `enforceRateLimit` 做限流，通常基于用户 ID + 窗口计数；  
+  - 推荐在生产及其他长期运行环境中配置 Upstash Redis：
+    - `UPSTASH_REDIS_REST_URL`
+    - `UPSTASH_REDIS_REST_TOKEN`  
+  - 并将 `RATE_LIMIT_REQUIRE_REDIS=true`：在 Redis 未正确配置或不可用时直接抛错，而不是静默回退到进程内内存桶；本地开发与测试环境默认允许缺失 Redis，并退化为单实例内存限流（同时输出警告日志）。
+
+- **文件上传与存储安全**  
+  - 上传入口 `/api/storage/upload`：
+    - 要求登录（`ensureApiUser`）与限流（`enforceRateLimit(scope: 'storage-upload')`）；  
+    - 限制单文件最大 10MB，仅允许 JPEG/PNG/WebP 图片类型；  
+    - 服务端对文件头进行魔数校验，要求 MIME 类型与魔数同时符合白名单。  
+  - 存储路径通过白名单根目录 + 正则校验 + 自动附加 `userId` 做隔离，具体 provider（S3/R2 等）由 `src/storage` 抽象控制，方便运维层按需要选择私有/公开 bucket 与访问策略。
+
+- **错误暴露与日志**  
+  - Server Actions 与 `/api/*` 路由统一使用 `{ success, error, code?, retryable? }` 的 envelope，错误码在 `docs/error-codes.md` 中归档；  
+  - 响应中不返回堆栈、内部 ID 或 token，仅返回用户可见的错误信息与错误码；详细错误（含 `requestId`、`userId`、`span` 等上下文）只写入服务端日志，便于在日志平台聚合与追踪；  
+  - AI/Payment/Storage 等领域的错误模型与前端 UI 降级策略详见 `docs/error-logging.md` 与对应领域文档。

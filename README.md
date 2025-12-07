@@ -125,6 +125,16 @@ pnpm start
 - Rate limiting（请求限流）使用 Upstash Redis。在生产及其他非 dev/test 环境中，推荐配置 `UPSTASH_REDIS_REST_URL` 与 `UPSTASH_REDIS_REST_TOKEN`，并将 `RATE_LIMIT_REQUIRE_REDIS=true`，这样在 Redis 未正确配置时会直接抛错而不是静默回退到进程级内存桶。
 - 在本地开发和测试环境中，若未配置 Redis，则会自动回退到单实例内存限流，并输出相应的警告日志；如需在 dev/test 环境下也强制使用 Redis，可显式设置 `RATE_LIMIT_REQUIRE_REDIS=true`。
 
+## Security baseline
+
+本模板内置了一套默认启用的安全基线，适用于大多数 SaaS 场景：
+
+- **TLS 与安全头**：通过 `next.config.ts` 的 `headers()` 为所有路由注入统一安全头（CSP、`X-Content-Type-Options=nosniff`、`Referrer-Policy=strict-origin-when-cross-origin`、`Permissions-Policy`、`X-Frame-Options=DENY`）；在生产环境额外启用 `Strict-Transport-Security`，配合 Vercel 的 “Enforce HTTPS” 一起强制 HTTPS，并对登录页、控制台页和 `/api/*` 路由附加 `Cache-Control: private, no-store, no-cache, max-age=0, must-revalidate`。
+- **会话与鉴权**：生产环境下 Better Auth 默认发放 `httpOnly + secure + SameSite=Lax` 会话 Cookie（前提是 `NEXT_PUBLIC_BASE_URL` 为 HTTPS）；所有受保护的 Server Actions 与 API Routes 必须在服务端验证会话（如 `ensureApiUser`），禁止仅凭 Cookie 是否存在做授权判断。
+- **请求限流与滥用防护**：高风险接口（AI、Storage 上传、积分分发等）统一通过 `enforceRateLimit` 做限流；推荐在生产环境配置 Upstash Redis 并设置 `RATE_LIMIT_REQUIRE_REDIS=true`，在限流依赖缺失时直接抛错而不是静默退化为无限流。
+- **文件上传与存储安全**：`/api/storage/upload` 要求登录 + 限流，限制单文件 10MB，仅允许 JPEG/PNG/WebP 图片类型，并在服务端校验 MIME 与魔数；上传目录通过白名单根目录 + 正则 + 自动附加 `userId` 做隔离，后端存储通过 `src/storage` 抽象封装。
+- **错误暴露与日志**：Server Actions 与绝大多数 `/api/*` 路由统一使用 `{ success, error, code?, retryable? }` envelope，错误通过 `ErrorCodes` + `DomainError` 建模；响应中不返回 stack trace/内部 ID/密钥，仅在服务端日志中记录详细错误并附带 `requestId` / `userId` / `span`，AI/Payment/Storage 等领域的错误行为与 UI 降级策略详见 `docs/error-logging.md` 与对应领域文档。
+
 ## Architecture Notes
 
 - **Client logging policy**: 前端代码（组件、hooks 等）禁止直接调用 `console.*`。请统一通过 `src/lib/client-logger.ts` 暴露的 `clientLogger.debug/info/warn/error` 输出，便于未来集中接入 Sentry/LogRocket 等监控服务，并避免在生产环境泄露敏感信息。Code Review 会以此为准；如确需保留 CLI/脚本级 `console`，请在说明中注明用途。

@@ -1,4 +1,4 @@
-import type { Logger } from '@/lib/logger';
+import type { Logger } from '@/lib/server/logger';
 import { getLogger } from '@/lib/server/logger';
 
 export type LifecycleLogger = Pick<Logger, 'error' | 'info' | 'warn'>;

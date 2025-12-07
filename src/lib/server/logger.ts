@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { createHash, randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import pino from 'pino';
 
 export type LogContext = {

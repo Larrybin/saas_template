@@ -1,4 +1,4 @@
-const { EventEmitter } = require('events');
+const { EventEmitter } = require('node:events');
 
 /**
  * Minimal stub for `thread-stream` to keep pino transports working in

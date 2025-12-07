@@ -154,6 +154,32 @@ export type ActionErrorBoundaryOptions<TArgs extends SafeActionHandlerArgs> = {
   retryable?: boolean;
 };
 
+const SENSITIVE_LOG_KEYS = [
+  'password',
+  'token',
+  'secret',
+  'apikey',
+  'authorization',
+  'cookie',
+] as const;
+
+function sanitizeContext(context: Record<string, unknown>) {
+  const sanitized: Record<string, unknown> = { ...context };
+
+  for (const key of Object.keys(sanitized)) {
+    const lowerKey = key.toLowerCase();
+    const isSensitive = SENSITIVE_LOG_KEYS.some((sensitive) =>
+      lowerKey.includes(sensitive)
+    );
+
+    if (isSensitive) {
+      sanitized[key] = '[REDACTED]';
+    }
+  }
+
+  return sanitized;
+}
+
 export function withActionErrorBoundary<
   TArgs extends SafeActionHandlerArgs,
   TResult,
@@ -165,7 +191,8 @@ export function withActionErrorBoundary<
     try {
       return await handler(args);
     } catch (error) {
-      const context = options.getLogContext?.(args) ?? {};
+      const rawContext = options.getLogContext?.(args) ?? {};
+      const context = sanitizeContext(rawContext);
       options.logger.error({ error, ...context }, options.logMessage);
 
       if (error instanceof DomainError) {

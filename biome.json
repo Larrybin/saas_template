@@ -125,6 +125,20 @@
           "expand": "auto"
         }
       }
+    },
+    {
+      "includes": [
+        "src/lib/server/**",
+        "src/db/**",
+        "src/payment/data-access/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNodejsImportProtocol": "error"
+          }
+        }
+      }
     }
   ]
 }

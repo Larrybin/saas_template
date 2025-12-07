@@ -45,9 +45,9 @@ Creem 集成在 Phase A 中仅覆盖标准 Checkout + Webhook 流程，所有字
 - `src/payment/index.ts`
   - 提供对外入口函数：`getPaymentProvider`, `createCheckout`, `createCreditCheckout`, `createCustomerPortal`, `getSubscriptions` 等（不再承担 Webhook 入口职责）。  
   - 通过全局 `paymentProviderFactory`（`DefaultPaymentProviderFactory`，定义于 `src/payment/provider-factory.ts`）获取当前 `PaymentProvider` 实例：
-    - `DefaultPaymentProviderFactory` 会在首次选择 `'stripe'` Provider 时，从 `serverEnv` 读取 Stripe 相关配置（`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`），并使用 `createStripePaymentProviderFromEnv` 组装默认的 `StripePaymentAdapter`（懒初始化，避免在未使用 Stripe 时强制依赖其 env）；  
-    - 当 `providerId === 'creem'` 且 `NODE_ENV !== 'production'` 时，`DefaultPaymentProviderFactory` 会通过 `createCreemPaymentProviderFromEnv` 组装 `CreemPaymentProvider`，该 Provider 基于 `CreemClient` 的 REST 调用与 `websiteConfig.payment.creem` 下的映射配置（`subscriptionProducts` / `creditProducts`）；在生产环境中，选择 `'creem'` 会抛出 `CREEM_PHASE_GATE_ERROR_MESSAGE`，明确提示 Creem 仍处于 Phase A，禁止在生产启用，并引导查看 `.codex/plan/creem-payment-integration.md` 与 `docs/governance-index.md`。  
-    - `getPaymentProvider` 会根据 `websiteConfig.payment.provider` 组装 `PaymentContext`（目前仅包含 `providerId`），并调用 `paymentProviderFactory.getProvider(ctx)` 选择具体 Provider，默认值为 `'stripe'`。
+    - `DefaultPaymentProviderFactory` 会在首次选择 `'creem'` Provider 时，通过 `createCreemPaymentProviderFromEnv` 组装 `CreemPaymentProvider`，该 Provider 基于 `CreemClient` 的 REST 调用与 `websiteConfig.payment.creem` 下的映射配置（`subscriptionProducts` / `creditProducts`）。Creem 所连接的 Test Mode / Live Mode 则由 `CREEM_API_URL` 与对应 API Key 决定。  
+    - 当 `providerId === 'stripe'` 时，则懒初始化 `StripePaymentAdapter`，从 `serverEnv` 读取 `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`。  
+    - `getPaymentProvider` 会根据 `websiteConfig.payment.provider` 组装 `PaymentContext`（目前仅包含 `providerId`），并调用 `paymentProviderFactory.getProvider(ctx)` 选择具体 Provider。模板默认使用 `'stripe'`，如需切换到 Creem，请在 `websiteConfig` 中显式设为 `'creem'` 并配置 `websiteConfig.payment.creem` 映射及 Creem 相关环境变量。
 
 - `src/payment/services/stripe-payment-adapter.ts`
   - `StripePaymentAdapter`：Stripe 场景下的支付适配器，职责包括：
@@ -141,6 +141,25 @@ Creem 集成在 Phase A 中仅覆盖标准 Checkout + Webhook 流程，所有字
      - 委托 `handleStripeWebhookEvent`，其中会：
        - 根据事件类型更新 `payment` 状态；  
        - 对订阅续费事件调用 Billing 域的 `handleRenewal`，进而通过 CreditsGateway 发放周期性积分。
+
+### 2.2 Auth / hasAccess 集成（Phase B）
+
+在 Phase B 中，引入了 Auth-domain 层的访问能力视图（hasAccess），用于为 UI / Server Actions 提供一个「当前用户拥有哪些付费能力」的快照，但不会改变 Payment/Billing/Credits 的事实来源：
+
+- 能力建模与数据来源：
+  - `src/lib/auth-domain.ts` 中定义：`AccessCapability = 'plan:${planId}' | 'feature:${key}'`，以及 `getUserAccessCapabilities(userId)`；
+  - `getUserAccessCapabilities` 通过：
+    - `getSubscriptions({ userId })`（经 `SubscriptionQueryService`，读取本地 `payment` 表），找到 active/trialing 订阅并映射为对应的 `plan:${plan.id}` 能力；
+    - `MembershipService.findActiveMembershipsByUserIds`（读取 `user_lifetime_membership` 表），将有效的 lifetime membership 映射为 `plan:lifetime`（或等价的 plan.id）；
+  - 任何映射错误/异常都会记录日志并兜底为“空能力集合”，避免因能力判定异常而错误扩权。
+- 访问能力消费路径：
+  - `ensure-access-and-checkout` Action（`src/actions/ensure-access-and-checkout.ts`）在发起订阅/积分 checkout 前，先调用 `getUserAccessCapabilities`：
+    - 已具备目标能力 → 返回 `alreadyHasAccess: true`，不触发新 checkout，仅用于 UI 更新；
+    - 尚未具备 → 调用 `BillingService.startSubscriptionCheckout` 或 `PaymentProvider.createCreditCheckout` 创建 checkout；
+  - 前端通过 `useAccessAndCheckout` Hook（`src/hooks/use-access-and-checkout.ts`）统一消费上述 Action，避免在 UI 层散落 provider 分支与能力判断逻辑。
+- 边界与不变式：
+  - hasAccess 只是一层「视图」：它只能读取由 Webhook + Billing/Credits/Membership 写入数据库的状态，不能直接授予订阅/Lifetime/积分，也不能绕过 `/api/webhooks/stripe` / `/api/webhooks/creem` 的链路；  
+  - 当接入 Better Auth / Creem 插件作为 `ExternalAccessProvider` 且通过 `CREEM_BETTER_AUTH_ENABLED=true` 启用时，它只会基于插件在 Database Mode 下同步到本地的订阅视图追加 `feature:*` 级能力（例如 `feature:creem:any-subscription`），不会改变 `plan:*` 判定，更不得基于实时 Creem API 结果直接授予访问能力或维护第二套计费事实来源。
 
 ### 3.2 Credits 套餐购买
 

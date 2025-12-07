@@ -66,6 +66,20 @@
 - Auth 模块本身不直接持有业务状态（如积分），而是通过 user-lifecycle hooks 与 credits/newsletter 等模块进行集成。
 - UI 层只使用 auth client / hooks，不直接操作 user-lifecycle。
 
+### 2.4 付费能力视图（AccessCapability / hasAccess）
+
+- Auth-domain 负责在 Auth 层聚合「付费能力视图」，基于 Billing / Payment / Credits / Membership 的本地状态输出简单的能力标识，而不改变账本事实：
+  - `src/lib/auth-domain.ts` 中定义：`AccessCapability = 'plan:${planId}' | 'feature:${key}'`；
+  - `getUserAccessCapabilities(userId)` 读取本地订阅（`getSubscriptions`）与终身会员记录（`MembershipService`），将 active/trialing 订阅和 lifetime membership 映射为 `plan:${plan.id}` 能力；
+  - 推荐使用 `PLAN_ACCESS_CAPABILITIES` 与 `buildFeatureAccessCapability(key)` 在调用处构造能力字符串，避免在组件/Actions 中散落裸字符串。
+- 决策与数据来源：
+  - 订阅能力：通过 `payment` 表 → `SubscriptionQueryService` → `findPlanByPriceId` 找到对应 plan，仅对非免费且未禁用的 plan 赋予 `plan:${plan.id}` 能力；
+  - 终身会员能力：通过 `user_lifetime_membership` 表（`MembershipService`）与 plan 配置映射为 `plan:lifetime`（或等价的 plan.id）。
+- 边界约束：
+  - Auth-domain 只消费已由 Webhook + Billing + Credits/Membership 写入数据库的视图，不直接调用 Stripe/Creem API，也不在 Auth 层维护第二套账本；
+  - 可选的 `ExternalAccessProvider` 允许接入 Better Auth / Creem 插件提供的 hasAccess 能力，但只能作为访问控制视图/缓存的补充，不能修改账本或绕过 Payment/Billing/Credits 的安全链路。
+  - 当 `CREEM_BETTER_AUTH_ENABLED=true` 且配置了 Better Auth Creem 插件（Database Mode，`persistSubscriptions: true`）时，Auth-domain 会通过 `creem-external-access-provider` 仅在 `feature:*` 维度追加外部能力快照（例如 `feature:creem:any-subscription`），`plan:*` 能力仍完全由本地 Billing/Credits/Membership 决定。
+
 ---
 
 ## 3. Payment 模块
@@ -110,6 +124,37 @@
 
 - Payment 模块是 Stripe 的唯一接入点；UI 或其他模块不得直接操作 Stripe SDK。
 - Credits 的发放与支付结果的映射逻辑位于 Payment / Credits 两模块之间，通过明确的服务接口协作。
+
+### 3.4 hasAccess + checkout 辅助（Phase B）
+
+在完成 Creem Payment Phase A（Provider + Webhook + Billing/Credits 打通）后，Phase B 引入了一个围绕 hasAccess 能力的 checkout 辅助 Action/Hook，简化 UI 侧的「是否已有访问能力 → 是否需要发起 checkout」判断：
+
+- Server Action：`ensure-access-and-checkout`（`src/actions/ensure-access-and-checkout.ts`）
+  - 输入：
+    - `mode: 'subscription' | 'credits'`：区分订阅 vs 积分套餐场景；
+    - `capability: AccessCapability`：目标能力（例如 `plan:pro` 或某个 `feature:*`）；
+    - 订阅场景：`planId` + `priceId`；
+    - 积分场景：`packageId` + `priceId`；
+    - 可选 `metadata`（扩展字段，例如运营标记）。
+  - 行为：
+    1. 调用 `getUserAccessCapabilities(userId)` 判断当前用户是否已具备目标能力；
+    2. 如已具备 → 返回 `{ success: true, data: { alreadyHasAccess: true } }`，不触发新的 checkout；
+    3. 如尚未具备：
+       - `mode = 'subscription'` 时，通过 `BillingService.startSubscriptionCheckout` 创建订阅 checkout；
+       - `mode = 'credits'` 时，通过 `PaymentProvider.createCreditCheckout` 创建积分套餐 checkout；
+    4. 返回 `{ success: true, data: { alreadyHasAccess: false, checkoutUrl, checkoutId } }`。
+  - Provider 透明性：
+    - 是否使用 Stripe 还是 Creem 由 `websiteConfig.payment.provider` + `DefaultPaymentProviderFactory` 决定；
+    - 在非生产环境下，当 provider = `'creem'` 时，会走 `CreemPaymentProvider`，但行为对 Action/Hook 调用方透明。
+- 前端 Hook：`useAccessAndCheckout`（`src/hooks/use-access-and-checkout.ts`）
+  - 典型调用：`useAccessAndCheckout({ capability: PLAN_ACCESS_CAPABILITIES.pro, mode: 'subscription', planId, priceId })`；
+  - 暴露：
+    - `hasAccess`：最近一次调用后的能力判定结果；
+    - `isLoading`：是否正在执行 Action；
+    - `startCheckout()`：触发 `ensure-access-and-checkout`，根据返回自动处理「跳转到 checkout」或「已具备能力，无需跳转」。
+- 模块边界要点：
+  - hasAccess 判定仍以 Billing/Credits/Membership 落库结果为准，不直接依赖 Creem Return URL 或实时 API 请求；
+  - 即便未来接入 Better Auth / Creem 插件作为 `ExternalAccessProvider` 实现，也只能在 Auth-domain 层补充访问视图，不能绕过 Payment/Billing/Credits 的安全链路或成为第二计费事实来源。
 
 ---
 

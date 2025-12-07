@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getMembershipService } from '@/lib/server/membership-service';
+import {
+  type GetUserAccessCapabilitiesOptions,
+  getUserAccessCapabilities,
+} from '@/lib/server/user-access-capabilities';
 import { getSubscriptions } from '@/payment';
 import { PaymentTypes } from '@/payment/types';
 import {
   type AccessCapability,
-  getUserAccessCapabilities,
   setExternalAccessProvider,
 } from '../auth-domain';
 
@@ -128,9 +131,11 @@ describe('getUserAccessCapabilities', () => {
       },
     });
 
-    const result = await getUserAccessCapabilities('user_1', {
+    const options: GetUserAccessCapabilitiesOptions = {
       externalCapabilities: [externalCapability],
-    });
+    };
+
+    const result = await getUserAccessCapabilities('user_1', options);
 
     expect(result).toContain(externalCapability);
 

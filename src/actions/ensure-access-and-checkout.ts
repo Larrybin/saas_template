@@ -1,10 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import {
-  type AccessCapability,
-  getUserAccessCapabilities,
-} from '@/lib/auth-domain';
+import type { AccessCapability } from '@/lib/auth-domain';
 import { DomainError } from '@/lib/domain-errors';
 import {
   getUserFromCtx,
@@ -56,6 +53,10 @@ export const ensureAccessAndMaybeStartCheckout = async ({
   customerEmail: string;
   userName?: string | null;
 }): Promise<EnsureAccessAndCheckoutResult> => {
+  const { getUserAccessCapabilities } = await import(
+    '@/lib/server/user-access-capabilities'
+  );
+
   const capabilities = await getUserAccessCapabilities(userId, {
     externalCapabilities: [input.capability as AccessCapability],
   });

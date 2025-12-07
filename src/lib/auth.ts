@@ -10,7 +10,7 @@ import { getDb } from '@/db/index';
 import { serverEnv } from '@/env/server';
 import { defaultMessages } from '@/i18n/messages';
 import { LOCALE_COOKIE_NAME, routing } from '@/i18n/routing';
-import { handleAuthUserCreated } from '@/lib/auth-domain';
+import { handleAuthUserCreated } from '@/lib/server/auth-user-lifecycle';
 import { sendEmail } from '@/mail';
 import './server/auth-access-provider';
 import { isCreemBetterAuthEnabled } from './server/creem-config';
@@ -56,6 +56,13 @@ export const auth = betterAuth({
     provider: 'pg', // or "mysql", "sqlite"
   }),
   session: {
+    /**
+     * Session cookies:
+     * - In production Better Auth issues httpOnly + secure + SameSite=Lax cookies by default,
+     *   as long as baseURL is HTTPS.
+     * - All protected actions/pages must validate the session on the server; cookie existence
+     *   alone must never be treated as sufficient authentication.
+     */
     // https://www.better-auth.com/docs/concepts/session-management#cookie-cache
     cookieCache: {
       enabled: true,

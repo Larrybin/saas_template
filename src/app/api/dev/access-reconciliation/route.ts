@@ -1,9 +1,7 @@
-'use server';
-
 import { NextResponse } from 'next/server';
-import { getUserAccessCapabilities } from '@/lib/auth-domain';
 import { getCreemFeatureEntitlementsForUser } from '@/lib/server/creem-external-access-provider';
 import { getLogger } from '@/lib/server/logger';
+import { getUserAccessCapabilities } from '@/lib/server/user-access-capabilities';
 
 const logger = getLogger({ span: 'dev.access-reconciliation' });
 

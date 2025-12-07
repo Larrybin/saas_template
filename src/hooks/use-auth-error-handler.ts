@@ -13,11 +13,34 @@ export type AuthErrorInput = DomainErrorLike & {
 
 const HANDLED_AUTH_CODES = new Set(['AUTH_UNAUTHORIZED', 'AUTH_BANNED']);
 
+type AuthErrorHandlerOptions = {
+  callbackUrl?: string;
+};
+
+function resolveCallbackUrl(explicit?: string): string | undefined {
+  if (explicit?.startsWith('/')) {
+    return explicit;
+  }
+
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+
+  const pathname = window.location.pathname || '/';
+  const search = window.location.search || '';
+  const combined = `${pathname}${search}`;
+
+  return combined.startsWith('/') ? combined : '/';
+}
+
 export function useAuthErrorHandler() {
   const t = useTranslations();
   const router = useLocaleRouter();
 
-  return (error: AuthErrorInput | null | undefined): boolean => {
+  return (
+    error: AuthErrorInput | null | undefined,
+    options?: AuthErrorHandlerOptions
+  ): boolean => {
     if (!error?.code) {
       return false;
     }
@@ -33,7 +56,16 @@ export function useAuthErrorHandler() {
     );
 
     toast.error(message);
-    router.push(Routes.Login);
+
+    const callbackUrl = resolveCallbackUrl(options?.callbackUrl);
+
+    if (callbackUrl) {
+      router.push(
+        `${Routes.Login}?callbackUrl=${encodeURIComponent(callbackUrl)}`
+      );
+    } else {
+      router.push(Routes.Login);
+    }
 
     return true;
   };

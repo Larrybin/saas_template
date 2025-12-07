@@ -1,18 +1,13 @@
 import '../../tests/helpers/actions';
 import { describe, expect, it, vi } from 'vitest';
-import * as authDomain from '@/lib/auth-domain';
 import * as billingServiceModule from '@/lib/server/billing-service';
+import * as authDomain from '@/lib/server/user-access-capabilities';
 import * as paymentModule from '@/payment';
 import { ensureAccessAndCheckoutAction } from './ensure-access-and-checkout';
 
-vi.mock('@/lib/auth-domain', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/auth-domain')>();
-
-  return {
-    ...actual,
-    getUserAccessCapabilities: vi.fn(),
-  };
-});
+vi.mock('@/lib/server/user-access-capabilities', () => ({
+  getUserAccessCapabilities: vi.fn(),
+}));
 
 vi.mock('@/lib/server/billing-service', () => ({
   getBillingService: vi.fn(),

@@ -1072,5 +1072,17 @@
   "AIAudioPage": {
     "title": "AI Audio",
     "description": "MkSaaS lets you make AI SaaS in days, simply and effortlessly"
+  },
+  "AIBilling": {
+    "chatHint": "AI Chat includes a limited number of free calls per billing period. After free calls are used, each call will consume credits.",
+    "textHint": "Web Content Analyzer includes a limited number of free calls per billing period. After free calls are used, each analysis will consume credits.",
+    "imageHint": "AI Image generation includes a limited number of free calls per billing period. After free calls are used, each image generation will consume credits.",
+    "learnMore": "Learn more about AI billing and credits"
+  },
+  "AIErrors": {
+    "invalidRequestTitle": "Invalid AI request",
+    "delayedTitle": "AI request delayed",
+    "requestFailedTitle": "AI request failed",
+    "imageFailedTitle": "Image generation failed"
   }
 }

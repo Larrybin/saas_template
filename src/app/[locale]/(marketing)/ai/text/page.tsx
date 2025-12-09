@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { WebContentAnalyzer } from '@/ai/text/components/web-content-analyzer';
+import { AiBillingHint } from '@/components/shared/ai-billing-hint';
 import { constructMetadata } from '@/lib/metadata';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 
@@ -44,8 +45,9 @@ export default async function AITextPage() {
           </p>
         </div>
 
-        {/* Web Content Analyzer Component */}
-        <div className="max-w-6xl mx-auto">
+        {/* Billing Hint + Web Content Analyzer Component */}
+        <div className="max-w-6xl mx-auto space-y-4">
+          <AiBillingHint variant="text" />
           <WebContentAnalyzer className="w-full" />
         </div>
 

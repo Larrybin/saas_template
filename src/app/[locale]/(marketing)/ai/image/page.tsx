@@ -4,6 +4,7 @@ import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { ImagePlayground } from '@/ai/image/components/ImagePlayground';
 import { getRandomSuggestions } from '@/ai/image/lib/suggestions';
+import { AiBillingHint } from '@/components/shared/ai-billing-hint';
 import { constructMetadata } from '@/lib/metadata';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 
@@ -37,8 +38,9 @@ export default async function AIImagePage() {
           </div>
         </div>
 
-        {/* Image Playground Component */}
-        <div className="max-w-6xl mx-auto">
+        {/* Billing Hint + Image Playground Component */}
+        <div className="max-w-6xl mx-auto space-y-4">
+          <AiBillingHint variant="image" />
           <ImagePlayground suggestions={getRandomSuggestions(5)} />
         </div>
       </div>

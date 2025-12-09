@@ -29,6 +29,7 @@ type AiErrorContext = {
  */
 export function useAiErrorUi() {
   const t = useTranslations();
+  const aiErrorsT = useTranslations('AIErrors');
   const translate = useCallback(
     (key: string) => t(key as Parameters<typeof t>[0]),
     [t]
@@ -61,34 +62,34 @@ export function useAiErrorUi() {
       const severity = strategy?.severity;
 
       if (severity === 'info') {
-        toast.info('Invalid AI request', toastOptions);
+        toast.info(aiErrorsT('invalidRequestTitle'), toastOptions);
         return;
       }
 
       if (severity === 'warning') {
-        toast.warning('AI request delayed', toastOptions);
+        toast.warning(aiErrorsT('delayedTitle'), toastOptions);
         return;
       }
+
+      const title =
+        context.source === 'image'
+          ? aiErrorsT('imageFailedTitle')
+          : aiErrorsT('requestFailedTitle');
 
       if (severity === 'error') {
-        toast.error(
-          context.source === 'image'
-            ? 'Image generation failed'
-            : 'AI request failed',
-          toastOptions
-        );
+        toast.error(title, toastOptions);
         return;
       }
 
-      // 没有命中策略时降级为 error
+      // 没有命中策略时降级为 error，但仍使用统一的 i18n 标题
       toast.error(
         context.source === 'image'
-          ? 'Image generation failed'
-          : 'AI request failed',
+          ? aiErrorsT('imageFailedTitle')
+          : aiErrorsT('requestFailedTitle'),
         toastOptions
       );
     },
-    [translate]
+    [aiErrorsT, translate]
   );
 
   return {

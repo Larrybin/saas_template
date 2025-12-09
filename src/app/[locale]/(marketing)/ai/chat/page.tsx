@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import ChatBot from '@/ai/chat/components/ChatBot';
+import { AiBillingHint } from '@/components/shared/ai-billing-hint';
 import { constructMetadata } from '@/lib/metadata';
 import { getUrlWithLocale } from '@/lib/urls/urls';
 
@@ -36,8 +37,9 @@ export default async function AIChatPage() {
           </div>
         </div>
 
-        {/* Chat Bot */}
-        <div className="max-w-6xl mx-auto">
+        {/* Billing Hint + Chat Bot */}
+        <div className="max-w-6xl mx-auto space-y-4">
+          <AiBillingHint variant="chat" />
           <ChatBot />
         </div>
       </div>

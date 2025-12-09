@@ -1072,5 +1072,17 @@
   "AIAudioPage": {
     "title": "AI 音频",
     "description": "MkSaaS 让您在几天内轻松构建您的 AI SaaS，简单且毫不费力"
+  },
+  "AIBilling": {
+    "chatHint": "AI 聊天在每个计费周期内提供一定数量的免费调用，超出免费额度后，每次调用将消耗积分。",
+    "textHint": "网页内容分析在每个计费周期内提供一定数量的免费调用，超出免费额度后，每次分析将消耗积分。",
+    "imageHint": "AI 图片生成功能在每个计费周期内提供一定数量的免费调用，超出免费额度后，每次生成图片将消耗积分。",
+    "learnMore": "了解 AI 计费与积分规则"
+  },
+  "AIErrors": {
+    "invalidRequestTitle": "AI 请求无效",
+    "delayedTitle": "AI 请求延迟",
+    "requestFailedTitle": "AI 请求失败",
+    "imageFailedTitle": "图片生成失败"
   }
 }

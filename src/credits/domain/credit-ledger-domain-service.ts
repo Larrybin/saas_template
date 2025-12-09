@@ -108,41 +108,58 @@ export class CreditLedgerDomainService {
   async addCredits(payload: AddCreditsPayload, db?: DbExecutor) {
     this.validateAddCreditsPayload(payload);
     const executor = await this.resolveExecutor(db);
-    const now = new Date();
-    const periodKey =
-      typeof payload.periodKey === 'number' && payload.periodKey > 0
-        ? payload.periodKey
-        : 0;
-    const current = await this.repository.findUserCredit(
-      payload.userId,
-      executor
-    );
-    const newBalance = (current?.currentCredits ?? 0) + payload.amount;
-    await this.repository.upsertUserCredit(
-      payload.userId,
-      newBalance,
-      executor
-    );
 
-    const expirationDate =
-      payload.expireDays && payload.expireDays > 0
-        ? addDays(now, payload.expireDays)
-        : undefined;
+    const run = async (exec: DbExecutor) => {
+      const now = new Date();
+      const periodKey =
+        typeof payload.periodKey === 'number' && payload.periodKey > 0
+          ? payload.periodKey
+          : 0;
+      await this.repository.upsertUserCredit(
+        payload.userId,
+        payload.amount,
+        exec
+      );
 
-    await this.saveCreditTransaction(
-      {
-        userId: payload.userId,
-        type: payload.type,
-        amount: payload.amount,
-        remainingAmount: payload.amount,
-        description: payload.description,
-        paymentId: payload.paymentId,
-        expirationDate,
-        periodKey,
-      },
-      executor,
-      now
-    );
+      const expirationDate =
+        payload.expireDays && payload.expireDays > 0
+          ? addDays(now, payload.expireDays)
+          : undefined;
+
+      await this.saveCreditTransaction(
+        {
+          userId: payload.userId,
+          type: payload.type,
+          amount: payload.amount,
+          remainingAmount: payload.amount,
+          description: payload.description,
+          paymentId: payload.paymentId,
+          expirationDate,
+          periodKey,
+        },
+        exec,
+        now
+      );
+
+      this.logger.info(
+        {
+          userId: payload.userId,
+          type: payload.type,
+          periodKey,
+          paymentId: payload.paymentId,
+        },
+        'credit transaction recorded'
+      );
+    };
+
+    if (this.isTransaction(executor)) {
+      await run(executor);
+      return;
+    }
+
+    await executor.transaction(async (tx) => {
+      await run(tx);
+    });
   }
 
   async hasEnoughCredits(

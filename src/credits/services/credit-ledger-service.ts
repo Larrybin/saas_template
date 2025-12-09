@@ -85,10 +85,31 @@ export class CreditLedgerService implements CreditsGateway {
     > = creditsServiceLogger
   ) {}
 
+  private logAddCreditsInvocation(
+    payload: AddCreditsPayload,
+    context: { via: string }
+  ) {
+    const { userId, type, periodKey, paymentId, amount } = payload;
+    this.logger.info(
+      {
+        userId,
+        type,
+        periodKey: periodKey ?? null,
+        paymentId,
+        amount,
+        via: context.via,
+      },
+      'credits.add dispatched from service'
+    );
+  }
+
   async addCredits(
     payload: AddCreditsPayload,
     transaction?: CreditsTransaction
   ): Promise<void> {
+    this.logAddCreditsInvocation(payload, {
+      via: transaction ? 'addCredits(transaction)' : 'addCredits',
+    });
     const executor = resolveExecutor(transaction);
     await this.domainService.addCredits(payload, executor);
   }
@@ -97,6 +118,9 @@ export class CreditLedgerService implements CreditsGateway {
     payload: AddCreditsPayload,
     executor: DbExecutor
   ): Promise<void> {
+    this.logAddCreditsInvocation(payload, {
+      via: 'addCreditsWithExecutor',
+    });
     await this.domainService.addCredits(payload, executor);
   }
 

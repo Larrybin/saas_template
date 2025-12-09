@@ -70,7 +70,7 @@ describe('handleStripeWebhookEvent - credit purchases', () => {
     expect(resolveExecutor(transactionArg)).toBeDefined();
   });
 
-  it('ignores webhook when metadata is missing', async () => {
+  it('logs and surfaces error when credit purchase metadata is missing', async () => {
     getCreditPackageByIdMock.mockReturnValue({
       id: 'pkg_basic',
       amount: 10,
@@ -90,8 +90,17 @@ describe('handleStripeWebhookEvent - credit purchases', () => {
       data: { object: session },
     };
 
-    await handleStripeWebhookEvent(event, deps);
+    await expect(handleStripeWebhookEvent(event, deps)).rejects.toThrow(
+      'Credit purchase metadata is missing required fields'
+    );
 
+    expect(deps.logger.error).toHaveBeenCalledWith(
+      {
+        sessionId: session.id,
+        metadata: session.metadata,
+      },
+      'Credit purchase webhook missing metadata'
+    );
     expect(deps.creditsGateway.addCredits).not.toHaveBeenCalled();
     await expect(
       deps.paymentRepository.findBySessionId(session.id)

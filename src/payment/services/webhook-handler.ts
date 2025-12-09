@@ -1,10 +1,12 @@
 import { randomUUID } from 'crypto';
 import type { Logger } from 'pino';
+import { InvalidCreditPayloadError } from '@/credits/domain/errors';
 import { getCreditPackageById } from '@/credits/server';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import { createCreditsTransaction } from '@/credits/services/transaction-context';
 import { CREDIT_TRANSACTION_TYPE } from '@/credits/types';
 import type { BillingRenewalPort } from '@/domain/billing';
+import { processSubscriptionRenewalWithCredits } from '@/lib/server/usecases/process-subscription-renewal-with-credits';
 import { PaymentTypes } from '../types';
 import type { NotificationGateway } from './gateways/notification-gateway';
 import type {
@@ -85,56 +87,13 @@ async function onCreateSubscription(
   const userId = subscription.metadata.userId;
   if (!userId) return;
   const { periodStart, periodEnd } = getSubscriptionPeriodBounds(subscription);
-  const effectivePeriodStart = periodStart ?? new Date();
-  await deps.paymentRepository.withTransaction(async (tx) => {
-    await deps.paymentRepository.upsertSubscription(
-      {
-        id: randomUUID(),
-        priceId,
-        type: PaymentTypes.SUBSCRIPTION,
-        userId,
+  await processSubscriptionRenewalWithCredits(
+    {
+      eventType: 'created',
+      subscription: {
+        id: subscription.id,
         customerId: subscription.customer as string,
-        subscriptionId: subscription.id,
-        interval: mapStripeIntervalToPlanInterval(subscription),
-        status: mapSubscriptionStatusToPaymentStatus(subscription.status),
-        periodStart: effectivePeriodStart,
-        periodEnd,
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        trialStart: subscription.trial_start
-          ? new Date(subscription.trial_start * 1000)
-          : null,
-        trialEnd: subscription.trial_end
-          ? new Date(subscription.trial_end * 1000)
-          : null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      tx
-    );
-    await deps.billingService.handleRenewal({
-      userId,
-      priceId,
-      cycleRefDate: effectivePeriodStart,
-      transaction: createCreditsTransaction(tx),
-    });
-  });
-}
-
-async function onUpdateSubscription(
-  subscription: StripeSubscriptionLike,
-  deps: WebhookDeps
-) {
-  const priceId = subscription.items.data[0]?.price.id;
-  if (!priceId) return;
-  const { periodStart, periodEnd } = getSubscriptionPeriodBounds(subscription);
-  const handled = await deps.paymentRepository.withTransaction(async (tx) => {
-    const existing = await deps.paymentRepository.findOneBySubscriptionId(
-      subscription.id,
-      tx
-    );
-    const updatedId = await deps.paymentRepository.updateBySubscriptionId(
-      subscription.id,
-      {
+        userId,
         priceId,
         interval: mapStripeIntervalToPlanInterval(subscription),
         status: mapSubscriptionStatusToPaymentStatus(subscription.status),
@@ -147,33 +106,48 @@ async function onUpdateSubscription(
         trialEnd: subscription.trial_end
           ? new Date(subscription.trial_end * 1000)
           : null,
-        updatedAt: new Date(),
       },
-      tx
-    );
-    if (!updatedId) {
-      return false;
+    },
+    {
+      paymentRepository: deps.paymentRepository,
+      billingService: deps.billingService,
     }
-    const isRenewal =
-      existing?.periodStart &&
-      periodStart &&
-      existing.periodStart.getTime() !== periodStart.getTime() &&
-      subscription.status === 'active';
-    if (isRenewal && existing?.userId) {
-      const effectivePeriodStart =
-        periodStart ?? existing.periodStart ?? new Date();
-      await deps.billingService.handleRenewal({
-        userId: existing.userId,
+  );
+}
+
+async function onUpdateSubscription(
+  subscription: StripeSubscriptionLike,
+  deps: WebhookDeps
+) {
+  const priceId = subscription.items.data[0]?.price.id;
+  if (!priceId) return;
+  const { periodStart, periodEnd } = getSubscriptionPeriodBounds(subscription);
+  await processSubscriptionRenewalWithCredits(
+    {
+      eventType: 'updated',
+      subscription: {
+        id: subscription.id,
+        customerId: subscription.customer as string,
+        userId: subscription.metadata.userId ?? '',
         priceId,
-        cycleRefDate: effectivePeriodStart,
-        transaction: createCreditsTransaction(tx),
-      });
+        interval: mapStripeIntervalToPlanInterval(subscription),
+        status: mapSubscriptionStatusToPaymentStatus(subscription.status),
+        periodStart,
+        periodEnd,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        trialStart: subscription.trial_start
+          ? new Date(subscription.trial_start * 1000)
+          : null,
+        trialEnd: subscription.trial_end
+          ? new Date(subscription.trial_end * 1000)
+          : null,
+      },
+    },
+    {
+      paymentRepository: deps.paymentRepository,
+      billingService: deps.billingService,
     }
-    return true;
-  });
-  if (!handled) {
-    await onCreateSubscription(subscription, deps);
-  }
+  );
 }
 
 async function onDeleteSubscription(
@@ -252,7 +226,16 @@ async function onCreditPurchase(
   const packageId = session.metadata?.packageId;
   const credits = session.metadata?.credits;
   if (!userId || !packageId || !credits) {
-    return;
+    deps.logger.error(
+      {
+        sessionId: session.id,
+        metadata: session.metadata,
+      },
+      'Credit purchase webhook missing metadata'
+    );
+    throw new InvalidCreditPayloadError(
+      'Credit purchase metadata is missing required fields'
+    );
   }
   const creditPackage = getCreditPackageById(packageId);
   if (!creditPackage) {

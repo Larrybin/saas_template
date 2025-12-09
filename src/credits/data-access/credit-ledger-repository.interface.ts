@@ -15,7 +15,10 @@ export interface ICreditLedgerRepository {
   ): Promise<UserCreditRecord | undefined>;
 
   /**
-   * Inserts or updates the aggregate credit balance for a user.
+   * Atomically updates the aggregate credit balance for a user.
+   *
+   * The `credits` argument is treated as a delta (positive or negative),
+   * not as the final absolute balance.
    */
   upsertUserCredit(
     userId: string,

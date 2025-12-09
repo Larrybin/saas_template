@@ -139,7 +139,13 @@ describe('Billing -> Credits integration (happy path)', () => {
     transactions.length = 0;
 
     const mockedGetDb = getDb as unknown as GetDbMock;
-    mockedGetDb.mockResolvedValue({} as unknown);
+    const fakeExecutor: unknown = {};
+    const fakeDb: any = {
+      transaction: async (cb: (tx: unknown) => Promise<void>) => {
+        await cb(fakeExecutor);
+      },
+    };
+    mockedGetDb.mockResolvedValue(fakeDb as unknown);
 
     vi.spyOn(creditLedgerRepository, 'findUserCredit').mockImplementation(
       async (userId: string): Promise<UserCreditRecord | undefined> => {

@@ -3,6 +3,7 @@ import { CreditLedgerService } from '@/credits/services/credit-ledger-service';
 import type { CreditsGateway } from '@/credits/services/credits-gateway';
 import type { BillingRenewalPort } from '@/domain/billing';
 import { getLogger } from '@/lib/server/logger';
+import { ConfigurationError } from '@/storage/types';
 import { PaymentRepository } from '../data-access/payment-repository';
 import { StripeEventRepository } from '../data-access/stripe-event-repository';
 import { UserRepository } from '../data-access/user-repository';
@@ -28,6 +29,11 @@ type StripeWebhookHandlerOverrides = StripeProviderOverrides & {
   billingService: BillingRenewalPort;
 };
 
+const stripeConfigLogger = getLogger({
+  span: 'payment.stripe',
+  provider: 'stripe',
+});
+
 export const createStripeClientFromSecret = (
   secretKey: string
 ): StripeClientLike => {
@@ -46,7 +52,13 @@ const resolveStripeSecretKey = (
   const stripeSecretKey =
     overrides?.stripeSecretKey ?? env.stripeSecretKey ?? undefined;
   if (!stripeSecretKey) {
-    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+    stripeConfigLogger.error(
+      { missingKeys: ['STRIPE_SECRET_KEY'] },
+      'Stripe configuration missing STRIPE_SECRET_KEY'
+    );
+    throw new ConfigurationError(
+      'STRIPE_SECRET_KEY environment variable is not set'
+    );
   }
   return stripeSecretKey;
 };
@@ -58,7 +70,13 @@ const resolveStripeWebhookSecret = (
   const stripeWebhookSecret =
     overrides?.stripeWebhookSecret ?? env.stripeWebhookSecret ?? undefined;
   if (!stripeWebhookSecret) {
-    throw new Error('STRIPE_WEBHOOK_SECRET environment variable is not set.');
+    stripeConfigLogger.error(
+      { missingKeys: ['STRIPE_WEBHOOK_SECRET'] },
+      'Stripe configuration missing STRIPE_WEBHOOK_SECRET'
+    );
+    throw new ConfigurationError(
+      'STRIPE_WEBHOOK_SECRET environment variable is not set.'
+    );
   }
 
   return stripeWebhookSecret;

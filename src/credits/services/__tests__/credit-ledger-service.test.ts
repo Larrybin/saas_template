@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { InsufficientCreditsError } from '@/credits/domain/errors';
 import { getDb } from '@/db';
+import type { DbExecutor } from '../../data-access/types';
 import { CREDIT_TRANSACTION_TYPE } from '../../types';
 import {
   addCredits,
@@ -28,21 +29,23 @@ vi.mock('@/lib/server/logger', () => ({
 
 type GetDbMock = Mock<
   () => Promise<{
-    transaction: (cb: (tx: undefined) => Promise<void>) => Promise<void>;
+    transaction: (cb: (tx: DbExecutor) => Promise<void>) => Promise<void>;
   }>
 >;
 
 describe('CreditLedgerService', () => {
   const mockedGetDb = getDb as unknown as GetDbMock;
   let fakeDb: Awaited<ReturnType<GetDbMock>>;
+  let fakeExecutor: DbExecutor;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    fakeExecutor = {} as DbExecutor;
     fakeDb = {
-      transaction: async (cb: (tx: undefined) => Promise<void>) => {
-        await cb(undefined);
+      transaction: async (cb: (tx: DbExecutor) => Promise<void>) => {
+        await cb(fakeExecutor);
       },
-    };
+    } as Awaited<ReturnType<GetDbMock>>;
     mockedGetDb.mockResolvedValue(fakeDb);
   });
 
@@ -79,27 +82,22 @@ describe('CreditLedgerService', () => {
       1,
       'txn-1',
       0,
-      undefined
+      fakeExecutor
     );
     expect(updateRemainingSpy).toHaveBeenNthCalledWith(
       2,
       'txn-2',
       40,
-      undefined
+      fakeExecutor
     );
-    expect(updateCreditsSpy).toHaveBeenCalledWith('user-1', 70, undefined);
+    expect(updateCreditsSpy).toHaveBeenCalledWith('user-1', 70, fakeExecutor);
     expect(usageSpy).toHaveBeenCalledWith(
       expect.objectContaining({ amount: -30 }),
-      undefined
+      fakeExecutor
     );
   });
 
   it('adds credits and writes transaction record', async () => {
-    vi.spyOn(creditLedgerRepository, 'findUserCredit').mockResolvedValue({
-      id: 'ledger-1',
-      userId: 'user-1',
-      currentCredits: 10,
-    } as any);
     const upsertSpy = vi
       .spyOn(creditLedgerRepository, 'upsertUserCredit')
       .mockResolvedValue();
@@ -114,8 +112,11 @@ describe('CreditLedgerService', () => {
       description: 'bonus',
     });
 
-    expect(upsertSpy).toHaveBeenCalledWith('user-1', 30, fakeDb);
-    expect(transactionSpy).toHaveBeenCalledWith(expect.any(Object), fakeDb);
+    expect(upsertSpy).toHaveBeenCalledWith('user-1', 20, fakeExecutor);
+    expect(transactionSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      fakeExecutor
+    );
   });
 
   it('prioritizes expiring transactions before non-expiring ones', async () => {
@@ -155,13 +156,13 @@ describe('CreditLedgerService', () => {
       1,
       'txn-exp',
       0,
-      undefined
+      fakeExecutor
     );
     expect(updateRemainingSpy).toHaveBeenNthCalledWith(
       2,
       'txn-non-exp',
       10,
-      undefined
+      fakeExecutor
     );
   });
 
@@ -186,7 +187,7 @@ describe('CreditLedgerService', () => {
 
     expect(transactionSpy).toHaveBeenCalledWith(
       expect.objectContaining({ expirationDate: undefined }),
-      fakeDb
+      fakeExecutor
     );
   });
 

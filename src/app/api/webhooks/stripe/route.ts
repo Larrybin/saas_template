@@ -27,11 +27,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     // Validate inputs
     if (!payload) {
+      logger.error(
+        { reason: 'missing-payload' },
+        'Stripe webhook payload missing'
+      );
       return NextResponse.json(
         {
           success: false,
           error: 'Missing webhook payload',
-          code: ErrorCodes.UnexpectedError,
+          code: ErrorCodes.PaymentSecurityViolation,
           retryable: false,
         },
         { status: 400 }
@@ -39,11 +43,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (!signature) {
+      logger.error(
+        { reason: 'missing-signature' },
+        'Stripe webhook signature missing'
+      );
       return NextResponse.json(
         {
           success: false,
           error: 'Missing Stripe signature',
-          code: ErrorCodes.UnexpectedError,
+          code: ErrorCodes.PaymentSecurityViolation,
           retryable: false,
         },
         { status: 400 }
@@ -90,7 +98,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         code: ErrorCodes.UnexpectedError,
         retryable: true,
       },
-      { status: 400 }
+      { status: 500 }
     );
   }
 }

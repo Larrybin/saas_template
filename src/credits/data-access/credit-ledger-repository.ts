@@ -27,22 +27,24 @@ export class CreditLedgerRepository implements ICreditLedgerRepository {
     credits: number,
     db: DbExecutor
   ): Promise<void> {
-    const existing = await this.findUserCredit(userId, db);
-    if (existing) {
-      await db
-        .update(userCredit)
-        .set({ currentCredits: credits, updatedAt: new Date() })
-        .where(eq(userCredit.userId, userId));
-      return;
-    }
+    const now = new Date();
 
-    await db.insert(userCredit).values({
-      id: randomUUID(),
-      userId,
-      currentCredits: credits,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    await db
+      .insert(userCredit)
+      .values({
+        id: randomUUID(),
+        userId,
+        currentCredits: credits,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: userCredit.userId,
+        set: {
+          currentCredits: sql`${userCredit.currentCredits} + ${credits}`,
+          updatedAt: now,
+        },
+      });
   }
 
   async updateUserCredits(

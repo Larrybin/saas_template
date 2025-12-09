@@ -41,9 +41,15 @@ describe('CreditLedgerDomainService (period key)', () => {
 
   beforeEach(() => {
     repository = createRepositoryMock();
+    const fakeExecutor: any = {};
+    const fakeDb: any = {
+      transaction: async (cb: (tx: any) => Promise<void>) => {
+        await cb(fakeExecutor);
+      },
+    };
     domainService = new CreditLedgerDomainService(
       repository,
-      async () => ({}) as never
+      async () => fakeDb
     );
   });
 

@@ -43,8 +43,9 @@ export const handleCreemWebhook = async (
   const signature = headers.get(CREEM_SIGNATURE_HEADER);
 
   if (!payload) {
+    logger.warn({ reason: 'missing-payload' }, 'Missing Creem webhook payload');
     throw new DomainError({
-      code: ErrorCodes.UnexpectedError,
+      code: ErrorCodes.PaymentSecurityViolation,
       message: 'Missing Creem webhook payload',
       retryable: false,
     });
@@ -71,8 +72,12 @@ export const handleCreemWebhook = async (
   }
 
   if (!signature) {
+    logger.warn(
+      { reason: 'missing-signature', signatureHeader: CREEM_SIGNATURE_HEADER },
+      'Missing Creem webhook signature'
+    );
     throw new DomainError({
-      code: ErrorCodes.UnexpectedError,
+      code: ErrorCodes.PaymentSecurityViolation,
       message: 'Missing Creem webhook signature',
       retryable: false,
     });
@@ -83,6 +88,7 @@ export const handleCreemWebhook = async (
   if (!isValid) {
     logger.warn(
       {
+        reason: 'invalid-signature',
         signatureHeader: CREEM_SIGNATURE_HEADER,
       },
       'Creem webhook signature verification failed'

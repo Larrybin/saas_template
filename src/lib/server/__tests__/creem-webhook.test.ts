@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServerEnv } from '@/env/server';
 import * as serverEnvModule from '@/env/server';
-import { DomainError } from '@/lib/domain-errors';
 import { handleCreemWebhook } from '@/lib/server/creem-webhook';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import * as signatureModule from '@/payment/creem-signature';
@@ -75,9 +74,9 @@ describe('handleCreemWebhook', () => {
   });
 
   it('throws domain error when payload is missing', async () => {
-    await expect(handleCreemWebhook('', new Headers())).rejects.toBeInstanceOf(
-      DomainError
-    );
+    await expect(handleCreemWebhook('', new Headers())).rejects.toMatchObject({
+      code: ErrorCodes.PaymentSecurityViolation,
+    });
   });
 
   it('throws domain error when signature is missing', async () => {
@@ -86,7 +85,9 @@ describe('handleCreemWebhook', () => {
     );
     await expect(
       handleCreemWebhook('{"id":"evt_1"}', new Headers())
-    ).rejects.toBeInstanceOf(DomainError);
+    ).rejects.toMatchObject({
+      code: ErrorCodes.PaymentSecurityViolation,
+    });
   });
 
   it('throws misconfigured error when webhook secret is missing', async () => {

@@ -14,18 +14,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const payload = await req.text();
 
   try {
-    if (!payload) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing webhook payload',
-          code: ErrorCodes.UnexpectedError,
-          retryable: false,
-        },
-        { status: 400 }
-      );
-    }
-
     await handleCreemWebhook(payload, req.headers);
 
     return NextResponse.json({ received: true }, { status: 200 });

@@ -96,6 +96,27 @@ For a detailed description of the payment lifecycle, Stripe integration and its 
 For a detailed description of AI text/chat/image lifecycles and their interaction with credits, see `docs/ai-lifecycle.md`.  
 For a detailed description of storage upload/delete lifecycles and provider boundaries, see `docs/storage-lifecycle.md`.  
 For developer-oriented guidance and extension patterns, see `docs/developer-guide.md`.
+For docs/marketing/blog routing and Source mappings, see the section below.
+
+---
+
+## Docs / Marketing / Blog Source ↔ Route 映射
+
+本项目使用 Fumadocs 的 Source 机制将内容仓库映射到 Next.js 路由，核心映射集中在 `src/lib/source.ts`：
+
+| Source 变量       | baseUrl    | 典型路由前缀示例        | 说明                              |
+| ----------------- | ---------- | ------------------------ | --------------------------------- |
+| `source`          | `/docs`    | `/docs/...`              | 主文档（架构、API、指南等）。    |
+| `changelogSource` | `/changelog` | `/changelog/...`       | 版本变更记录。                    |
+| `pagesSource`     | `/pages`   | `/pages/...`             | 营销/静态页面内容。              |
+| `authorSource`    | `/author`  | `/author/...`            | 博客作者档案页。                  |
+| `categorySource`  | `/category` | `/category/...`        | 博客分类页。                      |
+| `blogSource`      | `/blog`    | `/blog/...`              | 博客文章内容。                    |
+
+> 若未来调整 docs/marketing/blog 路由前缀或 Source 配置，应同时更新：  
+> - `src/lib/source.ts` 中对应 `baseUrl`；  
+> - 本表（用于架构与路由约定的统一视图）；  
+> - 如有必要，更新 `docs/governance-index.md` 中指向本表的说明。
 
 ---
 

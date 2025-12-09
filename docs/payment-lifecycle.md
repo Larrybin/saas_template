@@ -63,7 +63,8 @@ Creem 集成在 Phase A 中仅覆盖标准 Checkout + Webhook 流程，所有字
     - 从 `serverEnv` 读取 `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`；  
     - 通过 `createStripeWebhookHandlerFromEnv` 组装 `StripeWebhookHandler` 所需的 Stripe client / 仓储 / 网关；  
     - 通过 `getBillingService()` 获取 Billing 领域服务（按窄接口 `BillingRenewalPort` 使用）；  
-    - 调用 `handler.handleWebhookEvent(payload, signature)` 完成验证、幂等与业务协作。
+    - 调用 `handler.handleWebhookEvent(payload, signature)` 完成验证、幂等与业务协作（包括订阅续费、一
+      次性购买、Credits 套餐购买等）。
 
 ### 2.2 数据访问与仓储
 
@@ -93,7 +94,11 @@ Creem 集成在 Phase A 中仅覆盖标准 Checkout + Webhook 流程，所有字
     - `CREEM_CHECKOUT_NETWORK_ERROR`：代表调用 Creem checkout API 时的网络或传输层异常（如超时、连接失败）。
 
 - `src/lib/server/creem-webhook.ts` + `src/payment/services/creem-webhook-handler.ts`
-  - Webhook 入口 `/api/webhooks/creem` 调用 `handleCreemWebhook(payload, headers)`，使用 `CREEM_WEBHOOK_SECRET`（`serverEnv.creemWebhookSecret`）与 `creem-signature` 头进行验签，失败时抛出 `PAYMENT_SECURITY_VIOLATION`。  
+  - Webhook 入口 `/api/webhooks/creem` 调用 `handleCreemWebhook(payload, headers)`，使用 `CREEM_WEBHOOK_SECRET`（`serverEnv.creemWebhookSecret`）与 `creem-signature` 头进行验签：  
+    - payload 为空或缺少 `creem-signature` 头时记录 `reason: 'missing-payload' | 'missing-signature'` 并抛出 `PAYMENT_SECURITY_VIOLATION`；  
+    - 签名存在但验签失败时记录 `reason: 'invalid-signature'` 并抛出 `PAYMENT_SECURITY_VIOLATION`；  
+    - 缺少关键 env（`CREEM_API_KEY` / `CREEM_WEBHOOK_SECRET`）时记录 `missingEnv`，抛出 `CREEM_WEBHOOK_MISCONFIGURED`；  
+    - JSON 解析失败或事件 payload 不完整时记录结构化上下文并抛出 `UNEXPECTED_ERROR`（不会执行任何账本 side‑effect）。  
   - 通过 `CreemEventRepository.withEventProcessingLock('creem', ...)` 统一处理 Creem 事件幂等，并委托 `CreemWebhookHandler`：  
     - 处理 `checkout.completed`：根据 metadata 中的 `product_type` / `credits` 与 customer/product 信息，写入一次性付款记录并通过 `CreditsGateway` 发放积分；  
     - 处理 `subscription.*`：将 Creem 订阅状态映射为内部 `PaymentStatus`，更新本地订阅记录并在续费时调用 Billing 域的 `handleRenewal`。  
@@ -129,7 +134,7 @@ Creem 集成在 Phase A 中仅覆盖标准 Checkout + Webhook 流程，所有字
      - 调用 `PaymentProvider.createCheckout`（默认 `StripePaymentAdapter`）创建 checkout session。  
    - 结果通过 Action 返回前端，前端重定向到 Stripe Checkout。
 
-3. **续费与积分发放**：
+3. **续费与积分发放（经 usecase 收口）**：
    - Stripe 在订阅续费时触发相关 webhook 事件，POST 到 `/api/webhooks/stripe`。  
    - API Route：`src/app/api/webhooks/stripe/route.ts`：
      - 使用 `createLoggerFromHeaders` 建立 request logger；  
@@ -138,9 +143,12 @@ Creem 集成在 Phase A 中仅覆盖标准 Checkout + Webhook 流程，所有字
    - Webhook 处理由 `StripeWebhookHandler` 承担：
      - 通过 `stripe.webhooks.constructEvent` 验证并解析事件。  
      - 使用 `StripeEventRepository.withEventProcessingLock` 确保幂等处理。  
-     - 委托 `handleStripeWebhookEvent`，其中会：
-       - 根据事件类型更新 `payment` 状态；  
-       - 对订阅续费事件调用 Billing 域的 `handleRenewal`，进而通过 CreditsGateway 发放周期性积分。
+     - 委托 `handleStripeWebhookEvent`，其中：
+       - 使用 `getSubscriptionPeriodBounds` / `mapStripeIntervalToPlanInterval` 等工具，将 Stripe 订阅事件归一化为内部快照（SubscriptionSnapshot）；  
+       - 对订阅续费相关事件调用 usecase `processSubscriptionRenewalWithCredits`（`src/lib/server/usecases/process-subscription-renewal-with-credits.ts`），在单一事务中：  
+         - 通过 `PaymentRepository` 记录或更新本地订阅 Payment 记录；  
+         - 判断当前更新是否代表新的续费周期；  
+         - 对续费周期调用 Billing 域的 `handleRenewal`，再由其通过 `CreditsGateway` 发放周期性积分。
 
 ### 2.2 Auth / hasAccess 集成（Phase B）
 
@@ -193,9 +201,9 @@ Creem 集成在 Phase A 中仅覆盖标准 Checkout + Webhook 流程，所有字
 
 - Webhook Route：`src/app/api/webhooks/stripe/route.ts`
   - 使用 `DomainError` 捕获 Payment/Billing 域错误：  
-    - `PAYMENT_SECURITY_VIOLATION` → 返回 400 + `{ error, code, retryable }`。  
+    - `PAYMENT_SECURITY_VIOLATION` → 返回 400 + `{ error, code, retryable: false }`（包括签名/密钥缺失等安全校验失败场景）。  
     - 其他 DomainError → 400/500 视 `retryable` 而定。  
-  - 对未知错误统一返回：  
+  - 对未知错误统一返回 500：  
     - `{ success: false, error: 'Webhook handler failed', code: 'UNEXPECTED_ERROR', retryable: true }`。
 
 ### 4.2 前端错误消费（Payment 相关）

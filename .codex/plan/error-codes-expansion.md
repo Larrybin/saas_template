@@ -93,3 +93,17 @@
   - DRY：所有重复使用的错误码必须集中到 ErrorCodes。
   - SOLID：API route 仅依赖 ErrorCodes 常量；DomainError 类型只在需要处收紧 code 类型，避免全局泛型爆炸。
 
+## 错误码变更 checklist
+
+在新增或修改错误码时，建议逐项确认：
+
+1. **集中声明**
+   - [ ] 已在 `src/lib/server/error-codes.ts` 中新增或更新对应常量，字符串值符合现有命名规范。
+2. **文档同步**
+   - [ ] 已在 `docs/error-codes.md` 中补充或更新该错误码的说明（包括含义、所属领域、典型触发场景）。
+3. **前端 UI 行为（如适用）**
+   - [ ] 若该错误码需要特殊 UI 行为（跳转登录、打开积分页、特定 toast 文案等），已在 `src/lib/domain-error-ui-registry.ts` 中配置对应策略。
+4. **领域 / 协议文档**
+   - [ ] 若错误码属于特定领域（如 AI / Credits / Payment / Storage），已在对应的 `docs/*-lifecycle.md` 或相关文档中更新该错误码及其触发路径。
+5. **协议报告 / 计划文档（如属跨领域协议变更）**
+   - [ ] 若错误码牵涉跨领域协议或新增重要约定，已评估是否需要更新 `.codex/plan/protocol-future-techdebt-report.md` 及相关 `.codex/plan/*` 文档，保持报告与实现同步。

@@ -26,6 +26,8 @@ Storage 模块的主要职责：
   - 类型定义：`src/storage/types.ts`。  
   - 配置适配：`src/storage/config/storage-config.ts`（从 `serverEnv.storage` 构造 `StorageConfig`）。
 
+此外，Storage 模块还提供了生成预签名上传 URL 的能力，用于在未来支持浏览器直传（见第 6 章）。
+
 ---
 
 ## 2. 上传生命周期（Upload）
@@ -40,16 +42,20 @@ Storage 模块的主要职责：
        - 再调用 `uploadFileFromBrowser(file, 'avatars')` 推送到后端。
 
 2. **客户端 helper：`uploadFileFromBrowser`（`src/storage/client.ts`）**
-   - 行为：
-     - 构造 `FormData`（`file` + `folder`）；  
-     - `fetch('/api/storage/upload', { method: 'POST', body: formData })`；  
-     - 解析 JSON，预期形状：
-       - 成功：`{ success: true, data: UploadFileResult }`；  
-       - 失败：`{ success: false, error?: string, code?: string, retryable?: boolean }`。
-     - 当 `!response.ok` 或 `!json.success` 时：
-       - 使用 `getErrorUiStrategy(json.code)` 查找 Storage 相关错误策略；  
-       - 使用 `getDomainErrorMessage(json.code, undefined, strategy.defaultFallbackMessage ?? 'Failed to upload file')` 生成 message；  
-       - 抛出 `Error & DomainErrorLike`，附带 `code/retryable`，供上层 Hook/组件通过 `useStorageErrorUi` 统一消费。
+   - 行为（头像等前端上传的统一入口）：
+     - **优先尝试预签名直传**：
+       - 调用 `/api/storage/presign`，传入 `filename` / `contentType` / `folder` / `size`；  
+       - 预期成功响应：`{ success: true, data: { uploadUrl, method, key, publicUrl } }`；  
+       - 使用 `uploadUrl` 通过 `fetch(uploadUrl, { method, headers: { 'Content-Type': file.type }, body: file })` 直接 PUT 到存储；  
+       - 成功后返回 `{ url: publicUrl, key }`，与 `UploadFileResult` 形态一致。
+     - 当 `presign` 失败或 PUT 返回非 2xx 且错误属于存储提供方问题（`code === 'STORAGE_PROVIDER_ERROR' | 'STORAGE_UNKNOWN_ERROR'`）时：
+       - **回退到直传 API**：构造 `FormData(file, folder)`；  
+       - `fetch('/api/storage/upload', { method: 'POST', body: formData })`；  
+       - 成功返回同样的 `UploadFileResult`。
+     - 两条路径的错误 envelope 统一为：  
+       - 失败：`{ success: false, error?: string, code?: string, retryable?: boolean }`；  
+       - 使用 `getErrorUiStrategy(json.code)` 查找策略，`getDomainErrorMessage` 生成 message；  
+       - 抛出附带 `code/retryable` 的 `Error & DomainErrorLike`，供 `useStorageErrorUi` 消费。
 
 3. **前端错误 UI：`useStorageErrorUi`（`src/hooks/use-storage-error-ui.ts`）**
    - 领域 Hook 封装：
@@ -91,6 +97,59 @@ Storage 模块的主要职责：
    - 失败：
      - 若为 `StorageError` → 500 + `{ success: false, error, code: STORAGE_PROVIDER_ERROR, retryable: true }`；  
      - 其他错误 → 500 + `{ success: false, error: 'Something went wrong while uploading the file', code: STORAGE_UNKNOWN_ERROR, retryable: true }`。
+
+### 2.3 预签名上传（直传预备能力）
+
+本模板已在 Storage Provider 层实现预签名上传 URL 能力，但默认 UI 仍使用 `/api/storage/upload` 中转。  
+当需要在前端改为“浏览器直传”时，可遵循以下流程：
+
+1. **请求预签名 URL**
+   - 调用 `POST /api/storage/presign`，请求体：
+
+     ```json
+     {
+       "filename": "avatar.png",
+       "contentType": "image/png",
+       "folder": "avatars",
+       "size": 12345
+     }
+     ```
+
+   - 该路由会：
+     - 复用与 `/api/storage/upload` 一致的鉴权与限流；
+     - 通过 `resolveTargetFolder(folder, userId)` 约束目标路径；
+     - 对 `contentType` 做基础校验（当前仅支持 `image/*`）。
+
+   - 成功响应示例：
+
+     ```json
+     {
+       "success": true,
+       "data": {
+         "url": "https://bucket.s3.amazonaws.com/avatars/user_123/uuid.png?...",
+         "method": "PUT",
+         "key": "avatars/user_123/uuid.png"
+       }
+     }
+     ```
+
+2. **浏览器直传**
+   - 前端拿到 `url` 与 `method` 后，可以直接：
+
+     ```ts
+     await fetch(presign.data.url, {
+       method: presign.data.method,
+       headers: { 'Content-Type': file.type },
+       body: file,
+     });
+     ```
+
+   - 上传成功后，业务端可以持久化 `key` 或通过约定规则构造公开访问 URL（例如基于 `publicUrl`）。
+
+3. **安全注意事项**
+   - 预签名 URL 默认有效期较短（例如 15 分钟），并仅限于写入指定 `key`；
+   - Provider 层强制 `endpoint`/`publicUrl` 使用 HTTPS，防止通过明文通道泄露 bearer URL；
+   - 推荐仅为需要的 MIME 类型开放预签名直传（当前实现仅针对图片）。
 
 ---
 
@@ -180,4 +239,3 @@ Storage 模块的主要职责：
    - 在前端继续使用 `uploadFileFromBrowser` 和 `useStorageErrorUi`，避免新增 provider 时修改大量 UI 代码。
 
 通过上述分层与边界控制，可以在不影响现有业务的前提下，安全地替换或增加存储后端。
-

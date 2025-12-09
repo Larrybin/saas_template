@@ -183,16 +183,26 @@ Stripe       →  /api/webhooks/stripe  →  handleStripeWebhook  →  StripeWeb
 
 - 事件触发：
   - 用户在前端触发「购买积分」入口，调用如 `createCreditCheckoutSession` 等 Action。  
-  - Stripe 付款完成后，经 webhook / 后台任务调用 Credits 发放 API。
+  - Stripe 付款完成后，经 webhook / 后台任务调用 Credits 发放 API。  
+  - 管理员/客服在受控入口中执行人工调账操作（如补发/扣回积分）。
 
-- 调用链（典型）：
+- 调用链（套餐购买）：
   - 前端：调用 `src/actions/create-credit-checkout-session.ts` 等。  
-  - Payment：在 webhook 处理中根据支付结果（packageId 等）调用某个“发放积分”的 usecase。  
-  - Credits：通过 `addCredits` 或特定包装函数（如 `addSubscriptionCredits` 的变体）写入账本。
+  - Payment：在 Stripe webhook 处理中，根据支付结果（`packageId` 等）调用 Credits 发放 usecase（见 Payment 模块的 `handleStripeWebhookEvent` 实现）。  
+  - Credits：通过 `addCredits` 写入账本，type 通常为 `PURCHASE_PACKAGE`。
+
+- 调用链（人工调整 / 最小方案）：
+  - Admin Action：`src/actions/adjust-user-credits.ts`（基于 `adminActionClient`，仅对管理员开放）：  
+    - 接受 `{ userId, amount, direction: 'increase' | 'decrease', reason, correlationId? }`。  
+    - 使用统一的 safe-action 错误包装与日志上下文（span: `actions.admin.adjust-user-credits`）。  
+  - Usecase：`src/lib/server/usecases/adjust-user-credits.ts`：  
+    - direction = `increase`：调用 `addCredits`，写入 type = `MANUAL_ADJUSTMENT` 交易；  
+    - direction = `decrease`：调用 `consumeCredits` 扣减积分，由领域服务负责余额校验；  
+    - 在日志中记录 `operatorId` / `userId` / `amount` / `direction` / `reason` / `correlationId`，span 为 `credits.manual-adjustment`，用于审计追踪。
 
 - 持久化影响：
-  - 按套餐配置一次性新增若干积分交易记录（一般为单条 type = `PACKAGE_PURCHASE`）。  
-  - 更新用户余额。
+  - 套餐购买：按套餐配置一次性新增若干积分交易记录（一般为单条 type = `PURCHASE_PACKAGE`），更新用户余额。  
+  - 人工调整：新增 type = `MANUAL_ADJUSTMENT` 的发放记录（增加），或仅消费记录（减少），所有操作均可通过 `reason` 与审计日志追踪操作人和原因。
 
 ### 3.5 积分消费（AI 调用等）
 
@@ -242,6 +252,12 @@ Stripe       →  /api/webhooks/stripe  →  handleStripeWebhook  →  StripeWeb
 - 持久化影响：
   - 每次 Job 运行可能新增若干发放交易记录与过期调整记录。  
   - `jobRunId` 关联的日志可用于追踪特定批次的状态与异常。
+
+- 典型错误码与报警建议：
+  - `CRON_BASIC_AUTH_MISCONFIGURED`：缺失/配置错误的 Cron Basic Auth 环境变量。  
+    - 建议：以 `span = api.credits.distribute` + `code = CRON_BASIC_AUTH_MISCONFIGURED` 为条件配置告警，优先由运维修正环境变量。  
+  - `CREDITS_DISTRIBUTION_FAILED`：Job 执行过程中出现未处理异常。  
+    - 建议：同样以 `span = api.credits.distribute` + `code = CREDITS_DISTRIBUTION_FAILED` 为条件配置高优先级告警，并结合 `jobRunId` 调查具体批次。  
 
 ---
 

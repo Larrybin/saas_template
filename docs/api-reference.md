@@ -137,7 +137,7 @@
   {
     "success": false,
     "error": "URL must start with http:// or https://",
-    "code": "AI_CONTENT_VALIDATION_ERROR",
+    "code": "ANALYZE_CONTENT_INVALID_PARAMS",
     "retryable": false
   }
   ```
@@ -307,6 +307,64 @@
 
 - **Success**：`{"received": true}`。
 - **Error Codes**：`PAYMENT_SECURITY_VIOLATION`（签名错误）、DomainError（Billing/Credits），以及 `UNEXPECTED_ERROR`。
+
+### POST `/api/webhooks/creem`
+- **Purpose**：接收 Creem Webhook 事件（Checkout、Subscription）。
+- **Auth**：Creem `creem-signature` header + Webhook Secret 验证（`CREEM_WEBHOOK_SECRET`）。
+- **Request**：
+
+  Creem 控制台中配置 Webhook URL 为：
+
+  ```bash
+  https://app.example.com/api/webhooks/creem
+  ```
+
+  服务器读取原始 payload（`req.text()`）及 `creem-signature`，交由 `handleCreemWebhook(payload, headers)`：
+
+  - 当 payload 为空、缺少签名头或签名验证失败时，记录结构化日志并抛出 `PAYMENT_SECURITY_VIOLATION`；
+  - 当 env 配置缺失（如 `CREEM_API_KEY` / `CREEM_WEBHOOK_SECRET` 缺失）时抛出 `CREEM_WEBHOOK_MISCONFIGURED`；
+  - 解析失败或事件内容不符合预期时视为 `UNEXPECTED_ERROR`。
+
+- **Success**：`{"received": true}`。
+- **Error Codes**：
+  - `PAYMENT_SECURITY_VIOLATION`：payload 缺失、签名缺失或签名校验失败；
+  - `CREEM_WEBHOOK_MISCONFIGURED`：环境变量配置错误；
+  - 其他 Payment/Billing/Credits 领域 `DomainError`，以及 `UNEXPECTED_ERROR`。 
+
+### GET `/api/dev/access-reconciliation`
+- **Purpose**：开发环境下对齐「本地 AccessCapability 视图」与 Creem 外部特权视图的调试工具。
+- **Auth**：None（仅非生产环境启用；`NODE_ENV === 'production'` 时直接返回 404）。
+- **Request**：
+
+  ```bash
+  curl "http://localhost:3000/api/dev/access-reconciliation?userId=user_123"
+  ```
+
+- **Success**：
+
+  ```json
+  {
+    "success": true,
+    "data": {
+      "userId": "user_123",
+      "localCapabilities": ["plan:pro", "feature:analytics"],
+      "creemFeatures": ["feature:creem:any-subscription"]
+    }
+  }
+  ```
+
+- **Failure**（示例，缺少 userId）：
+
+  ```json
+  {
+    "success": false,
+    "error": "Missing userId query parameter",
+    "code": "UNEXPECTED_ERROR",
+    "retryable": false
+  }
+  ```
+
+  发生内部错误时返回 500，`code` 同样为 `UNEXPECTED_ERROR`，`retryable: true`，仅供开发/调试使用，不建议在生产环境依赖该路由。 
 
 ### GET/POST `/api/auth/[...all]`
 - **Purpose**：Better Auth Next.js Handler，聚合所有 auth 相关子路由（如 `/api/auth/login`, `/api/auth/register`, `/api/auth/session` 等）。

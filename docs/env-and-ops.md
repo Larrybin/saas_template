@@ -41,6 +41,22 @@
 
 > 注：当前模板默认使用 Creem 作为 Payment Provider，`websiteConfig.payment.provider` 的默认值已经切换为 `'creem'`。如需改回 Stripe，只需在配置中显式设置 `provider: 'stripe'`。Creem 的 Test Mode / Live Mode 由 `CREEM_API_URL` 决定：`https://test-api.creem.io/v1` 对应测试环境，`https://api.creem.io/v1` 对应生产环境；请确保 API Key 与 URL 成对配置。
 
+---
+
+## 2. Env ↔ 协议行为映射
+
+下表集中描述关键环境变量与协议/API 行为之间的关系，特别是缺失或配置错误时的表现（HTTP 状态 + 错误码），用于运维排查与告警配置。
+
+| Env                                | 受影响协议/API                            | 缺失/配置错误时行为                                                                                          |
+| ---------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `STRIPE_SECRET_KEY`               | Stripe 客户端初始化（Payment 域）         | 构造 Stripe client 时抛 `ConfigurationError` 并输出 `{ missingKeys: ['STRIPE_SECRET_KEY'] }` 日志，相关支付流程无法使用；一般视为配置错误，需修正后重新部署。 |
+| `STRIPE_WEBHOOK_SECRET`           | `POST /api/webhooks/stripe`               | Stripe Webhook 验签失败时抛 `PAYMENT_SECURITY_VIOLATION`（400，`retryable: false`），详见 `docs/payment-lifecycle.md`。 |
+| `CREEM_API_KEY` / `CREEM_API_URL` | Creem Provider / `POST /api/webhooks/creem` | 组合不正确时抛 `PAYMENT_SECURITY_VIOLATION` 或 `CREEM_PROVIDER_MISCONFIGURED`，部分请求可能返回 500；详情见 `docs/payment-lifecycle.md`。 |
+| `CREEM_WEBHOOK_SECRET`            | `POST /api/webhooks/creem`               | Webhook 验签失败时抛 `PAYMENT_SECURITY_VIOLATION`（400），不会执行后续 side-effect。                        |
+| `CRON_JOBS_USERNAME` / `CRON_JOBS_PASSWORD` | `GET /api/distribute-credits`      | 缺失时：返回 500 + `CRON_BASIC_AUTH_MISCONFIGURED`（`retryable: false`）；错误 Basic Auth 时：401 + `AUTH_UNAUTHORIZED`。 |
+| Storage 相关 env（`STORAGE_*`）   | `POST /api/storage/upload` 等             | 配置错误可能导致 Storage 客户端初始化或上传失败，返回 `STORAGE_PROVIDER_ERROR` 或 `STORAGE_UNKNOWN_ERROR`，详见 `docs/storage-lifecycle.md`。 |
+| AI Provider 相关 env（`OPENAI_API_KEY` 等） | `/api/chat`、`/api/analyze-content`、`/api/generate-images` | 缺失或无效时，通常通过 AI usecase 映射为 `AI_CONTENT_AUTH_ERROR` / `AI_CONTENT_SERVICE_UNAVAILABLE` 等错误码，详见 `docs/ai-lifecycle.md`。 |
+
 ### 1.1 Creem 环境变量（Phase A）
 
 
@@ -237,7 +253,7 @@ Better Auth 的 Creem 插件在本模板中只负责构建「访问控制视图�
 
 ---
 
-## 6. websiteConfig.ai.billing 配置
+## 3. websiteConfig.ai.billing 配置
 
 AI 调用的计费规则不再在业务代码中硬编码，而是集中在 `websiteConfig.ai.billing` 中配置，并通过 `AiBillingPolicy` 适配层提供给 usecase：
 

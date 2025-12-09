@@ -1,5 +1,9 @@
 import { LOCALES } from '@/i18n/routing';
-import { protectedRoutes, routesNotAllowedByLoggedInUsers } from '@/routes';
+import {
+  protectedRoutes,
+  routesNotAllowedByLoggedInUsers,
+  Routes,
+} from '@/routes';
 
 export const SESSION_COOKIE_SUFFIXES = [
   'better-auth.session_token',
@@ -82,14 +86,39 @@ export function shouldCheckSession(pathname: string): boolean {
   );
 }
 
-export function buildSafeCallbackUrl(nextUrl: URL): string {
-  let callbackPath = nextUrl.pathname;
-  if (nextUrl.search) {
-    callbackPath += nextUrl.search;
-  }
+type CallbackPathClassification =
+  | { safe: true; reason?: undefined }
+  | { safe: false; reason: string };
 
-  if (!callbackPath.startsWith('/')) {
-    callbackPath = '/';
+function classifyCallbackPath(path: string): CallbackPathClassification {
+  if (!path.startsWith('/')) {
+    return { safe: false, reason: 'non-absolute-path' };
+  }
+  if (path.startsWith('//')) {
+    return { safe: false, reason: 'protocol-relative-url' };
+  }
+  if (/^\/https?:\/\//i.test(path)) {
+    return { safe: false, reason: 'absolute-url-in-path' };
+  }
+  return { safe: true };
+}
+
+export function buildSafeCallbackUrl(nextUrl: URL): string {
+  const originalPath =
+    nextUrl.pathname + (nextUrl.search ? nextUrl.search : '');
+
+  let callbackPath = originalPath;
+
+  const classification = classifyCallbackPath(callbackPath);
+  if (!classification.safe) {
+    // Middleware 运行在 Edge 环境，不能依赖 server-only logger。
+    // 使用 console.warn 输出结构化日志，方便在平台侧聚合。
+    // eslint-disable-next-line no-console
+    console.warn('Rejected unsafe callback path', {
+      reason: classification.reason,
+      originalPath,
+    });
+    callbackPath = Routes.Login;
   }
 
   return encodeURIComponent(callbackPath);

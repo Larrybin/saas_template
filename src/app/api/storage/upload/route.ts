@@ -1,68 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { websiteConfig } from '@/config/website';
 import { ensureApiUser } from '@/lib/server/api-auth';
 import { ErrorCodes } from '@/lib/server/error-codes';
 import { createLoggerFromHeaders, resolveRequestId } from '@/lib/server/logger';
 import { enforceRateLimit } from '@/lib/server/rate-limit';
 import { uploadFile } from '@/storage';
+import { resolveTargetFolder } from '@/storage/folder';
 import { StorageError } from '@/storage/types';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const SAFE_FOLDER_REGEX = /^[a-z0-9/_-]+$/i;
-const FALLBACK_ALLOWED_FOLDER_ROOTS = ['uploads', 'avatars', 'attachments'];
-const configuredFolderRoots =
-  websiteConfig.storage.allowedFolders &&
-  websiteConfig.storage.allowedFolders.length > 0
-    ? websiteConfig.storage.allowedFolders
-    : FALLBACK_ALLOWED_FOLDER_ROOTS;
-const ALLOWED_FOLDER_ROOTS = new Set(
-  configuredFolderRoots.map((folder) => folder.toLowerCase())
-);
-const DEFAULT_FOLDER_ROOT =
-  configuredFolderRoots[0]?.toLowerCase() ?? FALLBACK_ALLOWED_FOLDER_ROOTS[0];
-
-type FolderResolutionResult =
-  | { ok: true; folder: string }
-  | { ok: false; error: string };
-
-function resolveTargetFolder(
-  folder: string | null,
-  userId: string
-): FolderResolutionResult {
-  const rawValue = (folder ?? '').trim();
-  if (!rawValue) {
-    return { ok: true, folder: `${DEFAULT_FOLDER_ROOT}/${userId}` };
-  }
-
-  const sanitized = rawValue.replace(/^\/*/, '').replace(/\/*$/, '');
-  if (!sanitized || !SAFE_FOLDER_REGEX.test(sanitized)) {
-    return {
-      ok: false,
-      error: 'Folder contains invalid characters',
-    };
-  }
-
-  const segments = sanitized.split('/');
-  const rootSegment = segments[0] ?? '';
-  const rootKey = rootSegment.toLowerCase();
-  if (!ALLOWED_FOLDER_ROOTS.has(rootKey)) {
-    return {
-      ok: false,
-      error: 'Folder is not allowed',
-    };
-  }
-
-  const subPath = segments.slice(1).join('/');
-  const basePath = subPath ? `${rootKey}/${subPath}` : rootKey;
-  const normalizedSegments = basePath.split('/').filter(Boolean);
-  const trailingSegment =
-    normalizedSegments[normalizedSegments.length - 1] ?? '';
-  const hasUserSuffix = trailingSegment === userId;
-  return {
-    ok: true,
-    folder: hasUserSuffix ? basePath : `${basePath}/${userId}`,
-  };
-}
 
 const IMAGE_TYPE_VALIDATORS: Record<string, (buffer: Buffer) => boolean> = {
   'image/png': (buffer) => {

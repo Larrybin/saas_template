@@ -52,4 +52,21 @@ describe('proxy helpers', () => {
     const rootBase = new URL('https://example.com');
     expect(buildSafeCallbackUrl(rootBase)).toBe(encodeURIComponent('/'));
   });
+
+  test('allows relative paths with dot segments', () => {
+    const url = new URL('https://example.com/docs/../ai/text?foo=bar');
+    expect(buildSafeCallbackUrl(url)).toBe(
+      encodeURIComponent('/ai/text?foo=bar')
+    );
+  });
+
+  test('rejects protocol-relative callback paths', () => {
+    const url = new URL('https://example.com//evil.com');
+    expect(buildSafeCallbackUrl(url)).toBe(encodeURIComponent(Routes.Login));
+  });
+
+  test('rejects absolute URL embedded in path', () => {
+    const url = new URL('https://example.com/http://evil.com');
+    expect(buildSafeCallbackUrl(url)).toBe(encodeURIComponent(Routes.Login));
+  });
 });

@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { serverEnv } from '@/env/server';
 import { createEmailLogFields, getLogger } from '@/lib/server/logger';
+import { withRetry } from '@/lib/server/retry';
 import { getTemplate } from '@/mail';
 import { mailConfigProvider } from '@/mail/mail-config-provider';
 import type {
@@ -110,28 +111,45 @@ export class ResendProvider implements MailProvider {
     }
 
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: this.from,
-        to,
-        subject,
-        html,
-        ...(text ? { text } : {}),
-      });
+      const data = await withRetry(
+        'mail.resend.send',
+        async (attempt) => {
+          const result = await this.resend.emails.send({
+            from: this.from,
+            to,
+            subject,
+            html,
+            ...(text ? { text } : {}),
+          });
 
-      if (error) {
-        this.logger.error({ error }, 'Error sending email');
-        return {
-          success: false,
-          error,
-        };
-      }
+          if (result.error) {
+            this.logger.error(
+              { error: result.error, attempt },
+              'Error sending email via Resend'
+            );
+            throw result.error;
+          }
+
+          return result.data;
+        },
+        {
+          logger: this.logger,
+          logContext: createEmailLogFields(to, {
+            from: this.from,
+            subject,
+          }),
+        }
+      );
 
       return {
         success: true,
         messageId: data?.id,
       };
     } catch (error) {
-      this.logger.error({ error }, 'Error sending email');
+      this.logger.error(
+        { error, to, subject },
+        'Error sending email after retries'
+      );
       return {
         success: false,
         error,

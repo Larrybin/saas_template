@@ -79,6 +79,8 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Biome lint
         run: pnpm lint
+      - name: Protocol & error model checks
+        run: pnpm check:protocol
       - name: Type check
         run: pnpm exec tsc --noEmit
 

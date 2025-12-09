@@ -73,8 +73,8 @@ export async function POST(req: Request) {
       {
         success: false,
         error: validationError.userMessage,
-        code: validationError.code,
-        retryable: validationError.retryable,
+        code: ErrorCodes.AnalyzeContentInvalidJson,
+        retryable: false,
       } satisfies AnalyzeContentResponse,
       { status: 400 }
     );
@@ -117,8 +117,8 @@ export async function POST(req: Request) {
       {
         success: false,
         error: validationError.userMessage,
-        code: validationError.code,
-        retryable: validationError.retryable,
+        code: ErrorCodes.AnalyzeContentInvalidParams,
+        retryable: false,
       } satisfies AnalyzeContentResponse,
       { status: 400 }
     );

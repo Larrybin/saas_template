@@ -23,6 +23,8 @@ const ERROR_UI_REGISTRY_FILE = path.join(
   'lib',
   'domain-error-ui-registry.ts'
 );
+const API_DOC_FILE = path.join('docs', 'api-reference.md');
+const ERROR_LOGGING_DOC_FILE = path.join('docs', 'error-logging.md');
 const SRC_DIR = 'src';
 
 function walkFiles(dir: string): string[] {
@@ -272,6 +274,164 @@ function checkDomainErrorCodes(repoRoot: string, violations: Violation[]) {
   }
 }
 
+function checkApiDocsReferences(repoRoot: string, violations: Violation[]) {
+  const apiDir = path.join(repoRoot, API_ROUTES_DIR);
+  const apiFiles = walkFiles(apiDir);
+  const apiRoutes = new Set<string>();
+
+  for (const filePath of apiFiles) {
+    if (!filePath.endsWith('route.ts')) continue;
+    if (filePath.includes(`${path.sep}__tests__${path.sep}`)) continue;
+
+    const rel = path
+      .relative(path.join(repoRoot, API_ROUTES_DIR), filePath)
+      .replace(/\\/g, '/');
+    // 形如 "foo/bar/route.ts" → "/api/foo/bar"
+    const withoutSuffix = rel.replace(/\/route\.ts$/, '');
+    const routePath = `/api/${withoutSuffix}`;
+    apiRoutes.add(routePath);
+  }
+
+  const docsPath = path.join(repoRoot, API_DOC_FILE);
+  if (!fs.existsSync(docsPath)) {
+    return;
+  }
+  const docsContent = fs.readFileSync(docsPath, 'utf8');
+
+  const documentedRoutes = new Set<string>();
+  const routeRegex = /`(\/api\/[a-zA-Z0-9_\-/]*)`/g;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const match = routeRegex.exec(docsContent);
+    if (!match) break;
+    const route = match[1];
+    if (typeof route === 'string' && route.startsWith('/api/')) {
+      documentedRoutes.add(route);
+    }
+  }
+
+  for (const route of apiRoutes) {
+    if (!documentedRoutes.has(route)) {
+      violations.push({
+        file: 'docs/api-reference.md',
+        level: 'warn',
+        message: `API route \`${route}\` is implemented under src/app/api but does not appear in docs/api-reference.md. Consider adding it to the API reference.`,
+      });
+    }
+  }
+}
+
+function checkSpansDocumented(repoRoot: string, violations: Violation[]) {
+  const srcDir = path.join(repoRoot, SRC_DIR);
+  const allFiles = walkFiles(srcDir);
+  const codeSpans = new Set<string>();
+
+  // 从代码中提取 span: '...'
+  const spanRegex = /span\s*:\s*['"]([a-zA-Z0-9_.-]+)['"]/g;
+
+  for (const filePath of allFiles) {
+    if (!filePath.endsWith('.ts')) continue;
+    const content = fs.readFileSync(filePath, 'utf8');
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const match = spanRegex.exec(content);
+      if (!match) break;
+      const span = match[1];
+      if (typeof span === 'string' && span.includes('.')) {
+        codeSpans.add(span);
+      }
+    }
+  }
+
+  const docPath = path.join(repoRoot, ERROR_LOGGING_DOC_FILE);
+  if (!fs.existsSync(docPath)) {
+    return;
+  }
+  const docsContent = fs.readFileSync(docPath, 'utf8');
+
+  const docSpans = new Set<string>();
+  const docSpanRegex = /`([a-z0-9_.-]+)`/gi;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const match = docSpanRegex.exec(docsContent);
+    if (!match) break;
+    const span = match[1];
+    if (typeof span === 'string' && span.includes('.')) {
+      docSpans.add(span);
+    }
+  }
+
+  for (const span of codeSpans) {
+    if (!docSpans.has(span)) {
+      violations.push({
+        file: 'docs/error-logging.md',
+        level: 'warn',
+        message: `Span \`${span}\` is used in code but not documented in docs/error-logging.md. Consider adding it to the span table.`,
+      });
+    }
+  }
+
+  for (const span of docSpans) {
+    if (!codeSpans.has(span)) {
+      violations.push({
+        file: 'docs/error-logging.md',
+        level: 'warn',
+        message: `Span \`${span}\` is documented in docs/error-logging.md but was not found in the source tree. Consider removing or updating it if it is obsolete.`,
+      });
+    }
+  }
+}
+
+function checkPaymentSecurityViolationUsage(
+  repoRoot: string,
+  violations: Violation[]
+) {
+  const srcDir = path.join(repoRoot, SRC_DIR);
+  const allFiles = walkFiles(srcDir);
+  let hasPaymentSecurityViolationReference = false;
+
+  for (const filePath of allFiles) {
+    if (!filePath.endsWith('.ts')) continue;
+    const content = fs.readFileSync(filePath, 'utf8');
+
+    if (content.includes('ErrorCodes.PaymentSecurityViolation')) {
+      hasPaymentSecurityViolationReference = true;
+      break;
+    }
+  }
+
+  if (!hasPaymentSecurityViolationReference) {
+    violations.push({
+      level: 'warn',
+      message:
+        'ErrorCodes.PaymentSecurityViolation is defined but not referenced in the source tree. Confirm that payment webhook security failures still surface this code, or remove it if truly unused.',
+    });
+  }
+
+  const webhooksDir = path.join(repoRoot, API_ROUTES_DIR, 'webhooks');
+  if (!fs.existsSync(webhooksDir)) {
+    return;
+  }
+
+  const webhookFiles = walkFiles(webhooksDir);
+
+  for (const filePath of webhookFiles) {
+    if (!filePath.endsWith('route.ts')) continue;
+
+    const content = fs.readFileSync(filePath, 'utf8');
+    if (content.includes('ErrorCodes.UnexpectedError')) {
+      const rel = path.relative(repoRoot, filePath).replace(/\\/g, '/');
+      violations.push({
+        file: rel,
+        level: 'warn',
+        message:
+          'Webhook route references `ErrorCodes.UnexpectedError`. Ensure security failures still use `PAYMENT_SECURITY_VIOLATION` and that `UNEXPECTED_ERROR` is only used for truly unexpected conditions.',
+      });
+    }
+  }
+}
+
 async function main() {
   const repoRoot = path.resolve(__dirname, '..');
   const violations: Violation[] = [];
@@ -283,6 +443,9 @@ async function main() {
   checkErrorCodesDocumented(repoRoot, violations);
   checkErrorUiRegistry(repoRoot, violations);
   checkDomainErrorCodes(repoRoot, violations);
+  checkApiDocsReferences(repoRoot, violations);
+  checkSpansDocumented(repoRoot, violations);
+  checkPaymentSecurityViolationUsage(repoRoot, violations);
 
   const errors = violations.filter((v) => v.level !== 'warn');
   const warnings = violations.filter((v) => v.level === 'warn');

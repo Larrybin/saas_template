@@ -127,6 +127,8 @@
     "react-tweet": "^3.2.2",
     "recharts": "^3.3.0",
     "resend": "^6.4.0",
+    "@aws-sdk/client-s3": "^3.679.0",
+    "@aws-sdk/s3-request-presigner": "^3.679.0",
     "s3mini": "^0.6.0",
     "server-only": "^0.0.1",
     "shiki": "^3.17.1",

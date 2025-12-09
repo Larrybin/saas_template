@@ -51,7 +51,7 @@ export const changelogSource = loader({
 /**
  * Pages source
  *
- * TODO: how to set the baseUrl for pages?
+ * 使用固定的 `/pages` 作为营销/静态页面的路由前缀。
  */
 export const pagesSource = loader({
   baseUrl: '/pages',

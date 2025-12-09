@@ -7,6 +7,7 @@
  */
 import { serverEnv } from '@/env/server';
 import { getLogger } from '@/lib/server/logger';
+import { withRetry } from '@/lib/server/retry';
 import { getBaseUrl } from '@/lib/urls/urls';
 
 const logger = getLogger({ span: 'notification.feishu' });
@@ -35,25 +36,56 @@ export async function sendMessageToFeishu(
       },
     };
 
-    // Send the webhook request
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    await withRetry(
+      'notification.feishu.send',
+      async (attempt) => {
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(message),
+        });
+
+        if (!response.ok) {
+          const context = {
+            userName,
+            status: response.status,
+            attempt,
+          };
+
+          if (response.status >= 500) {
+            logger.error(
+              context,
+              'Failed to send Feishu notification, will retry if attempts remain'
+            );
+            throw new Error(
+              `Feishu webhook responded with status ${response.status}`
+            );
+          }
+
+          logger.error(
+            context,
+            'Failed to send Feishu notification (non-retryable status)'
+          );
+          return;
+        }
+
+        logger.info(
+          { userName, attempt },
+          'Successfully sent Feishu notification'
+        );
       },
-      body: JSON.stringify(message),
-    });
-
-    if (!response.ok) {
-      logger.error(
-        { userName, status: response.status },
-        'Failed to send Feishu notification'
-      );
-    }
-
-    logger.info({ userName }, 'Successfully sent Feishu notification');
+      {
+        logger,
+        logContext: { userName },
+      }
+    );
   } catch (error) {
-    logger.error({ error }, 'Failed to send Feishu notification');
+    logger.error(
+      { error, userName },
+      'Failed to send Feishu notification after retries'
+    );
     // Don't rethrow the error to avoid interrupting the payment flow
   }
 }

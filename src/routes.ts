@@ -64,23 +64,90 @@ export enum Routes {
   ContactBlocks = '/blocks/contact',
 }
 
+type RouteMeta = {
+  protected?: boolean;
+  disallowedWhenLoggedIn?: boolean;
+};
+
+const routeMeta: Record<Routes, RouteMeta> = {
+  [Routes.Root]: {},
+
+  // marketing pages
+  [Routes.FAQ]: {},
+  [Routes.Features]: {},
+  [Routes.Pricing]: {},
+  [Routes.Blog]: {},
+  [Routes.Docs]: {},
+  [Routes.About]: {},
+  [Routes.Contact]: {},
+  [Routes.Waitlist]: {},
+  [Routes.Changelog]: {},
+  [Routes.CookiePolicy]: {},
+  [Routes.PrivacyPolicy]: {},
+  [Routes.TermsOfService]: {},
+
+  // auth routes
+  [Routes.Login]: { disallowedWhenLoggedIn: true },
+  [Routes.Register]: { disallowedWhenLoggedIn: true },
+  [Routes.AuthError]: {},
+  [Routes.ForgotPassword]: { disallowedWhenLoggedIn: true },
+  [Routes.ResetPassword]: { disallowedWhenLoggedIn: true },
+
+  // dashboard routes
+  [Routes.Dashboard]: { protected: true },
+  [Routes.AdminUsers]: { protected: true },
+  [Routes.SettingsProfile]: { protected: true },
+  [Routes.SettingsBilling]: { protected: true },
+  [Routes.SettingsCredits]: { protected: true },
+  [Routes.SettingsSecurity]: { protected: true },
+  [Routes.SettingsNotifications]: { protected: true },
+
+  // AI routes
+  [Routes.AIText]: { protected: true },
+  [Routes.AIImage]: { protected: true },
+  [Routes.AIChat]: { protected: true },
+  [Routes.AIVideo]: { protected: true },
+  [Routes.AIAudio]: { protected: true },
+
+  // block routes (public marketing)
+  [Routes.MagicuiBlocks]: {},
+  [Routes.HeroBlocks]: {},
+  [Routes.LogoCloudBlocks]: {},
+  [Routes.FeaturesBlocks]: {},
+  [Routes.IntegrationsBlocks]: {},
+  [Routes.ContentBlocks]: {},
+  [Routes.StatsBlocks]: {},
+  [Routes.TeamBlocks]: {},
+  [Routes.TestimonialsBlocks]: {},
+  [Routes.CallToActionBlocks]: {},
+  [Routes.FooterBlocks]: {},
+  [Routes.PricingBlocks]: {},
+  [Routes.ComparatorBlocks]: {},
+  [Routes.FAQBlocks]: {},
+  [Routes.LoginBlocks]: {},
+  [Routes.SignupBlocks]: {},
+  [Routes.ForgotPasswordBlocks]: {},
+  [Routes.ContactBlocks]: {},
+};
+
+const allRoutes = Object.values(Routes);
+
 /**
  * The routes that can not be accessed by logged in users
  */
-export const routesNotAllowedByLoggedInUsers = [Routes.Login, Routes.Register];
+export const routesNotAllowedByLoggedInUsers: ReadonlyArray<Routes> =
+  allRoutes.filter((route) => routeMeta[route]?.disallowedWhenLoggedIn);
 
 /**
  * The routes that are protected and require authentication
  */
-export const protectedRoutes = [
-  Routes.Dashboard,
-  Routes.AdminUsers,
-  Routes.SettingsProfile,
-  Routes.SettingsBilling,
-  Routes.SettingsCredits,
-  Routes.SettingsSecurity,
-  Routes.SettingsNotifications,
-];
+export const protectedRoutes: ReadonlyArray<Routes> = allRoutes.filter(
+  (route) => routeMeta[route]?.protected
+);
+
+export const isProtectedRoute = (route: string): route is Routes => {
+  return protectedRoutes.includes(route as Routes);
+};
 
 /**
  * The default redirect path after logging in

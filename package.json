@@ -157,7 +157,7 @@
     "@types/react-dom": "^19.2.2",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitest/coverage-v8": "^4.0.14",
-    "drizzle-kit": "^0.31.6",
+    "drizzle-kit": "^0.31.9",
     "jsdom": "^27.2.0",
     "knip": "^5.71.0",
     "postcss": "^8.5.6",
